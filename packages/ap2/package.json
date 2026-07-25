@@ -20,10 +20,12 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/authorization.test.ts src/index.test.ts src/merchant.test.ts src/pool.test.ts src/sd-jwt.test.ts src/validator.test.ts"
+    "test": "node --import tsx --test src/authorization.test.ts src/index.test.ts src/legacy-v01.test.ts src/merchant.test.ts src/pool.test.ts src/sd-jwt.test.ts src/validator.test.ts"
   },
   "dependencies": {
     "@reapp-sdk/core": "^0.3.1",

@@ -103,8 +103,12 @@ The under-10-line flow (`reapp.createIntentMandate` → `registerMandate` →
 Maps the supported AP2 v0.2 autonomous Open Payment Mandate subset into the
 existing core mandate without changing core's canonical hash. Unsupported
 constraints, multi-payee scope, bounded recurrence, minimum amounts, and
-not-before semantics fail closed. Exact v0.1 IntentMandate envelopes retain
-their legacy admission rules. The package also verifies supported v0.2
+not-before semantics fail closed. The v0.1 IntentMandate profile is still signed
+and admitted under its own legacy rules (`signAp2V01Mandate` / `bindIntentMandate`
+in `legacy-v01.ts`), byte-identical to what 0.3.0 published and pinned by a vector
+test generated from the published package. Never let one version's schema
+reinterpret the other's, and never infer the version from the input — the caller
+picks it by function name. The package also verifies supported v0.2
 open/closed Delegate SD-JWT Checkout and Payment flows, signs receipts, and
 creates typed authorizations for the separate Simple/Composite extension. The
 pooled path is explicitly a REAPP pool-participation VCT. AP2 normalization and

@@ -1,12 +1,15 @@
 /**
  * AP2 v0.1 credential compatibility.
  *
- * This preserves the exact fail-closed IntentMandate envelope admitted by the
- * 0.3.x package. It is intentionally isolated from the v0.2 Payment Mandate
- * schema so neither version can be interpreted as the other.
+ * This preserves the exact fail-closed IntentMandate envelope minted and
+ * admitted by the 0.3.x package, so a v0.1 credential signed by 0.3.0 and one
+ * signed by this package are byte-identical. It is intentionally isolated from
+ * the v0.2 Payment Mandate schema so neither version can be interpreted as the
+ * other, and the version is always chosen explicitly at the call site:
+ * `signAp2V01Mandate` for v0.1, `signAp2Mandate` for v0.2.
  */
 import { Buffer } from "buffer";
-import { hash } from "@stellar/stellar-sdk";
+import { Address, Keypair, StrKey, hash } from "@stellar/stellar-sdk";
 import { reapp, type IntentMandate } from "@reapp-sdk/core";
 
 export const REAPP_AP2_V01_CREDENTIAL_VERSION = "reapp-ap2-credential/1" as const;
@@ -26,6 +29,34 @@ export interface NormalizedAp2V01IntentMandate {
   skus: [];
   requires_refundability: false;
   intent_expiry: string;
+}
+
+/** AP2 v0.1.0 IntentMandate data shape (wire names preserved) accepted as input. */
+export interface Ap2V01IntentMandate {
+  user_cart_confirmation_required: boolean;
+  natural_language_description: string;
+  merchants?: readonly string[];
+  skus?: readonly string[];
+  requires_refundability?: boolean;
+  intent_expiry: string;
+}
+
+/** Stellar-specific authorization that AP2 v0.1's commerce intent does not carry. */
+export interface StellarV01MandateAuthorization {
+  user: string;
+  agent: string;
+  asset: string;
+  /** Human amount, such as "5.00". */
+  maxAmount: string;
+  /** Token decimals; defaults to Stellar's 7. */
+  decimals?: number;
+  /** Optional reproducibility nonce; secure random bytes are used by default. */
+  nonce?: string;
+}
+
+export interface BindIntentMandateInput {
+  intent: Ap2V01IntentMandate;
+  stellar: StellarV01MandateAuthorization;
 }
 
 export interface ReappAp2V01CredentialPayload {
@@ -304,4 +335,294 @@ export function rebuildV01CredentialBinding(
     bindingNonce: payload.stellar.nonce,
     mandate,
   };
+}
+
+/* ------------------------------------------------------------------------- *
+ * Minting. Everything below reproduces the 0.3.0 authoring path exactly, so a
+ * v0.1 credential minted here verifies against a 0.3.x validator and vice
+ * versa. `v01_matches_the_published_0_3_0_vector` in legacy-v01.test.ts pins
+ * that against real 0.3.0 output; treat any change here as a wire break.
+ * ------------------------------------------------------------------------- */
+
+function requirePlainObject(label: string, value: unknown): UnknownRecord {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    Object.getPrototypeOf(value) !== Object.prototype
+  ) {
+    throw new Error(`${label} must be a plain object.`);
+  }
+  return value as UnknownRecord;
+}
+
+function rejectUnknownKeys(label: string, value: unknown, allowed: readonly string[]): UnknownRecord {
+  const object = requirePlainObject(label, value);
+  const unknown = Object.keys(object).filter((key) => !allowed.includes(key));
+  if (unknown.length > 0) {
+    throw new Error(`${label} contains unsupported field ${JSON.stringify(unknown[0])}.`);
+  }
+  return object;
+}
+
+function requireStellarAddress(label: string, value: unknown): string {
+  const address = requireText(label, value);
+  try {
+    Address.fromString(address);
+  } catch {
+    throw new Error(`${label} must be a valid Stellar address.`);
+  }
+  return address;
+}
+
+function requireEd25519Address(label: string, value: unknown): string {
+  const address = requireText(label, value);
+  if (!StrKey.isValidEd25519PublicKey(address)) {
+    throw new Error(`${label} must be a Stellar G-address.`);
+  }
+  return address;
+}
+
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+/**
+ * v0.1 accepted a UTC offset on input and normalized it to `Z`; v0.2 requires
+ * `Z` up front. Keeping the looser input rule here is what makes an existing
+ * 0.3.x caller's mandate hash come out unchanged.
+ */
+function normalizeExpiry(value: unknown): { iso: string; unixSeconds: number } {
+  const expiry = requireText("intent.intent_expiry", value);
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.000)?(Z|[+-](\d{2}):(\d{2}))$/.exec(expiry);
+  if (!match) {
+    throw new Error(
+      "intent.intent_expiry must be an ISO 8601 timestamp with a timezone and whole-second precision.",
+    );
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = Number(match[6]);
+  const offsetHour = match[8] === undefined ? 0 : Number(match[8]);
+  const offsetMinute = match[9] === undefined ? 0 : Number(match[9]);
+  const daysInMonth = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > daysInMonth[month - 1]! ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    offsetHour > 23 ||
+    offsetMinute > 59
+  ) {
+    throw new Error("intent.intent_expiry must be a real calendar timestamp.");
+  }
+  const milliseconds = Date.parse(expiry);
+  if (!Number.isFinite(milliseconds) || milliseconds % 1000 !== 0) {
+    throw new Error("intent.intent_expiry must be a valid whole-second ISO 8601 timestamp.");
+  }
+  const iso = new Date(milliseconds).toISOString().replace(".000Z", "Z");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(iso)) {
+    throw new Error(
+      "intent.intent_expiry must normalize within the supported four-digit UTC year range.",
+    );
+  }
+  const unixSeconds = milliseconds / 1000;
+  if (!Number.isSafeInteger(unixSeconds) || unixSeconds <= Math.floor(Date.now() / 1000)) {
+    throw new Error("intent.intent_expiry must resolve to a future Unix timestamp.");
+  }
+  return { iso, unixSeconds };
+}
+
+/**
+ * Normalize and validate the AP2 v0.1 subset REAPP can enforce without
+ * inventing application-only policy. Unsupported constraints fail closed.
+ */
+export function normalizeAp2V01Intent(intent: Ap2V01IntentMandate): {
+  intent: NormalizedAp2V01IntentMandate;
+  unixExpiry: number;
+} {
+  rejectUnknownKeys("intent", intent, [
+    "user_cart_confirmation_required",
+    "natural_language_description",
+    "merchants",
+    "skus",
+    "requires_refundability",
+    "intent_expiry",
+  ]);
+  if (intent.user_cart_confirmation_required !== false) {
+    throw new Error(
+      "REAPP's AP2 bridge requires user_cart_confirmation_required=false; cart-confirmation state is not enforced by MandateRegistry.",
+    );
+  }
+  const description = requireText(
+    "intent.natural_language_description",
+    intent.natural_language_description,
+  );
+  if (!Array.isArray(intent.merchants) || intent.merchants.length !== 1) {
+    throw new Error("intent.merchants must contain exactly one Stellar merchant address.");
+  }
+  const merchant = requireStellarAddress("intent.merchants[0]", intent.merchants[0]);
+  if (intent.skus !== undefined && (!Array.isArray(intent.skus) || intent.skus.length > 0)) {
+    throw new Error(
+      "intent.skus is not supported because MandateRegistry does not enforce SKU constraints.",
+    );
+  }
+  if (intent.requires_refundability === true) {
+    throw new Error(
+      "intent.requires_refundability=true is not supported because MandateRegistry does not enforce refundability.",
+    );
+  }
+  if (
+    intent.requires_refundability !== undefined &&
+    typeof intent.requires_refundability !== "boolean"
+  ) {
+    throw new Error("intent.requires_refundability must be a boolean when present.");
+  }
+  const expiry = normalizeExpiry(intent.intent_expiry);
+  return {
+    intent: {
+      user_cart_confirmation_required: false,
+      natural_language_description: description,
+      merchants: [merchant],
+      skus: [],
+      requires_refundability: false,
+      intent_expiry: expiry.iso,
+    },
+    unixExpiry: expiry.unixSeconds,
+  };
+}
+
+function secureNonce(): string {
+  type CryptoSource = { getRandomValues(bytes: Uint8Array): Uint8Array };
+  const source = (globalThis as typeof globalThis & { crypto?: CryptoSource }).crypto;
+  if (!source) {
+    throw new Error("Web Crypto is required to create a secure AP2 binding nonce.");
+  }
+  const bytes = source.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function deepFreeze<T>(value: T): Readonly<T> {
+  if (Array.isArray(value)) {
+    for (const entry of value) deepFreeze(entry);
+    return Object.freeze(value);
+  }
+  if (isRecord(value)) {
+    for (const entry of Object.values(value)) deepFreeze(entry);
+    return Object.freeze(value) as Readonly<T>;
+  }
+  return value;
+}
+
+/**
+ * Bind a supported AP2 v0.1 IntentMandate to REAPP's existing core mandate.
+ *
+ * The AP2 hash is embedded in core's existing nonce field under the
+ * `reapp-ap2/1` binding version, so an id minted here is the same id 0.3.0
+ * minted for the same inputs.
+ */
+export function bindIntentMandate(input: BindIntentMandateInput): Ap2V01MandateBinding {
+  rejectUnknownKeys("input", input, ["intent", "stellar"]);
+  rejectUnknownKeys("stellar", input.stellar, [
+    "user",
+    "agent",
+    "asset",
+    "maxAmount",
+    "decimals",
+    "nonce",
+  ]);
+  const normalized = normalizeAp2V01Intent(input.intent);
+  const canonicalIntent = canonicalize(normalized.intent);
+  const intentHash = hash(Buffer.from(canonicalIntent, "utf8")).toString("hex");
+
+  const user = requireEd25519Address("stellar.user", input.stellar.user);
+  const agent = requireEd25519Address("stellar.agent", input.stellar.agent);
+  const asset = requireText("stellar.asset", input.stellar.asset);
+  if (!StrKey.isValidContract(asset)) {
+    throw new Error("stellar.asset must be a valid Stellar contract address.");
+  }
+
+  const bindingNonce = input.stellar.nonce === undefined
+    ? secureNonce()
+    : requireText("stellar.nonce", input.stellar.nonce);
+  const decimals = input.stellar.decimals ?? 7;
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 38) {
+    throw new Error("stellar.decimals must be an integer from 0 through 38.");
+  }
+  const maxAmount = requireText("stellar.maxAmount", input.stellar.maxAmount);
+  const coreNonce = `${REAPP_AP2_V01_BINDING_VERSION}:${intentHash}:${bindingNonce}`;
+  const mandate = reapp.createIntentMandate({
+    user,
+    agent,
+    merchant: normalized.intent.merchants[0],
+    asset,
+    maxAmount,
+    expiry: normalized.unixExpiry,
+    decimals,
+    nonce: coreNonce,
+  });
+
+  return {
+    ap2SpecVersion: AP2_V01_SPEC_VERSION,
+    ap2DataKey: AP2_V01_INTENT_DATA_KEY,
+    bindingVersion: REAPP_AP2_V01_BINDING_VERSION,
+    normalizedIntent: normalized.intent,
+    canonicalIntent,
+    intentHash,
+    bindingNonce,
+    mandate,
+  };
+}
+
+/**
+ * Sign a supported AP2 v0.1 IntentMandate with its Stellar user key.
+ *
+ * Deliberately not named `signAp2Mandate`: that name now means v0.2, and a
+ * caller must never get a different protocol version than the one it asked for.
+ * A 0.3.x call site that upgrades without changing the name fails closed on the
+ * unknown `intent` key rather than silently switching versions.
+ */
+export function signAp2V01Mandate(
+  input: BindIntentMandateInput,
+  signer: Keypair,
+): Readonly<SignedAp2V01Mandate> {
+  const binding = bindIntentMandate(input);
+  if (signer.publicKey() !== binding.mandate.user) {
+    throw new Error("the signing key must match stellar.user.");
+  }
+  const payload: ReappAp2V01CredentialPayload = {
+    ap2SpecVersion: binding.ap2SpecVersion,
+    ap2DataKey: binding.ap2DataKey,
+    bindingVersion: binding.bindingVersion,
+    intent: binding.normalizedIntent,
+    stellar: {
+      user: binding.mandate.user,
+      agent: binding.mandate.agent,
+      asset: binding.mandate.asset,
+      maxAmount: String(input.stellar.maxAmount).trim(),
+      decimals: binding.mandate.decimals,
+      nonce: binding.bindingNonce,
+    },
+  };
+  const digest = ap2V01CredentialSigningDigest(
+    REAPP_AP2_V01_CREDENTIAL_VERSION,
+    payload,
+    binding.mandate.id,
+  );
+  return deepFreeze({
+    credentialVersion: REAPP_AP2_V01_CREDENTIAL_VERSION,
+    payload,
+    mandateHash: binding.mandate.id,
+    signature: {
+      algorithm: REAPP_AP2_V01_SIGNATURE_ALGORITHM,
+      value: signer.sign(digest).toString("base64"),
+    },
+  });
 }

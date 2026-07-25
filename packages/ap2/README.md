@@ -1,7 +1,7 @@
 # @reapp-sdk/ap2 0.4.0
 
 AP2 v0.2 mandate admission, merchant verification, and typed authorization for
-contract-enforced Stellar payments.
+contract-enforced Stellar payments, with full AP2 v0.1 compatibility.
 
 The package has two explicit boundaries:
 
@@ -92,6 +92,48 @@ await reapp.approveBudget(accepted.binding.mandate, { signer: USER_KEY });
 The trusted `expectedUser`, `merchant`, `checkoutReference`, and `amount` inputs
 must come from application state, not untrusted HTTP fields.
 
+## Signing an AP2 v0.1 IntentMandate
+
+The v0.1 profile is still first-class: `signAp2V01Mandate` produces a credential
+byte-identical to the one `@reapp-sdk/ap2@0.3.0` signed for the same inputs, and
+the same validator admits it.
+
+```ts
+import { signAp2V01Mandate } from "@reapp-sdk/ap2";
+
+const legacy = signAp2V01Mandate({
+  intent: {
+    user_cart_confirmation_required: false,
+    natural_language_description: "Buy one research dataset",
+    merchants: [MERCHANT_ADDRESS],
+    intent_expiry: new Date(expiry * 1000).toISOString(),
+  },
+  stellar: {
+    user: USER_KEY.publicKey(),
+    agent: AGENT_KEY.publicKey(),
+    asset: reapp.testnet.nativeSac,
+    maxAmount: "5.00",
+  },
+}, USER_KEY);
+
+// Same validator, no checkoutReference — v0.1 has no checkout binding.
+const accepted = await validator.validateAndConsume({
+  credential: legacy,
+  expectedUser: USER_KEY.publicKey(),
+  merchant: MERCHANT_ADDRESS,
+  amount: "1.00",
+});
+```
+
+**The version is always explicit at the call site.** `signAp2Mandate` means
+v0.2 and `signAp2V01Mandate` means v0.1; neither is inferred from the input and
+there is no default. A 0.3.x call site that upgrades without renaming the
+function fails closed on the unrecognized `intent` key rather than quietly
+switching protocol versions.
+
+Prefer v0.2 for new integrations. v0.1 exists so credentials already in the
+field, and merchants still running a 0.3.x validator, keep working.
+
 ## Supported v0.2 profile
 
 The bridge follows the official
@@ -168,11 +210,16 @@ The user signs a domain-separated SHA-256 digest under
 payload, `reapp-ap2-credential/2`, AP2 version, VCT, binding version, and the
 recomputed REAPP mandate hash.
 
-The validator also accepts the exact `reapp-ap2-credential/1` envelope produced
-by the legacy v0.1 package. Those credentials retain their v0.1
-`IntentMandate`, `reapp-ap2/1` binding, V1 signature domain, merchant/amount
-checks, expiry, and admission replay behavior. They are not upgraded,
-normalized as v0.2, or allowed to mix version fields.
+v0.1 keeps its own scheme end to end. `signAp2V01Mandate` and
+`bindIntentMandate` produce the `reapp-ap2-credential/1` envelope over an
+`IntentMandate`, hashed as `reapp-ap2/1:<intent_hash>:<binding_nonce>` and
+signed under the `REAPP\0AP2\0SIGNED-MANDATE\0V1\0` domain; the validator
+admits exactly that. Credentials are never upgraded, normalized as v0.2, or
+allowed to mix version fields in either direction, and the two schemes cannot
+collide on-chain because the binding version is part of the hashed nonce.
+
+`legacy-v01.test.ts` pins the v0.1 output against a credential minted by the
+published 0.3.0 package, so drift off the released wire format fails the build.
 
 The core canonical field order is unchanged, so non-AP2 mandate ids remain
 stable. Supply `stellar.nonce` only for reproducible vectors; otherwise Web
@@ -192,8 +239,8 @@ granted to the contract.
 
 Existing mandates registered through the v0.1 bridge remain executable
 on-chain because the contract interface and stored mandate shape have not
-changed. The validator also admits a correctly signed v0.1 envelope with the
-legacy rules. Together these provide AP2 v0.1 backwards compatibility without
+changed. The package still signs and admits v0.1 credentials under the legacy
+rules. Together these provide AP2 v0.1 backwards compatibility without
 weakening the v0.2 schema.
 
 For a new Simple route, a separately deployed authorization extension can be
@@ -227,9 +274,12 @@ for route selection, security boundaries, schemas, and release status.
 | `signAp2Mandate(input, signer)` | Normalize, bind, and sign the supported v0.2 mandate. |
 | `bindPaymentMandate(input)` | Normalize and bind without signing. |
 | `normalizeAp2PaymentMandate(paymentMandate, stellar)` | Validate and canonicalize the supported subset. |
-| `createAp2ComplianceValidator(options)` | Create the signature/context/amount/expiry/replay admission validator. |
+| `createAp2ComplianceValidator(options)` | Create the signature/context/amount/expiry/replay admission validator. Admits both versions. |
 | `InMemoryAp2ReplayStore` | Tests and single-process development only. |
 | `canonicalizeJson(value)` | Deterministic recursively key-sorted JSON. |
+| `signAp2V01Mandate(input, signer)` | Normalize, bind, and sign an AP2 v0.1 IntentMandate, byte-identical to 0.3.0. |
+| `bindIntentMandate(input)` | Bind a v0.1 IntentMandate without signing. |
+| `normalizeAp2V01Intent(intent)` | Validate and canonicalize the supported v0.1 subset. |
 | `parseSignedAp2V01Mandate` / `rebuildV01CredentialBinding` | Exact legacy v0.1 admission compatibility; no v0.2 reinterpretation. |
 | `verifyDelegateSdJwtChain(chain, options)` | Verify bounded AP2 Delegate SD-JWT open/closed chains. |
 | `Ap2JsonWebKey` | Package-owned structural JWK type accepted by the JWS APIs without coupling consumers to one `@types/node` layout. |

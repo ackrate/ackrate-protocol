@@ -38,7 +38,7 @@ instead, copy a script into an empty directory and
 | `a1-lifecycle.mjs` | register → pay → overspend → revoke → expire | overspend, pay-after-revoke, and pay-after-expiry all rejected on-chain; exact-remaining budget still settles |
 | `a2-x402-roundtrip.mjs` | pay a 402 API, then replay the proof / retarget it / use a legacy client | 3 paid unlocks, 4th blocked on-chain, `426` for a legacy client, replayed proof never re-runs fulfillment |
 | `a3-bypass-attempts.mjs` | rogue caller, replay, raw-i128 overspend, zero/negative, wrong merchant, direct `transfer_from` | every attempt rejected; post-attack contract state intact |
-| `a4-ap2-adversarial.mjs` | tampered signature, mutated payload, forged issuer, wrong session user, replay, unsupported semantics | validator fails closed on every mutation |
+| `a4-ap2-adversarial.mjs` | tampered signature, mutated payload, forged issuer, wrong session user, replay, unsupported semantics, version relabelling — run against **both** the v0.1 IntentMandate and the v0.2 Open Payment Mandate profile | 37 checks; validator fails closed on every mutation with the expected `Ap2ValidationError` code |
 | `a5-custody-and-landed-revert.mjs` | measure the real allowances | allowance user→contract = full budget, user→**agent = 0** |
 | `a6-landed-revert-race.mjs` | force a rejected payment to be included in a ledger | a `BadSequence` revert lands on-chain as a failed transaction with a real hash |
 
