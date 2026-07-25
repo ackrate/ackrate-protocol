@@ -95,7 +95,8 @@ must come from application state, not untrusted HTTP fields.
 ## Signing an AP2 v0.1 IntentMandate
 
 The v0.1 profile is still first-class: `signAp2V01Mandate` produces a credential
-byte-identical to the one `@reapp-sdk/ap2@0.3.0` signed for the same inputs, and
+byte-identical to the one `@reapp-sdk/ap2@0.3.0` signed for the same inputs —
+including the same `stellar.nonce`, since an omitted nonce is random in both — and
 the same validator admits it.
 
 ```ts
@@ -215,8 +216,9 @@ v0.1 keeps its own scheme end to end. `signAp2V01Mandate` and
 `IntentMandate`, hashed as `reapp-ap2/1:<intent_hash>:<binding_nonce>` and
 signed under the `REAPP\0AP2\0SIGNED-MANDATE\0V1\0` domain; the validator
 admits exactly that. Credentials are never upgraded, normalized as v0.2, or
-allowed to mix version fields in either direction, and the two schemes cannot
-collide on-chain because the binding version is part of the hashed nonce.
+allowed to mix version fields in either direction. The binding version is part
+of the hashed core nonce, so the two schemes have disjoint preimages and cannot
+produce the same mandate id short of a SHA-256 collision.
 
 `legacy-v01.test.ts` pins the v0.1 output against a credential minted by the
 published 0.3.0 package, so drift off the released wire format fails the build.

@@ -1,6 +1,10 @@
-// Gate A4 — adversarial validation of the PUBLISHED @reapp-sdk/ap2 validator.
-// Every mutation of a validly signed AP2 credential must fail closed, for BOTH
-// the v0.1 IntentMandate profile and the v0.2 Open Payment Mandate profile.
+// Gate A4 — adversarial validation of the @reapp-sdk/ap2 validator. Every
+// mutation of a validly signed AP2 credential must fail closed, for BOTH the
+// v0.1 IntentMandate profile and the v0.2 Open Payment Mandate profile.
+//
+// Run as-is this attacks the WORKSPACE package. To attack the published one,
+// copy this file into an empty directory and install from the registry — see
+// the install line in ./README.md.
 //
 // Two rules keep this gate honest:
 //   1. A rejection only counts if it came from the validator as an
@@ -12,12 +16,13 @@
 import {
   Ap2ValidationError,
   InMemoryAp2ReplayStore,
+  canonicalizeJson,
   createAp2ComplianceValidator,
   signAp2Mandate,
   signAp2V01Mandate,
 } from "@reapp-sdk/ap2";
 import { reapp } from "@reapp-sdk/core";
-import { Keypair } from "@stellar/stellar-sdk";
+import { Keypair, hash } from "@stellar/stellar-sdk";
 
 const results = [];
 let failures = 0;
@@ -42,6 +47,28 @@ function freshValidator(now) {
     replayNamespace: `stellar-testnet:${reapp.testnet.mandateRegistryId}`,
     ...(now ? { now } : {}),
   });
+}
+
+/**
+ * The signing digest, reimplemented from the documented construction rather
+ * than imported. A real attacker holding a user key does not call our signer,
+ * so neither does this file: it forges credentials the package would refuse to
+ * produce and checks the validator rejects them anyway.
+ *
+ * Reimplementing it also means the control case below independently confirms
+ * the package's scheme matches what its README documents.
+ */
+function forgeSignature(domain, credentialVersion, versionFields, payload, mandateHash, signer) {
+  const parts = [Buffer.from(domain, "utf8"), Buffer.from(credentialVersion, "utf8"), Buffer.from([0])];
+  for (const field of versionFields) {
+    parts.push(Buffer.from(payload[field], "utf8"), Buffer.from([0]));
+  }
+  parts.push(
+    hash(Buffer.from(canonicalizeJson(payload), "utf8")),
+    Buffer.from([0]),
+    Buffer.from(mandateHash, "hex"),
+  );
+  return signer.sign(hash(Buffer.concat(parts))).toString("base64");
 }
 
 /* --------------------------------------------------------------------------
@@ -79,11 +106,30 @@ const v01 = {
   },
   foreignCredentialVersion: "reapp-ap2-credential/2",
   unsupportedSemantics: [
-    ["cart-confirmation required", { intent: { user_cart_confirmation_required: true } }],
-    ["refundability required", { intent: { requires_refundability: true } }],
-    ["SKU-scoped intent", { intent: { skus: ["sku-1"] } }],
-    ["multi-merchant intent", { merchants: [MERCHANT, OTHER_MERCHANT] }],
+    ["cart-confirmation required", { intent: { user_cart_confirmation_required: true } }, /user_cart_confirmation_required=false/],
+    ["refundability required", { intent: { requires_refundability: true } }, /requires_refundability=true is not supported/],
+    ["SKU-scoped intent", { intent: { skus: ["sku-1"] } }, /intent\.skus is not supported/],
+    ["multi-merchant intent", { merchants: [MERCHANT, OTHER_MERCHANT] }, /exactly one Stellar merchant address/],
   ],
+  /** Re-sign a payload the package itself would never emit, using the real user key. */
+  forge(mutate) {
+    const credential = structuredClone(this.mint());
+    mutate(credential.payload);
+    credential.signature.value = forgeSignature(
+      "REAPP\0AP2\0SIGNED-MANDATE\0V1\0",
+      credential.credentialVersion,
+      ["ap2SpecVersion", "ap2DataKey", "bindingVersion"],
+      credential.payload,
+      credential.mandateHash,
+      USER,
+    );
+    return credential;
+  },
+  forgeUnsupported(payload) {
+    // With a valid signature over this exact payload, the only thing left to
+    // reject it is the v0.1 schema rule itself.
+    payload.intent.user_cart_confirmation_required = true;
+  },
 };
 
 const v02 = {
@@ -135,14 +181,30 @@ const v02 = {
   },
   foreignCredentialVersion: "reapp-ap2-credential/1",
   unsupportedSemantics: [
-    ["bounded recurrence", { constraints: { agent_recurrence: { max_occurrences: 3 } } }],
-    ["minimum payment amount", { constraints: { amount_range: { min: 1 } } }],
-    ["not-before execution window", { constraints: { execution_date: { not_before: utc(nowSeconds() + 60) } } }],
-    ["multi-payee scope", { payees: [{ id: MERCHANT, name: "A" }, { id: OTHER_MERCHANT, name: "B" }] }],
+    ["bounded recurrence", { constraints: { agent_recurrence: { max_occurrences: 3 } } }, /ON_DEMAND without max_occurrences/],
+    ["minimum payment amount", { constraints: { amount_range: { min: 1 } } }, /amount_range\.min is unsupported/],
+    ["not-before execution window", { constraints: { execution_date: { not_before: utc(nowSeconds() + 60) } } }, /not_before is unsupported/],
+    ["multi-payee scope", { payees: [{ id: MERCHANT, name: "A" }, { id: OTHER_MERCHANT, name: "B" }] }, /exactly one Stellar merchant/],
     ["confirmation key that is not the agent", {
       cnf: { jwk: { kty: "OKP", crv: "Ed25519", x: Buffer.from(Keypair.random().rawPublicKey()).toString("base64url") } },
-    }],
+    }, /cnf must contain the Ed25519 JWK/],
   ],
+  forge(mutate) {
+    const credential = structuredClone(this.mint());
+    mutate(credential.payload);
+    credential.signature.value = forgeSignature(
+      "REAPP\0AP2\0SIGNED-MANDATE\0V2\0",
+      credential.credentialVersion,
+      ["ap2SpecVersion", "ap2Vct", "bindingVersion"],
+      credential.payload,
+      credential.mandateHash,
+      USER,
+    );
+    return credential;
+  },
+  forgeUnsupported(payload) {
+    payload.paymentMandate.constraints.find((c) => c.type === "payment.amount_range").min = 1;
+  },
 };
 
 /* --------------------------------------------------------------------------
@@ -177,12 +239,22 @@ async function mustRejectAtAdmission(name, build, admit, expectedCodes) {
   }
 }
 
-function mustRefuseAtSigning(name, mint) {
+/**
+ * `expected` is required. Accepting any throw is how the previous version of
+ * this file scored its own crashes as wins — a profile-specific TypeError or a
+ * malformed fixture must not read as a refusal.
+ */
+function mustRefuseAtSigning(name, mint, expected) {
   try {
     mint();
     record(name, false, "package minted a credential it cannot enforce");
   } catch (err) {
-    record(name, true, String(err?.message ?? err).slice(0, 100));
+    const message = String(err?.message ?? err);
+    if (!(err instanceof Error) || !expected.test(message)) {
+      record(name, false, `threw, but not the expected refusal: ${message.slice(0, 90)}`);
+      return;
+    }
+    record(name, true, message.slice(0, 100));
   }
 }
 
@@ -278,6 +350,7 @@ for (const profile of [v01, v02]) {
   mustRefuseAtSigning(
     `${tag} package refuses to sign on behalf of another user`,
     () => profile.mint({ signer: Keypair.random() }),
+    /signing key must match stellar\.user/,
   );
 
   // 10. replay store outage fails closed (no silent admit)
@@ -289,9 +362,39 @@ for (const profile of [v01, v02]) {
   }, ["REPLAY_STORE_UNAVAILABLE"]);
 
   // 11. unsupported AP2 semantics are refused at signing, not quietly dropped
-  for (const [what, overrides] of profile.unsupportedSemantics) {
-    mustRefuseAtSigning(`${tag} ${what} is refused at signing`, () => profile.mint(overrides));
+  for (const [what, overrides, expected] of profile.unsupportedSemantics) {
+    mustRefuseAtSigning(`${tag} ${what} is refused at signing`, () => profile.mint(overrides), expected);
   }
+
+  // 11b. CONTROL: our own re-implementation of the signing digest, used by the
+  //      forgery below. If this does not admit, every forged-rejection result
+  //      in this file would be meaningless — the credential would be failing on
+  //      a bad signature rather than on the rule under test.
+  {
+    let ok = false;
+    let detail = "";
+    try {
+      const accepted = await freshValidator().validateAndConsume({
+        credential: profile.forge(() => {}),
+        ...args,
+      });
+      ok = !!accepted?.binding?.mandate?.id;
+      detail = "independently signed credential admits, so forged rejections below are meaningful";
+    } catch (err) {
+      detail = `re-signed credential was rejected (${err?.code ?? err?.message}); forgery checks below prove nothing`;
+    }
+    record(`${tag} control: independently re-signed valid credential admits`, ok, detail);
+  }
+
+  // 11c. An attacker holding the user key does not call our signer. Refusing to
+  //      mint unsupported semantics is worthless if the validator would accept
+  //      them when someone else signs them correctly.
+  await mustRejectAtAdmission(
+    `${tag} correctly signed credential carrying unsupported semantics fails closed`,
+    () => profile.forge((payload) => profile.forgeUnsupported(payload)),
+    admit(),
+    ["INVALID_CREDENTIAL", "BINDING_MISMATCH", "UNSUPPORTED_VERSION"],
+  );
 
   // 12. payee scope widened after signing
   await mustRejectAtAdmission(`${tag} payee scope widened after signing fails closed`, () => {

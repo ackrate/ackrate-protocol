@@ -20,9 +20,10 @@ npm install @reapp-sdk/ap2@0.4.0 @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
 See the package [quick start](../packages/ap2/README.md#quick-start) for the full
 construction and validation example.
 
-`validateAndConsume` requires trusted `expectedUser`, `merchant`,
-`checkoutReference`, and `amount` inputs. On success it returns the exact core
-mandate to register. Its replay check is admission-only; cumulative spending
+`validateAndConsume` requires trusted `expectedUser`, `merchant`, and `amount`
+inputs, plus `checkoutReference` for v0.2 — a v0.1 IntentMandate carries no
+checkout binding, so the field is ignored on that path. On success it returns
+the exact core mandate to register. Its replay check is admission-only; cumulative spending
 and payment replay remain atomically enforced on-chain.
 
 ## Running AP2 v0.1 alongside v0.2
@@ -33,9 +34,11 @@ one validator admits either. Nothing is inferred — the version is a property o
 the function you call, so a caller can never be handed a different protocol
 version than it asked for.
 
-The v0.1 output is byte-identical to `@reapp-sdk/ap2@0.3.0` for the same
-inputs, pinned by a vector in `packages/ap2/src/legacy-v01.test.ts` that was
-generated from the published 0.3.0 package. A merchant still running a 0.3.x
+The v0.1 output is byte-identical to `@reapp-sdk/ap2@0.3.0` for the same inputs,
+including the same `stellar.nonce` — omit the nonce and both versions draw a
+fresh random one, as they always have. That equivalence is pinned by a vector in
+`packages/ap2/src/legacy-v01.test.ts` generated from the published 0.3.0
+package. A merchant still running a 0.3.x
 validator therefore accepts credentials this package signs today.
 
 Mandates already registered through the v0.1 bridge remain executable because
@@ -70,8 +73,8 @@ do not yet expose those new routes.
 npm test -w @reapp-sdk/ap2
 ```
 
-The package suite contains 56 named cases, including 30 individually reported
-validator cases. It covers canonical admission binding, open/closed SD-JWT chains,
+The package suite contains 77 named cases, including 32 individually reported
+validator cases and 8 v0.1 compatibility cases. It covers canonical admission binding, open/closed SD-JWT chains,
 disclosures, Checkout/Payment linkage, known and unknown constraints,
 merchant/amount context, receipts, REAPP pool participation, byte-exact
 Soroban authorization vectors, expiry, replay concurrency, store outages, and
