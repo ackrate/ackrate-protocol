@@ -25,7 +25,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepack": "npm run build",
+    "prepack": "rm -rf dist && npm run build",
     "test": "node --import tsx --test src/authorization.test.ts src/index.test.ts src/legacy-v01.test.ts src/merchant.test.ts src/pool.test.ts src/sd-jwt.test.ts src/validator.test.ts"
   },
   "dependencies": {

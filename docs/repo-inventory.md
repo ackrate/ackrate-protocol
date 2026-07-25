@@ -41,7 +41,7 @@ pause, upgrade authorization/timing, and real same-address replacement.
 | Script | Purpose |
 |---|---|
 | `scripts/verify.mjs` | Clean build, formatting, lint/type, tests, and workspace contract checks. |
-| `scripts/gatecheck-t2.mjs` | Full T2 gate, eight real tarballs, empty-project strict types/imports/CLI, and public/private boundaries. |
+| `scripts/gatecheck-t2.mjs` | Full T2 gate, five real tarballs, empty-project strict types/imports/CLI, and public/private boundaries. |
 | `scripts/e2e-x402.ts` | Three bound-v2 testnet purchases, fourth budget rejection, replay conflict. |
 | `scripts/failure-drills-testnet.ts` | Revocation, merchant downtime recovery, and expiry drills. |
 | `scripts/e2e-sdk.mjs` | Direct SDK testnet contract flow. |

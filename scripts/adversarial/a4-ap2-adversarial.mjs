@@ -389,11 +389,15 @@ for (const profile of [v01, v02]) {
   // 11c. An attacker holding the user key does not call our signer. Refusing to
   //      mint unsupported semantics is worthless if the validator would accept
   //      them when someone else signs them correctly.
+  //      Pinned to the exact code: v0.1 is refused by its credential schema
+  //      before rebinding, v0.2 while rebinding refuses the unsupported
+  //      constraint. A regression that started returning BINDING_MISMATCH here
+  //      would mean something else broke, and must not read as a pass.
   await mustRejectAtAdmission(
     `${tag} correctly signed credential carrying unsupported semantics fails closed`,
     () => profile.forge((payload) => profile.forgeUnsupported(payload)),
     admit(),
-    ["INVALID_CREDENTIAL", "BINDING_MISMATCH", "UNSUPPORTED_VERSION"],
+    ["INVALID_CREDENTIAL"],
   );
 
   // 12. payee scope widened after signing

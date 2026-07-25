@@ -169,7 +169,8 @@ test("v0.1 and v0.2 mints of the same authorization produce different mandate id
   }, userKey);
 
   // Same user, agent, merchant, asset, ceiling and expiry — but the binding
-  // version and hashed mandate differ, so the two can never collide on-chain.
+  // version prefixes the hashed core nonce, so the two have disjoint preimages
+  // and cannot share a mandate id short of a SHA-256 collision.
   assert.equal(legacy.payload.bindingVersion, "reapp-ap2/1");
   assert.equal(current.payload.bindingVersion, "reapp-ap2/2");
   assert.notEqual(legacy.mandateHash, current.mandateHash);
