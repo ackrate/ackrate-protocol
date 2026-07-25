@@ -300,9 +300,20 @@ function normalizeMerchant(value: unknown): Ap2Merchant {
   return merchant;
 }
 
+export interface Ap2NormalizationOptions {
+  /**
+   * Reject a mandate that has already expired. True when authoring one. Set
+   * false to re-derive an existing credential's binding without a wall-clock
+   * dependency, so the caller's own trusted clock decides expiry — see
+   * `rebuildCredentialBinding`.
+   */
+  requireFutureExpiry?: boolean;
+}
+
 export function normalizeAp2PaymentMandate(
   paymentMandate: Ap2OpenPaymentMandate,
   stellar: StellarMandateAuthorization,
+  options: Ap2NormalizationOptions = {},
 ): {
   paymentMandate: NormalizedAp2OpenPaymentMandate;
   merchant: string;
@@ -384,7 +395,10 @@ export function normalizeAp2PaymentMandate(
   if (expiry.unixSeconds !== paymentMandate.exp) {
     throw new Error("paymentMandate.exp must equal payment.execution_date.not_after.");
   }
-  if (!Number.isSafeInteger(paymentMandate.exp) || paymentMandate.exp <= Math.floor(Date.now() / 1000)) {
+  if (!Number.isSafeInteger(paymentMandate.exp) || paymentMandate.exp <= 0) {
+    throw new Error("paymentMandate.exp must be a positive safe whole Unix timestamp.");
+  }
+  if ((options.requireFutureExpiry ?? true) && paymentMandate.exp <= Math.floor(Date.now() / 1000)) {
     throw new Error("paymentMandate.exp must be a future safe whole Unix timestamp.");
   }
 
@@ -435,7 +449,10 @@ function secureNonce(): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export function bindPaymentMandate(input: BindPaymentMandateInput): Ap2MandateBinding {
+export function bindPaymentMandate(
+  input: BindPaymentMandateInput,
+  options: Ap2NormalizationOptions = {},
+): Ap2MandateBinding {
   rejectUnknownKeys("input", input, ["paymentMandate", "stellar"]);
   rejectUnknownKeys("stellar", input.stellar, [
     "user",
@@ -454,7 +471,7 @@ export function bindPaymentMandate(input: BindPaymentMandateInput): Ap2MandateBi
     throw new Error("stellar.decimals must be an integer from 0 through 38.");
   }
 
-  const normalized = normalizeAp2PaymentMandate(input.paymentMandate, input.stellar);
+  const normalized = normalizeAp2PaymentMandate(input.paymentMandate, input.stellar, options);
   const canonicalPaymentMandate = canonicalizeJson(normalized.paymentMandate);
   const paymentMandateHash = hash(Buffer.from(canonicalPaymentMandate, "utf8")).toString("hex");
   const bindingNonce = input.stellar.nonce === undefined

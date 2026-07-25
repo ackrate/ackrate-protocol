@@ -116,6 +116,14 @@ export interface VerifyDelegateSdJwtChainOptions {
   currentTime?: number;
   /** Bounds untrusted input before JSON or signature work. Defaults to 8. */
   maxHops?: number;
+  /**
+   * Smallest chain this verifier will accept. Defaults to 2: an AP2 delegation
+   * carries at least one open mandate plus the closed mandate that delegates
+   * from it. A one-hop presentation has no delegation hop, so it can carry no
+   * `sd_hash` binding and no terminal audience or nonce to check — accepting
+   * one would silently skip those controls.
+   */
+  minHops?: number;
   /** Bounds each compact chain segment. Defaults to 64 KiB. */
   maxSegmentBytes?: number;
 }
@@ -123,6 +131,7 @@ export interface VerifyDelegateSdJwtChainOptions {
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 const JWT_PARTS = 3;
 const DEFAULT_MAX_HOPS = 8;
+const DEFAULT_MIN_HOPS = 2;
 const DEFAULT_MAX_SEGMENT_BYTES = 64 * 1024;
 const TERMINAL_TYPES = new Set(["kb+sd-jwt", "kb-sd-jwt"]);
 const INTERMEDIATE_TYPES = new Set(["kb+sd-jwt+kb", "kb-sd-jwt+kb"]);
@@ -542,6 +551,13 @@ export async function verifyDelegateSdJwtChain(
   if (!Number.isSafeInteger(maxHops) || maxHops < 1 || rawSegments.length > maxHops) {
     fail(`chain exceeds the ${maxHops}-hop limit`);
   }
+  const minHops = options.minHops ?? DEFAULT_MIN_HOPS;
+  if (!Number.isSafeInteger(minHops) || minHops < 1 || minHops > maxHops) {
+    fail("minHops must be a safe integer between 1 and maxHops");
+  }
+  if (rawSegments.length < minHops) {
+    fail(`chain must contain at least ${minHops} hops`);
+  }
   if (rawSegments.some((segment) => segment.length === 0)) fail("chain contains an empty hop");
   const maxSegmentBytes = options.maxSegmentBytes ?? DEFAULT_MAX_SEGMENT_BYTES;
   if (!Number.isSafeInteger(maxSegmentBytes) || maxSegmentBytes < 1) {
@@ -595,13 +611,17 @@ export async function verifyDelegateSdJwtChain(
     const nextKey = findConfirmationKey(payload, effective);
     if (isLast && nextKey) fail("terminal delegation hop must not carry cnf.jwk");
     if (!isLast && !nextKey) fail(`intermediate hop ${index} must carry cnf.jwk`);
-    if (isLast && options.expectedAudience !== undefined && payload.aud !== options.expectedAudience) {
-      fail(`terminal aud does not match ${JSON.stringify(options.expectedAudience)}`);
-    }
-    if (isLast && options.expectedNonce !== undefined && payload.nonce !== options.expectedNonce) {
-      fail("terminal nonce does not match the verifier challenge");
-    }
     hops.push({ token, payload, effectivePayloads: effective });
+  }
+
+  // Bound to the last hop rather than to the loop, so a caller that lowers
+  // minHops to 1 still gets its challenge checked instead of silently skipped.
+  const terminal = hops.at(-1)!.payload;
+  if (options.expectedAudience !== undefined && terminal.aud !== options.expectedAudience) {
+    fail(`terminal aud does not match ${JSON.stringify(options.expectedAudience)}`);
+  }
+  if (options.expectedNonce !== undefined && terminal.nonce !== options.expectedNonce) {
+    fail("terminal nonce does not match the verifier challenge");
   }
 
   const leaf = tokens.at(-1)!;

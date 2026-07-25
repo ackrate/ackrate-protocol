@@ -21,6 +21,27 @@ export const AP2_OPEN_CHECKOUT_VCT = "mandate.checkout.open.1" as const;
 export const AP2_CHECKOUT_VCT = "mandate.checkout.1" as const;
 export const AP2_CLOSED_PAYMENT_VCT = "mandate.payment.1" as const;
 
+/** Every checkout status this package recognizes as well-formed. */
+export const AP2_CHECKOUT_STATUSES: ReadonlySet<string> = new Set([
+  "incomplete",
+  "requires_escalation",
+  "ready_for_complete",
+  "complete_in_progress",
+  "completed",
+  "canceled",
+]);
+
+/**
+ * The subset that may back a capture. `incomplete` and `requires_escalation`
+ * are not yet payable; `canceled` never is. Recognizing a status is not the
+ * same as accepting a payment against it.
+ */
+export const AP2_PAYABLE_CHECKOUT_STATUSES: readonly string[] = [
+  "ready_for_complete",
+  "complete_in_progress",
+  "completed",
+];
+
 export interface Ap2MerchantIdentity {
   id: string;
   name: string;
@@ -106,6 +127,8 @@ export interface VerifyAp2CheckoutAuthorizationInput {
   expectedCheckoutNonce: string;
   expectedMerchant: Ap2MerchantIdentity;
   expectedCurrency: string;
+  /** Statuses a capture may run against. Defaults to `AP2_PAYABLE_CHECKOUT_STATUSES`. */
+  acceptedCheckoutStatuses?: readonly string[];
   currentTime?: number;
   clockSkewSeconds?: number;
 }
@@ -193,11 +216,10 @@ function merchant(label: string, value: unknown): Ap2MerchantIdentity {
   return result;
 }
 
+// `merchant()` already requires a non-empty id on both sides, so identity is
+// always the id. Name and website are display data and never decide a match.
 function merchantMatches(candidate: Ap2MerchantIdentity, expected: Ap2MerchantIdentity): boolean {
-  if (candidate.id && expected.id) return candidate.id === expected.id;
-  return candidate.name === expected.name &&
-    candidate.website !== undefined &&
-    candidate.website === expected.website;
+  return candidate.id === expected.id;
 }
 
 function amount(label: string, value: unknown): Ap2Amount {
@@ -257,14 +279,7 @@ function parseCheckout(value: unknown): Ap2Checkout {
     return parsed;
   });
   const status = text("checkout.status", candidate.status);
-  if (!new Set([
-    "incomplete",
-    "requires_escalation",
-    "ready_for_complete",
-    "complete_in_progress",
-    "completed",
-    "canceled",
-  ]).has(status)) {
+  if (!AP2_CHECKOUT_STATUSES.has(status)) {
     reject("SCHEMA_INVALID", `checkout.status ${JSON.stringify(status)} is not recognized.`);
   }
   const parsed: Ap2Checkout = {
@@ -333,7 +348,12 @@ function splitChain(
   openVct: string,
   closedVct: string,
 ): { opens: Record<string, unknown>[]; closed: Record<string, unknown> } {
-  if (chain.payloads.length === 0) reject("CHAIN_INVALID", `${label} chain has no disclosed mandate.`);
+  if (chain.payloads.length < 2) {
+    reject(
+      "CHAIN_INVALID",
+      `${label} chain must disclose at least one open mandate and one closed mandate.`,
+    );
+  }
   const closed = chain.payloads.at(-1)! as Record<string, unknown>;
   if (closed.vct !== closedVct) reject("VCT_MISMATCH", `${label} chain must end in ${closedVct}.`);
   const opens = chain.payloads.slice(0, -1) as Record<string, unknown>[];
@@ -497,6 +517,7 @@ function evaluatePaymentConstraints(
   openCheckoutHash: string,
   usage: Ap2MandateUsageContext | undefined,
   exponent: number,
+  currentTimeMs: number,
 ): void {
   for (const field of ["payee", "payment_amount", "payment_instrument", "pisp", "execution_date"] as const) {
     if (open[field] !== undefined && !sameJson(open[field], closed[field])) {
@@ -590,21 +611,24 @@ function evaluatePaymentConstraints(
         break;
       }
       case "payment.execution_date": {
-        if (closed.execution_date !== undefined) {
-          const execution = Date.parse(closed.execution_date);
-          if (!Number.isFinite(execution)) reject("SCHEMA_INVALID", "execution_date must be ISO 8601.");
-          if (
-            constraint.not_before !== undefined &&
-            execution < Date.parse(text("payment.execution_date.not_before", constraint.not_before))
-          ) {
-            reject("PAYMENT_CONSTRAINT_FAILED", "payment executes before the allowed window.");
-          }
-          if (
-            constraint.not_after !== undefined &&
-            execution > Date.parse(text("payment.execution_date.not_after", constraint.not_after))
-          ) {
-            reject("PAYMENT_CONSTRAINT_FAILED", "payment executes after the allowed window.");
-          }
+        // A closed mandate that simply omits execution_date must not escape a
+        // window the user signed; an undeclared execution date is the payment
+        // happening now, so hold it to the same bounds.
+        const execution = closed.execution_date === undefined
+          ? currentTimeMs
+          : Date.parse(closed.execution_date);
+        if (!Number.isFinite(execution)) reject("SCHEMA_INVALID", "execution_date must be ISO 8601.");
+        if (
+          constraint.not_before !== undefined &&
+          execution < Date.parse(text("payment.execution_date.not_before", constraint.not_before))
+        ) {
+          reject("PAYMENT_CONSTRAINT_FAILED", "payment executes before the allowed window.");
+        }
+        if (
+          constraint.not_after !== undefined &&
+          execution > Date.parse(text("payment.execution_date.not_after", constraint.not_after))
+        ) {
+          reject("PAYMENT_CONSTRAINT_FAILED", "payment executes after the allowed window.");
         }
         break;
       }
@@ -680,6 +704,21 @@ export async function verifyAp2CheckoutAuthorization(
   if (checkout.currency !== expectedCurrency) {
     reject("AMOUNT_MISMATCH", "merchant Checkout currency does not match the pending Stellar capture.");
   }
+  const acceptedStatuses = input.acceptedCheckoutStatuses ?? AP2_PAYABLE_CHECKOUT_STATUSES;
+  if (!Array.isArray(acceptedStatuses) || acceptedStatuses.length === 0) {
+    reject("SCHEMA_INVALID", "acceptedCheckoutStatuses must be a non-empty array.");
+  }
+  for (const [index, candidate] of acceptedStatuses.entries()) {
+    if (!AP2_CHECKOUT_STATUSES.has(text(`acceptedCheckoutStatuses[${index}]`, candidate))) {
+      reject("SCHEMA_INVALID", `acceptedCheckoutStatuses[${index}] is not a recognized status.`);
+    }
+  }
+  if (!acceptedStatuses.includes(checkout.status)) {
+    reject(
+      "CHECKOUT_NOT_PAYABLE",
+      `merchant Checkout status ${JSON.stringify(checkout.status)} cannot back a capture.`,
+    );
+  }
 
   for (const open of checkoutMandates.opens) evaluateCheckoutConstraints(open, checkout);
 
@@ -737,6 +776,7 @@ export async function verifyAp2MerchantAuthorization(
     reject("AMOUNT_MISMATCH", "closed Payment Mandate amount does not match the pending Stellar capture.");
   }
 
+  const currentTimeMs = (input.currentTime ?? Math.floor(Date.now() / 1000)) * 1000;
   for (const open of paymentMandates.opens) {
     evaluatePaymentConstraints(
       open,
@@ -744,6 +784,7 @@ export async function verifyAp2MerchantAuthorization(
       checkoutAuthorization.openCheckoutHash,
       input.usage,
       exponent,
+      currentTimeMs,
     );
   }
 

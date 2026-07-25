@@ -69,8 +69,8 @@ test("authorization IDs are route-specific and network-bound", () => {
   );
 });
 
-test("pool participation authorizations have a separate domain and signature", () => {
-  const authorization: Ap2PoolParticipationAuthorization = {
+function participation(): Ap2PoolParticipationAuthorization {
+  return {
     version: 1,
     networkId: "09".repeat(32),
     registry: addresses[0],
@@ -90,6 +90,21 @@ test("pool participation authorizations have a separate domain and signature", (
     notBefore: 1_799_999_999,
     expiresAt: 1_800_000_600,
   };
+}
+
+test("pool participation authorization ID matches the Soroban contract vector", () => {
+  // Pinned against `participation_id` in the AP2 extension's Rust test suite.
+  // Without this, a field reorder or rename on either side would silently make
+  // every on-chain pool participation signature unverifiable, and no pooled
+  // test would notice: the Rust pool tests sign in Rust, not from this code.
+  assert.equal(
+    poolParticipationAuthorizationId(participation()),
+    "8627f68f4eddba96b24e262b7f7d9d3b13d0e96ddf8fdf6711230474666b9165",
+  );
+});
+
+test("pool participation authorizations have a separate domain and signature", () => {
+  const authorization = participation();
   const signed = signAp2PoolParticipationAuthorization(authorization, verifier);
   assert.equal(signed.authorizationId, poolParticipationAuthorizationId(authorization));
   assert.notEqual(signed.authorizationId, captureAuthorizationId(capture()));
@@ -97,4 +112,33 @@ test("pool participation authorizations have a separate domain and signature", (
     Buffer.from(signed.authorizationId, "hex"),
     Buffer.from(signed.signature, "hex"),
   ));
+});
+
+test("every authorization field changes its ID", () => {
+  const base = participation();
+  const baseId = poolParticipationAuthorizationId(base);
+  const variants: Partial<Ap2PoolParticipationAuthorization>[] = [
+    { poolId: "ff".repeat(32) },
+    { mandateId: "fe".repeat(32) },
+    { agent: addresses[2] },
+    { merchant: addresses[1] },
+    { asset: addresses[0] },
+    { maxAmount: 501n },
+    { scheduleHash: "fd".repeat(32) },
+    { openCheckoutEvidence: "fc".repeat(32) },
+    { closedCheckoutEvidence: "fb".repeat(32) },
+    { openParticipationEvidence: "fa".repeat(32) },
+    { closedParticipationEvidence: "f9".repeat(32) },
+    { nonce: "f8".repeat(32) },
+    { networkId: "f7".repeat(32) },
+    { notBefore: 1_799_999_998 },
+    { expiresAt: 1_800_000_601 },
+  ];
+  for (const variant of variants) {
+    assert.notEqual(
+      poolParticipationAuthorizationId({ ...base, ...variant }),
+      baseId,
+      `${Object.keys(variant)[0]} must be covered by the authorization ID`,
+    );
+  }
 });

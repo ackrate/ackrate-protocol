@@ -172,8 +172,64 @@ test("rejects unbound disclosures and unsupported algorithms", async () => {
     }],
   }, user.privateKey, "ES256", undefined, [unbound]);
 
+  // minHops: 1 keeps this case about disclosure binding rather than hop count.
   await assert.rejects(
-    verifyDelegateSdJwtChain(root, { resolveRootKey: () => user.publicJwk }),
+    verifyDelegateSdJwtChain(root, { resolveRootKey: () => user.publicJwk, minHops: 1 }),
     /unbound disclosure/,
+  );
+});
+
+test("a one-hop presentation is refused by default", async () => {
+  const user = p256();
+  const now = 1_800_000_000;
+  const root = sdJwt({
+    delegate_payload: [{ vct: "mandate.payment.open.1", constraints: [], exp: now + 600 }],
+  }, user.privateKey);
+
+  await assert.rejects(
+    verifyDelegateSdJwtChain(root, { resolveRootKey: () => user.publicJwk, currentTime: now }),
+    /chain must contain at least 2 hops/,
+  );
+});
+
+test("a one-hop presentation still has its audience and nonce checked", async () => {
+  const user = p256();
+  const now = 1_800_000_000;
+  const root = sdJwt({
+    delegate_payload: [{ vct: "mandate.payment.open.1", constraints: [], exp: now + 600 }],
+    aud: "SOME-OTHER-MERCHANT",
+    nonce: "STALE",
+  }, user.privateKey);
+
+  await assert.rejects(
+    verifyDelegateSdJwtChain(root, {
+      resolveRootKey: () => user.publicJwk,
+      currentTime: now,
+      minHops: 1,
+      expectedAudience: "THE-REAL-MERCHANT",
+    }),
+    /terminal aud does not match/,
+  );
+  await assert.rejects(
+    verifyDelegateSdJwtChain(root, {
+      resolveRootKey: () => user.publicJwk,
+      currentTime: now,
+      minHops: 1,
+      expectedNonce: "FRESH",
+    }),
+    /terminal nonce does not match/,
+  );
+});
+
+test("minHops must be a sane bound", async () => {
+  const user = p256();
+  const root = sdJwt({ vct: "x" }, user.privateKey);
+  await assert.rejects(
+    verifyDelegateSdJwtChain(root, { resolveRootKey: () => user.publicJwk, minHops: 0 }),
+    /minHops must be a safe integer/,
+  );
+  await assert.rejects(
+    verifyDelegateSdJwtChain(root, { resolveRootKey: () => user.publicJwk, minHops: 9 }),
+    /minHops must be a safe integer/,
   );
 });

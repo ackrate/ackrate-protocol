@@ -14,6 +14,7 @@ import {
   REAPP_AP2_V01_SIGNATURE_ALGORITHM,
   REAPP_AP2_SIGNATURE_ALGORITHM,
   ap2V01CredentialSigningDigest,
+  bindPaymentMandate,
   createAp2ComplianceValidator,
   rebuildV01CredentialBinding,
   signAp2Mandate,
@@ -25,7 +26,7 @@ import {
   type SignedAp2V01Mandate,
   type SignedAp2Mandate,
 } from "./index.js";
-import { ap2CredentialSigningDigest } from "./credential.js";
+import { ap2CredentialSigningDigest, createSignedAp2Credential } from "./credential.js";
 
 const userKey = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 11));
 const otherUserKey = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 12));
@@ -356,6 +357,56 @@ test("expiry before the trusted clock is rejected", async () => {
   await expectCode(
     validator(new InMemoryAp2ReplayStore(), "test", 4_070_908_801).validateAndConsume(request()),
     "EXPIRED",
+  );
+});
+
+test("a genuinely past-dated credential reports EXPIRED, not INVALID_CREDENTIAL", async () => {
+  // Rebinding must not depend on the wall clock: if it did, an already-expired
+  // credential would fail as unparseable and the validator's own trusted clock
+  // would never get to say EXPIRED.
+  const pastInput: BindPaymentMandateInput = {
+    ...baseInput,
+    paymentMandate: {
+      ...baseInput.paymentMandate,
+      constraints: baseInput.paymentMandate.constraints.map((constraint) =>
+        constraint.type === "payment.execution_date"
+          ? { type: "payment.execution_date", not_after: "2020-01-01T00:00:00Z" }
+          : constraint
+      ),
+      exp: 1_577_836_800,
+    },
+  };
+  const expired = createSignedAp2Credential(
+    bindPaymentMandate(pastInput, { requireFutureExpiry: false }),
+    pastInput,
+    userKey,
+  );
+
+  await expectCode(
+    createAp2ComplianceValidator({
+      replayStore: new InMemoryAp2ReplayStore(),
+      replayNamespace: "test",
+    }).validateAndConsume(request(expired)),
+    "EXPIRED",
+  );
+});
+
+test("authoring a past-dated mandate is still refused", () => {
+  assert.throws(
+    () =>
+      signAp2Mandate({
+        ...baseInput,
+        paymentMandate: {
+          ...baseInput.paymentMandate,
+          constraints: baseInput.paymentMandate.constraints.map((constraint) =>
+            constraint.type === "payment.execution_date"
+              ? { type: "payment.execution_date", not_after: "2020-01-01T00:00:00Z" }
+              : constraint
+          ),
+          exp: 1_577_836_800,
+        },
+      }, userKey),
+    /must be a future safe whole Unix timestamp/,
   );
 });
 

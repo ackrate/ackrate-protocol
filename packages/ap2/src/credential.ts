@@ -81,9 +81,15 @@ function deepFreeze<T>(value: T): Readonly<T> {
   return value;
 }
 
+/**
+ * The digest covers the WHOLE payload — `paymentMandate` and `stellar`
+ * included — through `canonicalizeJson(payload)`. The parameter is typed as the
+ * full payload for that reason: narrowing it would still compile while quietly
+ * dropping the signed mandate out of the signature.
+ */
 export function ap2CredentialSigningDigest(
   credentialVersion: string,
-  payload: Pick<ReappAp2CredentialPayload, "ap2SpecVersion" | "ap2Vct" | "bindingVersion">,
+  payload: ReappAp2CredentialPayload,
   mandateHash: string,
 ): Buffer {
   if (!LOWER_HEX_32.test(mandateHash)) throw new Error("mandateHash must be lowercase 32-byte hex.");
@@ -210,6 +216,11 @@ export function decodeCanonicalSignature(value: string): Buffer {
   return bytes;
 }
 
+/**
+ * Re-derive an existing credential's binding. Expiry is deliberately NOT
+ * enforced here: a validator holds its own trusted clock and reports an expired
+ * mandate as `EXPIRED`, which it cannot do if rebinding throws first.
+ */
 export function rebuildCredentialBinding(payload: ReappAp2CredentialPayload): Ap2MandateBinding {
   return bindPaymentMandate({
     paymentMandate: payload.paymentMandate,
@@ -221,5 +232,5 @@ export function rebuildCredentialBinding(payload: ReappAp2CredentialPayload): Ap
       currencyDecimals: payload.stellar.currencyDecimals,
       nonce: payload.stellar.nonce,
     },
-  });
+  }, { requireFutureExpiry: false });
 }

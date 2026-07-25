@@ -99,6 +99,97 @@ function isV01Credential(value: unknown): boolean {
     (value as Record<string, unknown>).credentialVersion === REAPP_AP2_V01_CREDENTIAL_VERSION;
 }
 
+/** What both version branches produce once their own schema has been proven. */
+interface AdmittedAp2Credential {
+  credential: Readonly<SignedAp2Mandate | SignedAp2V01Mandate>;
+  binding: Ap2MandateBinding | Ap2V01MandateBinding;
+  mandateHash: string;
+  user: string;
+  decimals: number;
+}
+
+function verifyUserSignature(
+  user: string,
+  digest: Buffer,
+  value: string,
+  decode: (encoded: string) => Buffer,
+): void {
+  let signature: Buffer;
+  try {
+    signature = decode(value);
+  } catch (cause) {
+    throw new Ap2ValidationError(
+      "INVALID_SIGNATURE",
+      "credential signature encoding is invalid.",
+      { cause },
+    );
+  }
+  if (!Keypair.fromPublicKey(user).verify(digest, signature)) {
+    throw new Ap2ValidationError("INVALID_SIGNATURE", "credential signature is invalid.");
+  }
+}
+
+/**
+ * Amount, expiry and replay are version-independent, so both branches share one
+ * implementation. The version-specific schemas stay isolated above; only this
+ * common tail is shared, and it is the part where drift would be dangerous.
+ */
+async function consumeAdmittedCredential(
+  admitted: AdmittedAp2Credential,
+  amount: string,
+  acceptedAt: number,
+  options: CreateAp2ComplianceValidatorOptions,
+): Promise<Readonly<ValidatedAp2Mandate>> {
+  let amountStroops: bigint;
+  try {
+    amountStroops = toStroops(amount, admitted.decimals);
+  } catch (cause) {
+    throw new Ap2ValidationError("INVALID_AMOUNT", "requested amount is invalid.", { cause });
+  }
+  if (amountStroops <= 0n) {
+    throw new Ap2ValidationError("INVALID_AMOUNT", "requested amount must be greater than zero.");
+  }
+  if (amountStroops > admitted.binding.mandate.maxAmount) {
+    throw new Ap2ValidationError(
+      "AMOUNT_EXCEEDS_MANDATE",
+      "requested amount exceeds the signed mandate maximum.",
+    );
+  }
+  if (admitted.binding.mandate.expiry <= acceptedAt) {
+    throw new Ap2ValidationError("EXPIRED", "signed mandate is expired.");
+  }
+
+  const replayRecord: Readonly<Ap2ReplayRecord> = Object.freeze({
+    key: `${options.replayNamespace}:${admitted.mandateHash}`,
+    namespace: options.replayNamespace,
+    mandateHash: admitted.mandateHash,
+    user: admitted.user,
+    acceptedAt,
+  });
+  let replayResult: unknown;
+  try {
+    replayResult = await options.replayStore.consumeOnce(replayRecord);
+  } catch (cause) {
+    throw new Ap2ValidationError("REPLAY_STORE_UNAVAILABLE", "replay store failed closed.", { cause });
+  }
+  if (replayResult === "duplicate") {
+    throw new Ap2ValidationError("REPLAYED", "mandate hash was already admitted.");
+  }
+  if (replayResult !== "consumed") {
+    throw new Ap2ValidationError(
+      "REPLAY_STORE_UNAVAILABLE",
+      "replay store returned an unsupported result.",
+    );
+  }
+  return Object.freeze({
+    credential: admitted.credential,
+    binding: admitted.binding,
+    mandateHash: admitted.mandateHash,
+    amountStroops,
+    acceptedAt,
+  });
+}
+
 /**
  * Validate and consume a signed AP2 mandate at admission/registration time.
  * This is intentionally independent of HTTP/x402. Repeated payment enforcement
@@ -178,24 +269,16 @@ export function createAp2ComplianceValidator(
             "credential payload does not match its mandate hash.",
           );
         }
-        let signature: Buffer;
-        try {
-          signature = decodeCanonicalV01Signature(credential.signature.value);
-        } catch (cause) {
-          throw new Ap2ValidationError(
-            "INVALID_SIGNATURE",
-            "credential signature encoding is invalid.",
-            { cause },
-          );
-        }
-        const digest = ap2V01CredentialSigningDigest(
-          credential.credentialVersion,
-          credential.payload,
-          credential.mandateHash,
+        verifyUserSignature(
+          credential.payload.stellar.user,
+          ap2V01CredentialSigningDigest(
+            credential.credentialVersion,
+            credential.payload,
+            credential.mandateHash,
+          ),
+          credential.signature.value,
+          decodeCanonicalV01Signature,
         );
-        if (!Keypair.fromPublicKey(credential.payload.stellar.user).verify(digest, signature)) {
-          throw new Ap2ValidationError("INVALID_SIGNATURE", "credential signature is invalid.");
-        }
         if (input.merchant !== credential.payload.intent.merchants[0]) {
           throw new Ap2ValidationError(
             "MERCHANT_MISMATCH",
@@ -203,61 +286,18 @@ export function createAp2ComplianceValidator(
           );
         }
 
-        let amountStroops: bigint;
-        try {
-          amountStroops = toStroops(input.amount, credential.payload.stellar.decimals);
-        } catch (cause) {
-          throw new Ap2ValidationError("INVALID_AMOUNT", "requested amount is invalid.", { cause });
-        }
-        if (amountStroops <= 0n) {
-          throw new Ap2ValidationError(
-            "INVALID_AMOUNT",
-            "requested amount must be greater than zero.",
-          );
-        }
-        if (amountStroops > binding.mandate.maxAmount) {
-          throw new Ap2ValidationError(
-            "AMOUNT_EXCEEDS_MANDATE",
-            "requested amount exceeds the signed mandate maximum.",
-          );
-        }
-        if (binding.mandate.expiry <= acceptedAt) {
-          throw new Ap2ValidationError("EXPIRED", "signed mandate is expired.");
-        }
-
-        const replayRecord: Readonly<Ap2ReplayRecord> = Object.freeze({
-          key: `${options.replayNamespace}:${credential.mandateHash}`,
-          namespace: options.replayNamespace,
-          mandateHash: credential.mandateHash,
-          user: credential.payload.stellar.user,
+        return consumeAdmittedCredential(
+          {
+            credential: Object.freeze(credential),
+            binding,
+            mandateHash: credential.mandateHash,
+            user: credential.payload.stellar.user,
+            decimals: credential.payload.stellar.decimals,
+          },
+          input.amount,
           acceptedAt,
-        });
-        let replayResult: unknown;
-        try {
-          replayResult = await options.replayStore.consumeOnce(replayRecord);
-        } catch (cause) {
-          throw new Ap2ValidationError(
-            "REPLAY_STORE_UNAVAILABLE",
-            "replay store failed closed.",
-            { cause },
-          );
-        }
-        if (replayResult === "duplicate") {
-          throw new Ap2ValidationError("REPLAYED", "mandate hash was already admitted.");
-        }
-        if (replayResult !== "consumed") {
-          throw new Ap2ValidationError(
-            "REPLAY_STORE_UNAVAILABLE",
-            "replay store returned an unsupported result.",
-          );
-        }
-        return Object.freeze({
-          credential: Object.freeze(credential),
-          binding,
-          mandateHash: credential.mandateHash,
-          amountStroops,
-          acceptedAt,
-        });
+          options,
+        );
       }
 
       let credential: SignedAp2Mandate;
@@ -315,24 +355,16 @@ export function createAp2ComplianceValidator(
       const referenceConstraint = binding.normalizedPaymentMandate.constraints[5];
       requireAddress("credential merchant", merchant);
 
-      let signature: Buffer;
-      try {
-        signature = decodeCanonicalSignature(credential.signature.value);
-      } catch (cause) {
-        throw new Ap2ValidationError(
-          "INVALID_SIGNATURE",
-          "credential signature encoding is invalid.",
-          { cause },
-        );
-      }
-      const digest = ap2CredentialSigningDigest(
-        credential.credentialVersion,
-        credential.payload,
-        credential.mandateHash,
+      verifyUserSignature(
+        credential.payload.stellar.user,
+        ap2CredentialSigningDigest(
+          credential.credentialVersion,
+          credential.payload,
+          credential.mandateHash,
+        ),
+        credential.signature.value,
+        decodeCanonicalSignature,
       );
-      if (!Keypair.fromPublicKey(credential.payload.stellar.user).verify(digest, signature)) {
-        throw new Ap2ValidationError("INVALID_SIGNATURE", "credential signature is invalid.");
-      }
 
       if (input.merchant !== merchant) {
         throw new Ap2ValidationError(
@@ -350,60 +382,18 @@ export function createAp2ComplianceValidator(
         );
       }
 
-      let amountStroops: bigint;
-      try {
-        amountStroops = toStroops(input.amount, credential.payload.stellar.decimals);
-      } catch (cause) {
-        throw new Ap2ValidationError("INVALID_AMOUNT", "requested amount is invalid.", { cause });
-      }
-      if (amountStroops <= 0n) {
-        throw new Ap2ValidationError("INVALID_AMOUNT", "requested amount must be greater than zero.");
-      }
-      if (amountStroops > binding.mandate.maxAmount) {
-        throw new Ap2ValidationError(
-          "AMOUNT_EXCEEDS_MANDATE",
-          "requested amount exceeds the signed mandate maximum.",
-        );
-      }
-
-      if (binding.mandate.expiry <= acceptedAt) {
-        throw new Ap2ValidationError("EXPIRED", "signed mandate is expired.");
-      }
-
-      const replayRecord: Readonly<Ap2ReplayRecord> = Object.freeze({
-        key: `${options.replayNamespace}:${credential.mandateHash}`,
-        namespace: options.replayNamespace,
-        mandateHash: credential.mandateHash,
-        user: credential.payload.stellar.user,
+      return consumeAdmittedCredential(
+        {
+          credential: Object.freeze(credential),
+          binding,
+          mandateHash: credential.mandateHash,
+          user: credential.payload.stellar.user,
+          decimals: credential.payload.stellar.decimals,
+        },
+        input.amount,
         acceptedAt,
-      });
-      let replayResult: unknown;
-      try {
-        replayResult = await options.replayStore.consumeOnce(replayRecord);
-      } catch (cause) {
-        throw new Ap2ValidationError(
-          "REPLAY_STORE_UNAVAILABLE",
-          "replay store failed closed.",
-          { cause },
-        );
-      }
-      if (replayResult === "duplicate") {
-        throw new Ap2ValidationError("REPLAYED", "mandate hash was already admitted.");
-      }
-      if (replayResult !== "consumed") {
-        throw new Ap2ValidationError(
-          "REPLAY_STORE_UNAVAILABLE",
-          "replay store returned an unsupported result.",
-        );
-      }
-
-      return Object.freeze({
-        credential: Object.freeze(credential),
-        binding,
-        mandateHash: credential.mandateHash,
-        amountStroops,
-        acceptedAt,
-      });
+        options,
+      );
     },
   });
 }

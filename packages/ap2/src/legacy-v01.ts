@@ -114,12 +114,14 @@ function canonicalize(value: unknown): string {
     .join(",")}}`;
 }
 
+/**
+ * As with v0.2, the digest covers the whole payload through `canonicalize`, so
+ * the parameter is the full payload type rather than the three fields spliced
+ * into the domain prefix below.
+ */
 export function ap2V01CredentialSigningDigest(
   credentialVersion: string,
-  payload: Pick<
-    ReappAp2V01CredentialPayload,
-    "ap2SpecVersion" | "ap2DataKey" | "bindingVersion"
-  >,
+  payload: ReappAp2V01CredentialPayload,
   mandateHash: string,
 ): Buffer {
   if (!LOWER_HEX_32.test(mandateHash)) {

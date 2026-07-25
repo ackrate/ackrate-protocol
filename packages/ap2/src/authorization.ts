@@ -125,6 +125,15 @@ function address(label: string, value: string): Address {
   }
 }
 
+function isStellarAddress(value: string): boolean {
+  try {
+    Address.fromString(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function u32(label: string, value: number): xdr.ScVal {
   if (!Number.isSafeInteger(value) || value < 0 || value > 0xffff_ffff) {
     throw new Error(`${label} must be an unsigned 32-bit integer.`);
@@ -165,9 +174,12 @@ function contractEnum(value: string): xdr.ScVal {
   return xdr.ScVal.scvVec([symbol(value)]);
 }
 
+// Soroban orders ScMap symbol keys by byte value. `localeCompare` is locale-
+// and ICU-build-dependent and deprioritizes `_`, so compare bytes directly:
+// the host rejects a map whose keys are not in its own ascending order.
 function contractStruct(fields: Readonly<Record<string, xdr.ScVal>>): xdr.ScVal {
   return xdr.ScVal.scvMap(Object.entries(fields)
-    .sort(([left], [right]) => left.localeCompare(right))
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
     .map(([key, value]) => new xdr.ScMapEntry({
       key: symbol(key),
       val: value,
@@ -228,6 +240,20 @@ export function createAp2CaptureAuthorization(
 ): Readonly<Ap2CaptureAuthorization> {
   if (input.amount <= 0n) throw new Error("amount must be positive.");
   requireWindow(input.notBefore, input.expiresAt);
+  // The extension forwards only (mandate_id, amount, expected_seq) to the
+  // registry, so `merchant` here is evidence rather than an on-chain control.
+  // Under the REAPP profile the AP2 payee id IS the Stellar address, and in
+  // that case signing a different one would attest to a payee the chain never
+  // proved. Other AP2 deployments use opaque payee ids whose mapping to a
+  // Stellar address is deployment configuration, so only bind when we can.
+  const verifiedPayee = input.verified.closedPayment.payee.id;
+  const merchantAddress = address("merchant", input.merchant).toString();
+  if (isStellarAddress(verifiedPayee) && verifiedPayee !== merchantAddress) {
+    throw new Error(
+      "merchant must equal the verified closed Payment Mandate payee " +
+        `(${JSON.stringify(verifiedPayee)}).`,
+    );
+  }
   const evidenceExpiresAt = Math.min(
     openEvidenceExpiry("Checkout chain", input.verified.checkoutChain.payloads),
     openEvidenceExpiry("Payment chain", input.verified.paymentChain.payloads),

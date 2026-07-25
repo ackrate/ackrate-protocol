@@ -7,8 +7,11 @@ import {
 } from "node:crypto";
 import { test } from "node:test";
 import {
+  AP2_PAYABLE_CHECKOUT_STATUSES,
+  Ap2MerchantVerificationError,
   signAp2CheckoutReceipt,
   signAp2PaymentReceipt,
+  verifyAp2CheckoutAuthorization,
   verifyAp2MerchantAuthorization,
 } from "./merchant.js";
 import {
@@ -41,6 +44,8 @@ function chain(root: string, closed: string): string {
 function fixture(overrides: {
   amount?: number;
   paymentConstraints?: readonly Record<string, unknown>[];
+  checkoutStatus?: string;
+  closedPaymentOverrides?: Readonly<Record<string, unknown>>;
 } = {}) {
   const user = p256();
   const agent = p256();
@@ -62,7 +67,7 @@ function fixture(overrides: {
       quantity: 1,
       totals: [],
     }],
-    status: "ready_for_complete",
+    status: overrides.checkoutStatus ?? "ready_for_complete",
     currency: "USD",
     totals: [],
     links: [],
@@ -129,6 +134,7 @@ function fixture(overrides: {
       payee: merchant,
       payment_amount: { amount, currency: "USD" },
       payment_instrument: { id: "stellar-usdc", type: "push" },
+      ...(overrides.closedPaymentOverrides ?? {}),
     }],
     iat: now,
     aud: "merchant.example",
@@ -143,9 +149,39 @@ function fixture(overrides: {
     now,
     merchant,
     amount,
+    checkoutRoot,
+    checkoutClosed,
     checkoutMandateChain,
     paymentMandateChain: chain(paymentRoot, paymentClosed),
   };
+}
+
+/** The standard happy-path call, with `overrides` applied on top. */
+function verify(
+  f: ReturnType<typeof fixture>,
+  overrides: Readonly<Record<string, unknown>> = {},
+) {
+  return verifyAp2MerchantAuthorization({
+    checkoutMandateChain: f.checkoutMandateChain,
+    paymentMandateChain: f.paymentMandateChain,
+    resolveCheckoutRootKey: () => f.user.publicJwk,
+    resolvePaymentRootKey: () => f.user.publicJwk,
+    resolveCheckoutJwtKey: () => f.merchantSigner.publicJwk,
+    expectedAudience: "merchant.example",
+    expectedCheckoutNonce: "checkout-nonce",
+    expectedPaymentNonce: "payment-nonce",
+    expectedMerchant: f.merchant,
+    expectedAmountMinor: f.amount,
+    expectedCurrency: "USD",
+    usage: { totalAmountMinor: 0, totalUses: 0 },
+    currentTime: f.now,
+    ...overrides,
+  } as Parameters<typeof verifyAp2MerchantAuthorization>[0]);
+}
+
+function code(expected: string) {
+  return (error: unknown) =>
+    error instanceof Ap2MerchantVerificationError && error.code === expected;
 }
 
 test("verifies linked AP2 v0.2 Checkout and Payment chains", async () => {
@@ -216,6 +252,94 @@ test("fails closed on unknown constraints and trusted amount mismatches", async 
     }),
     /does not match the pending Stellar capture/,
   );
+});
+
+test("a chain with no open mandate cannot satisfy audience, nonce or constraints", async () => {
+  const f = fixture();
+
+  // The closed hop alone: correctly signed, but it delegates from nothing, so
+  // there is no open mandate to evaluate and no terminal hop to bind.
+  await assert.rejects(
+    verifyAp2CheckoutAuthorization({
+      checkoutMandateChain: f.checkoutClosed,
+      resolveCheckoutRootKey: () => f.user.publicJwk,
+      resolveCheckoutJwtKey: () => f.merchantSigner.publicJwk,
+      expectedAudience: "merchant.example",
+      expectedCheckoutNonce: "checkout-nonce",
+      expectedMerchant: f.merchant,
+      expectedCurrency: "USD",
+      currentTime: f.now,
+    }),
+    code("CHAIN_INVALID"),
+  );
+});
+
+test("a stale audience or nonce is rejected on the terminal hop", async () => {
+  const f = fixture();
+  await assert.rejects(
+    verify(f, { expectedCheckoutNonce: "a-different-challenge" }),
+    code("CHAIN_INVALID"),
+  );
+  await assert.rejects(
+    verify(f, { expectedAudience: "another.merchant.example" }),
+    code("CHAIN_INVALID"),
+  );
+});
+
+test("an omitted execution_date cannot escape a signed execution window", async () => {
+  // The user signed "not before 2099"; the closed mandate simply says nothing.
+  // Silence must not read as permission.
+  const f = fixture({
+    paymentConstraints: [
+      { type: "payment.execution_date", not_before: "2099-01-01T00:00:00Z" },
+    ],
+  });
+  await assert.rejects(verify(f), code("PAYMENT_CONSTRAINT_FAILED"));
+
+  // The same mandate inside its window is accepted.
+  const open = fixture({
+    paymentConstraints: [
+      { type: "payment.execution_date", not_after: "2099-01-01T00:00:00Z" },
+    ],
+  });
+  assert.equal((await verify(open)).closedPayment.payment_amount.amount, open.amount);
+});
+
+test("a declared execution_date is still held to the window", async () => {
+  const f = fixture({
+    paymentConstraints: [
+      { type: "payment.execution_date", not_after: "2020-01-01T00:00:00Z" },
+    ],
+    closedPaymentOverrides: { execution_date: "2026-07-24T00:00:00Z" },
+  });
+  await assert.rejects(verify(f), code("PAYMENT_CONSTRAINT_FAILED"));
+});
+
+test("a canceled or unfinished checkout cannot back a capture", async () => {
+  for (const status of ["canceled", "incomplete", "requires_escalation"]) {
+    await assert.rejects(
+      verify(fixture({ checkoutStatus: status })),
+      code("CHECKOUT_NOT_PAYABLE"),
+      `status ${status} must not be payable`,
+    );
+  }
+  for (const status of AP2_PAYABLE_CHECKOUT_STATUSES) {
+    const verified = await verify(fixture({ checkoutStatus: status }));
+    assert.equal(verified.checkout.status, status);
+  }
+});
+
+test("a caller may widen the payable statuses but not invent one", async () => {
+  const verified = await verify(fixture({ checkoutStatus: "incomplete" }), {
+    acceptedCheckoutStatuses: ["incomplete"],
+  });
+  assert.equal(verified.checkout.status, "incomplete");
+
+  await assert.rejects(
+    verify(fixture(), { acceptedCheckoutStatuses: ["not_a_real_status"] }),
+    code("SCHEMA_INVALID"),
+  );
+  await assert.rejects(verify(fixture(), { acceptedCheckoutStatuses: [] }), code("SCHEMA_INVALID"));
 });
 
 test("creates verifiable AP2 success and rejection receipts", () => {

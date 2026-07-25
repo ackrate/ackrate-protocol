@@ -117,15 +117,32 @@ AP2's ISO-4217 model does not identify a SEP-41 token contract.
 ## Merchant open/closed verification
 
 `verifyAp2CheckoutAuthorization` verifies the open/closed Checkout chain, the
-merchant-signed Checkout JWT, disclosed constraints, merchant, currency, and
-hash linkage. `verifyAp2MerchantAuthorization` adds the open/closed Payment
-chain, exact pending amount/payee context, Payment-to-Checkout reference,
-payment constraints, and cumulative usage when required.
+merchant-signed Checkout JWT, disclosed constraints, merchant, currency,
+checkout status, and hash linkage. `verifyAp2MerchantAuthorization` adds the
+open/closed Payment chain, exact pending amount/payee context,
+Payment-to-Checkout reference, payment constraints, and cumulative usage when
+required.
 
 The Delegate SD-JWT verifier supports selective disclosures, chained `cnf`
 keys, predecessor hashes, terminal audience and nonce, bounded input, ES256,
 and EdDSA. Callers supply trusted root-key and Checkout-JWT-key resolvers; the
 package does not silently treat `kid` or `x5c` as trusted.
+
+A chain must carry at least two hops. A one-hop presentation has no delegation
+hop, so it can carry no predecessor binding and no terminal audience or nonce,
+and it discloses no open mandate whose constraints could be evaluated —
+accepting one would skip all three checks rather than pass them.
+`verifyDelegateSdJwtChain` takes `minHops` for callers with a different chain
+shape; the terminal audience and nonce are still checked at one hop.
+
+Only `ready_for_complete`, `complete_in_progress`, and `completed` checkouts can
+back a capture (`AP2_PAYABLE_CHECKOUT_STATUSES`). `incomplete`,
+`requires_escalation`, and `canceled` are recognized but not payable; pass
+`acceptedCheckoutStatuses` to choose a different set deliberately.
+
+`payment.execution_date` is evaluated even when the closed mandate omits
+`execution_date`, using verification time as the execution moment. Omitting the
+field is not a way out of a window the user signed.
 
 Supported Checkout and Payment constraints are evaluated rather than merely
 parsed. Unknown constraints fail closed. Signed Checkout and Payment

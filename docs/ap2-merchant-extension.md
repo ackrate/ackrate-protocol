@@ -34,8 +34,8 @@ credential is never reinterpreted as a v0.2 Payment Mandate.
   disclosures, predecessor hashes, `cnf` delegation, audience, nonce, time,
   and signature verification;
 - `verifyAp2CheckoutAuthorization` for the open/closed Checkout chain,
-  merchant-signed Checkout JWT, checkout hash, merchant, currency, and
-  disclosed Checkout constraints;
+  merchant-signed Checkout JWT, checkout hash, merchant, currency, payable
+  checkout status, and disclosed Checkout constraints;
 - `verifyAp2MerchantAuthorization` for the complete Checkout plus Payment
   flow, including Payment-to-Checkout linkage and disclosed Payment
   constraints;
@@ -118,7 +118,21 @@ shopping agent, validity window, nonce, and open/closed evidence hashes. Solo
 authorizations additionally bind capture kind, amount, and expected sequence.
 Pool participation binds the pool, maximum amount, and exact schedule hash.
 
-TypeScript and Rust share fixed authorization and schedule-hash vectors.
+TypeScript and Rust share fixed vectors for the capture id, the pool
+participation id, and the schedule hash. Each is pinned on both sides: the
+pooled contract tests sign in Rust, so only the shared vector proves a
+TypeScript verifier's signature is verifiable on-chain.
+
+A validity window may not exceed `MAX_AUTHORIZATION_LIFETIME_SECS` (45 days).
+Replay markers derive their TTL from `expires_at`, and Soroban clamps a TTL
+extension at the network maximum rather than rejecting it, so an unbounded
+window could outlive the marker that prevents its replay.
+
+On the solo routes the extension reads the mandate back from the registry and
+refuses a capture unless the registry's own mandate names the extension as its
+agent and carries the same merchant and asset the verifier signed. Only
+`(mandate_id, amount, expected_seq)` reaches the registry, so without that read
+the signed merchant and asset would be evidence nothing ever checked.
 
 ## Simple needs no registry upgrade
 
