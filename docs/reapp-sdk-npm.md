@@ -10,7 +10,7 @@ cannot replace the contract's `execute_payment` checks.
 |---|---:|---|
 | `@reapp-sdk/core` | 0.3.1 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
 | `@reapp-sdk/stellar` | 0.2.2 | Typed contract bindings, permanent testnet deployment, network config, signing and token helpers. |
-| `@reapp-sdk/ap2` | 0.4.0 | AP2 v0.2 admission, open/closed merchant verification, receipts, and typed contract authorizations. |
+| `@reapp-sdk/ap2` | 0.4.0 | AP2 v0.2 admission and AP2 v0.1 compatibility, open/closed merchant verification, receipts, and typed contract authorizations. |
 | `@reapp-sdk/express-middleware` | 0.2.2 | Bound-v2 Express payment boundary and chain verifier. |
 | `reapp-protocol-cli` | 0.1.7 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo commands. |
 
