@@ -72,7 +72,7 @@ flowchart LR
 | Express middleware | [`@reapp-sdk/express-middleware`](https://www.npmjs.com/package/@reapp-sdk/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
 | CLI | [`reapp-protocol-cli`](https://www.npmjs.com/package/reapp-protocol-cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
 
-### Pinned Tranche 2 release map
+### Pinned testnet release map
 
 Package releases and protocol/specification versions are separate axes. The
 submission and live demo use this exact set:
@@ -112,7 +112,7 @@ The contract is authoritative. SDK-side checks only fail fast; they never replac
 
 ```bash
 npm ci
-npm run gatecheck:t2
+npm run gatecheck:release
 ```
 
 Run the reviewer CLI from any clean directory:

@@ -1,4 +1,4 @@
-# T2 threat model — Stellar testnet
+# Release threat model — Stellar testnet
 
 Scope: current upgradeable MandateRegistry deployments, core 0.3.1, Express
 middleware 0.2.2, AP2 package 0.3.0 (AP2 profile v0.1), CLI 0.1.7, and the reference agents.
@@ -82,7 +82,7 @@ middleware 0.2.2, AP2 package 0.3.0 (AP2 profile v0.1), CLI 0.1.7, and the refer
 
 ## Named production gates
 
-T2 is testnet scope. Mainnet additionally requires production key custody and
+This release is testnet-scoped. Mainnet additionally requires production key custody and
 rotation, 2-of-3 governance implementation, a shared linearizable redemption
 database, durable result/outbox design, encrypted receipt storage, independent
 external review, operational monitoring, and a final immutable-release decision.

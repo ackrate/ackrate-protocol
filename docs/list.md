@@ -40,16 +40,15 @@ Current testnet facts:
 
 | Document | Scope |
 |---|---|
-| [`security/threat-model.md`](../security/threat-model.md) | Current bound-v2 T2 threat model and named production gates. |
+| [`security/threat-model.md`](../security/threat-model.md) | Current bound-v2 release threat model and named production gates. |
 | [`security/data-flow.md`](../security/data-flow.md) | Current first-delivery and exact-recovery sequences. |
 | [`security/README.md`](../security/README.md) | Current evidence index and historical-scope labels. |
 
 The dated 2026-06 security reports are historical snapshots with exact old
 versions. They are retained for traceability and are not current release proof.
 
-## Historical design material
+## Historical material
 
-`docs/history/` and the composite design/work-log documents record earlier
-decisions and deployments. If a historical status conflicts with this index,
-the current package manifests, contract release READMEs, and T2 submission map
-are authoritative.
+Internal work logs and superseded review records are archived outside this
+public product repository. Current package manifests, contract release READMEs,
+and the pinned release map are authoritative.

@@ -183,7 +183,7 @@ In the protocol repository:
 
 ```bash
 npm ci
-npm run gatecheck:t2
+npm run gatecheck:release
 ```
 
 The gate cleans build output, builds/types/tests the workspace, validates the
@@ -258,7 +258,7 @@ Private operator documents remain outside all public repositories.
 
 After public npm verification, update the hosted site's exact dependency and
 lockfile versions. Keep internal imports on the canonical implementation; public
-install links may use the exact T2 compatibility names. Build locally, commit,
+install links may use the exact release compatibility names. Build locally, commit,
 push the Railway-mapped repository, and wait for the deployment.
 
 Live verification must cover:
@@ -274,7 +274,7 @@ Live verification must cover:
 
 ## 12. Final evidence close
 
-T2 becomes complete only when all of these are true:
+The testnet release is complete only when all of these are true:
 
 - contract and protocol gates green;
 - current-version adversarial review has zero unresolved release blockers;

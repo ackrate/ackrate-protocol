@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CACHE = "/tmp/reapp-t2-npm-cache";
+const CACHE = "/tmp/reapp-release-npm-cache";
 
 const packages = [
   ["packages/stellar", "@reapp-sdk/stellar", "0.2.2"],
@@ -36,12 +36,12 @@ function run(command, args, cwd = ROOT) {
 function main() {
 let packRoot;
 try {
-console.log("T2 gate check 1/4: clean contract and workspace verification");
+console.log("Release gate check 1/4: clean contract and workspace verification");
 run(process.execPath, ["scripts/verify.mjs"]);
 run("npm", ["run", "cli:bundle"]);
 
-console.log("T2 gate check 2/4: public package manifests and tarball contents");
-packRoot = mkdtempSync(path.join(tmpdir(), "reapp-t2-pack-"));
+console.log("Release gate check 2/4: public package manifests and tarball contents");
+packRoot = mkdtempSync(path.join(tmpdir(), "reapp-release-pack-"));
 const tarballs = new Map();
 for (const [directory, expectedName, expectedVersion] of packages) {
   const packageRoot = path.join(ROOT, directory);
@@ -91,7 +91,7 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   console.log(`  verified ${expectedName}@${expectedVersion} (${entry.entryCount} files)`);
 }
 
-console.log("T2 gate check 3/4: clean install, strict TypeScript, runtime imports, and CLI bin");
+console.log("Release gate check 3/4: clean install, strict TypeScript, runtime imports, and CLI bin");
   const installRoot = path.join(packRoot, "clean-install");
   mkdirSync(installRoot);
   const dependencies = Object.fromEntries(
@@ -152,7 +152,7 @@ console.log("runtime imports passed");
   if (cliVersion !== "0.1.7") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
-console.log("T2 gate check 4/4: public terminology and private-file boundary");
+console.log("Release gate check 4/4: public terminology and private-file boundary");
 const tracked = run("git", ["ls-files", "--cached", "--others", "--exclude-standard"])
   .split("\n")
   .filter(Boolean)
@@ -180,7 +180,7 @@ for (const file of publicText) {
   }
 }
 
-console.log("\nT2 gate check passed");
+console.log("\nRelease gate check passed");
 } finally {
   if (packRoot) rmSync(packRoot, { recursive: true, force: true });
 }
@@ -189,6 +189,6 @@ console.log("\nT2 gate check passed");
 try {
   main();
 } catch (error) {
-  console.error(`\nT2 gate check failed: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(`\nRelease gate check failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 }

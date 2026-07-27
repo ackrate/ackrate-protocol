@@ -98,7 +98,7 @@ try {
 ## Before presenting
 
 ```bash
-npm run gatecheck:t2
+npm run gatecheck:release
 npm run agents:testnet
 npm run drills:testnet
 ```

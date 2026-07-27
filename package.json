@@ -24,7 +24,7 @@
     "drills:testnet": "npm run build && tsx scripts/failure-drills-testnet.ts",
     "adversarial:testnet": "npm run build && node scripts/adversarial/run-all.mjs",
     "gatecheck": "node scripts/gatecheck-mandate.mjs",
-    "gatecheck:t2": "node scripts/gatecheck-t2.mjs"
+    "gatecheck:release": "node scripts/gatecheck-release.mjs"
   },
   "devDependencies": {
     "@stellar/stellar-sdk": "^14.6.1",

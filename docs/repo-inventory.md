@@ -37,7 +37,7 @@ pause, upgrade authorization/timing, and real same-address replacement.
 | Script | Purpose |
 |---|---|
 | `scripts/verify.mjs` | Clean build, formatting, lint/type, tests, and workspace contract checks. |
-| `scripts/gatecheck-t2.mjs` | Full T2 gate, eight real tarballs, empty-project strict types/imports/CLI, and public/private boundaries. |
+| `scripts/gatecheck-release.mjs` | Full release gate, real tarballs, empty-project strict types/imports/CLI, and public/private boundaries. |
 | `scripts/e2e-x402.ts` | Three bound-v2 testnet purchases, fourth budget rejection, replay conflict. |
 | `scripts/failure-drills-testnet.ts` | Revocation, merchant downtime recovery, and expiry drills. |
 | `scripts/e2e-sdk.mjs` | Direct SDK testnet contract flow. |
@@ -57,6 +57,6 @@ They are not current version or deployment sources.
 ## Private-file boundary
 
 `REAPP_PROGRESS_LOG.md` and `CONTRACT_UPGRADE_PLAYBOOK.md` are private operator
-documents outside this repository. The T2 gate fails if either filename becomes
+documents outside this repository. The release gate fails if either filename becomes
 tracked. Credentials, testnet secrets, receipt files, and redemption files also
 remain untracked.

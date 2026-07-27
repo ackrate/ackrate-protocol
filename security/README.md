@@ -5,7 +5,7 @@ Security is a release gate, not an end-of-project appendix.
 Current artifacts:
 
 - [`threat-model.md`](threat-model.md): assets, trust boundaries, invariants,
-  abuse cases, and named production gates for the bound-v2 T2 surface.
+  abuse cases, and named production gates for the bound-v2 release.
 - [`data-flow.md`](data-flow.md): contract, SDK, receipt, challenge, fulfillment,
   chain verification, and exact-proof recovery sequence.
 - [`../docs/enforcement-evidence.md`](../docs/enforcement-evidence.md): per-deliverable implementation and evidence.
@@ -24,7 +24,7 @@ current core 0.3.1 or Express middleware 0.2.2.
 Current repeatable checks:
 
 ```bash
-npm run gatecheck:t2
+npm run gatecheck:release
 npm run agents:testnet
 npm run drills:testnet
 ```

@@ -2,7 +2,7 @@
 
 Fail-closed Express 4/5 paid JSON routes for REAPP on Stellar.
 
-The exact T2 package `@reapp-sdk/express-middleware` exposes the typed ESM API.
+The published `@reapp-sdk/express-middleware` package exposes the typed ESM API.
 
 The package authenticates an exact-origin GET challenge, verifies the on-chain
 settlement independently, atomically claims fulfillment, stores the exact JSON

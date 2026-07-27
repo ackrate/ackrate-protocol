@@ -30,7 +30,7 @@ Application client:
 npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
 ```
 
-T2 SDK packages:
+Pinned testnet SDK packages:
 
 ```bash
 npm install @reapp-sdk/stellar@0.2.2 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2
@@ -109,7 +109,7 @@ adversarial cases. Cumulative spending and payment replay remain contract checks
 
 ```bash
 npm ci
-npm run gatecheck:t2
+npm run gatecheck:release
 ```
 
 The gate check:

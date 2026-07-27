@@ -133,5 +133,5 @@ and expiry before settlement.
 
 [`security/x402-gatecheck-2026-06-16.md`](../security/x402-gatecheck-2026-06-16.md)
 records the legacy proof-v1 review. It is retained as history, not as evidence
-for bound-v2. Current release evidence comes from the T2 gate check, bound-v2
+for bound-v2. Current release evidence comes from the release gate check, bound-v2
 tests, and the fresh live commands above.

@@ -19,5 +19,5 @@ source/secret leakage.
 
 ```bash
 npm ci
-npm run gatecheck:t2
+npm run gatecheck:release
 ```
