@@ -13,6 +13,7 @@ Current testnet facts:
 | [`hackathon-quickstart.md`](hackathon-quickstart.md) | Clean-clone, CLI, SDK, and reference-agent testnet setup. |
 | [`express-vscode-quickstart.md`](express-vscode-quickstart.md) | Build a clean VS Code consumer against the `/express` companion. |
 | [`playbook-testnet.md`](playbook-testnet.md) | Linear contract-to-SDK release and operating procedure. |
+| [`mainnet-roadmap.md`](mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
 
 ## Protocol and implementation
 
