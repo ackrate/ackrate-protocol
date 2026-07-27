@@ -14,6 +14,7 @@ Current testnet facts:
 | [`express-vscode-quickstart.md`](express-vscode-quickstart.md) | Build a clean VS Code consumer against the `/express` companion. |
 | [`playbook-testnet.md`](playbook-testnet.md) | Linear contract-to-SDK release and operating procedure. |
 | [`mainnet-roadmap.md`](mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
+| [`mainnet-mandate-registry-plan.md`](mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
 
 ## Protocol and implementation
 

@@ -23,6 +23,12 @@ The work is split across:
 No mainnet activation occurs until every blocking gate in this document has
 objective evidence and no unresolved critical or high-severity finding.
 
+The first contract-focused workstream is expanded in the
+[Mainnet MandateRegistry activation plan](mainnet-mandate-registry-plan.md).
+It is the one-step operating notebook for authority selection, access control,
+the canonical timelock, signature coordination, generated configuration, and
+the bounded real-USDC canary.
+
 ## Definition of done
 
 | Product outcome | Required evidence |
