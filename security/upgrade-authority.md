@@ -24,11 +24,12 @@ authorized operator workstation. This is acceptable only for the current
 testnet window. It is not the intended early-mainnet custody model.
 
 The documented administrator is verified against live chain state. A read-only
-`get_admin()` simulation against testnet RPC on 2026-07-14 returned the address
-above for both deployed contracts, reproducible any time with the snippet below:
+`get_admin()` simulation against testnet RPC on 2026-07-27 returned the address
+above for both current deployed contracts, reproducible any time with the
+snippet below:
 
 ```
-simple    CC6JMPDHRPBR2HBLJKRCIKV54HXDV2RFXDKW6MALQKWM6JEAJQHICRWE
+simple    CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM
           get_admin() = GA2B3YY27OY6AWT2VXMXUDBSAHVOLU2ST6QWJJJLOIGDQHJDXO4RL4XH  ✓
 composite CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW
           get_admin() = GA2B3YY27OY6AWT2VXMXUDBSAHVOLU2ST6QWJJJLOIGDQHJDXO4RL4XH  ✓
