@@ -72,6 +72,22 @@ flowchart LR
 | Express middleware | [`@reapp-sdk/express-middleware`](https://www.npmjs.com/package/@reapp-sdk/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
 | CLI | [`reapp-protocol-cli`](https://www.npmjs.com/package/reapp-protocol-cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
 
+### Pinned Tranche 2 release map
+
+Package releases and protocol/specification versions are separate axes. The
+submission and live demo use this exact set:
+
+| Deliverable | Package release | Protocol/specification target |
+|---|---:|---|
+| Stellar binding | `@reapp-sdk/stellar@0.2.2` | Simple MandateRegistry `0.2.3` |
+| High-level SDK | `@reapp-sdk/core@0.3.1` | REAPP testnet toolkit |
+| AP2 validator | `@reapp-sdk/ap2@0.3.0` | AP2 `0.1.0` profile |
+| Express middleware | `@reapp-sdk/express-middleware@0.2.2` | bound-v2 proof flow |
+| CLI | `reapp-protocol-cli@0.1.7` | installed commands `reapp` and `reapp-protocol-cli` |
+
+In particular, `@reapp-sdk/ap2@0.3.0` implements the AP2 `0.1.0` profile;
+the package version is not the AP2 specification version.
+
 The contract is authoritative. SDK-side checks only fail fast; they never replace on-chain validation.
 
 ---
@@ -102,8 +118,7 @@ npm run gatecheck:t2
 Run the reviewer CLI from any clean directory:
 
 ```bash
-npm install -g reapp-protocol-cli
-reapp demo research-agent
+npx --yes reapp-protocol-cli@0.1.7 demo research-agent
 ```
 
 Run both reference agents from this repository with one command:

@@ -15,9 +15,9 @@ Because every run creates fresh ephemeral actors, the transaction hashes below
 are unique to the recorded run. Re-running `npm run drills:testnet` produces
 new, equally verifiable evidence rather than reproducing these exact hashes.
 
-## Fresh run — 2026-07-13
+## Fresh run — 2026-07-27
 
-Contract: [`CC6JMPDH…CRWE`](https://stellar.expert/explorer/testnet/contract/CC6JMPDHRPBR2HBLJKRCIKV54HXDV2RFXDKW6MALQKWM6JEAJQHICRWE)
+Contract: [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
 
 All three drills passed (`3/3 live failure drills passed`).
 
@@ -30,7 +30,7 @@ an **overspending** agent is demonstrated separately by the reference-agent
 round-trip (the fourth purchase is rejected on-chain for budget) and by the
 contract's `BudgetExceeded` negative suite.
 
-- Settled transaction: [`451531f1…ab7b`](https://stellar.expert/explorer/testnet/tx/451531f1e16074a31d9ed3dd159f766c0671bfa53ab6541ebec2c6d835feab7b)
+- Settled transaction: [`8b5cb297…63e03`](https://stellar.expert/explorer/testnet/tx/8b5cb2974baa0eda07b0b8c0f223ec69a93df7a52c2991eed2522f1438663e03)
 - User experience: the valid purchase is delivered; the revoked purchase is
   shown as a terminal contract rejection, not retried.
 
@@ -41,7 +41,7 @@ the first paid delivery is then deliberately interrupted. The SDK surfaces
 `DeliveryPendingError`, retries that exact receipt after recovery, and proves
 there is no second payment.
 
-- Settled transaction: [`4a55cedb…28fe`](https://stellar.expert/explorer/testnet/tx/4a55cedb05cb59647a86358859bbade1d5d7669e395ed62f70c8441ad75f28fe)
+- Settled transaction: [`532c92a3…432d`](https://stellar.expert/explorer/testnet/tx/532c92a342c3c17594c41b67540391683b487882e12ff42ea63f2474d90a432d)
 - User experience: “broadcast may have been attempted; settlement or delivery pending,” followed by recovered
   delivery tied to the same transaction.
 
@@ -78,13 +78,3 @@ dead, a trusted operator/outbox may call
 `resolveBoundReappInterruptedDelivery` to store one terminal result; it never
 reruns. In-memory stores are demo-only; the included file stores are
 single-process references.
-
-## Historical evidence
-
-Earlier transaction hashes remain useful point-in-time records but do not prove
-the current bound-v2 release. The evidence above is the most recent recorded run.
-
-Post-hardening run of 2026-07-12 (same contract, earlier ephemeral actors):
-reference-agent register [`0ac41cdb…b8a`](https://stellar.expert/explorer/testnet/tx/0ac41cdbe101ede949485e5c423e555014677c27249bbc7222dd4b8701b13b8a),
-approve [`33a50a07…cd5`](https://stellar.expert/explorer/testnet/tx/33a50a0716236fa900b776074c36e66ba0979bf8513a82f044c8b4d297009cd5),
-payments [`1f35a405…

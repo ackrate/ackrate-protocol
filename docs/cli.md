@@ -10,9 +10,9 @@ then proves the fourth is rejected by the contract budget.
 ## Evidence
 
 ```bash
-npm install -g reapp-protocol-cli
-reapp demo research-agent
+npx --yes reapp-protocol-cli@0.1.7 demo research-agent
 ```
 
-Installed command is `reapp` (the unscoped npm name `reapp-cli` is owned by an
-unrelated publisher).
+The package installs both `reapp` and `reapp-protocol-cli` command names. The
+roadmap's proposed unscoped npm name `reapp-cli` is owned by an unrelated
+publisher, so the canonical REAPP package is `reapp-protocol-cli`.
