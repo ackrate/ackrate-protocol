@@ -1,5 +1,40 @@
 # Bound-v2 security data flow
 
+## LOBSTR wallet and consumer chat
+
+```mermaid
+sequenceDiagram
+    participant Browser
+    participant LOBSTR
+    participant Web as Next.js server
+    participant Registry as MandateRegistry
+    participant Agent as AI consumer agent
+    participant Merchant as Fulfillment agent
+
+    Browser->>Web: Request account-bound auth transaction
+    Web-->>Browser: Non-broadcast XDR + one-time challenge
+    Browser->>LOBSTR: Sign exact auth XDR
+    Browser->>Web: Return signed XDR
+    Web->>Web: Verify signature; consume challenge once
+    Browser->>LOBSTR: Sign register_mandate
+    LOBSTR->>Registry: Register scoped mandate
+    Browser->>LOBSTR: Sign SEP-41 allowance to Registry
+    Browser->>Agent: Request allowlisted source
+    Agent->>Registry: Read state for fail-fast UX only
+    Agent->>Merchant: GET exact allowlisted path
+    Merchant-->>Agent: Authenticated bound x402 challenge
+    Agent->>Registry: execute_payment
+    Registry->>Registry: Authenticate + validate + consume + transfer atomically
+    Agent->>Merchant: Retry exact GET with bound proof
+    Merchant-->>Agent: Verified immutable result
+    Agent->>Web: Persist result, then acknowledge receipt
+    Web-->>Browser: Result + Stellar Expert transaction link
+```
+
+The browser never receives the agent secret. The model never receives an
+arbitrary payment surface. The preliminary read is not authorization; only
+`execute_payment` can authorize and consume a payment.
+
 ## Diagram — first delivery
 
 ```mermaid

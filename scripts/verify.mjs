@@ -50,5 +50,6 @@ for (const workspace of [
 }
 run("npm run build (clean)", "npm", ["run", "build"], ROOT);
 run("npm test", "npm", ["test"], ROOT);
+run("npm audit (high/critical release stop)", "npm", ["audit", "--audit-level=high"], ROOT);
 
 console.log("\n✓ verify passed — safe to push");

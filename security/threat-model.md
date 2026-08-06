@@ -86,3 +86,47 @@ This release is testnet-scoped. Mainnet additionally requires production key cus
 rotation, 2-of-3 governance implementation, a shared linearizable redemption
 database, durable result/outbox design, encrypted receipt storage, independent
 external review, operational monitoring, and a final immutable-release decision.
+
+## Wallet/chat and mainnet-candidate extension
+
+The release gate also covers the LOBSTR wallet/consumer chat application and
+manifest-gated mainnet configuration. Mainnet statements remain candidate
+requirements until a completed deployment manifest and live evidence exist.
+
+Additional protected assets:
+
+- wallet-authentication challenges and HttpOnly sessions;
+- AI provider credential and server-only agent signer;
+- payment tool-call idempotency records; and
+- verified deployment-manifest and application-source fingerprints.
+
+Additional invariants:
+
+1. LOBSTR signs full G-account transactions without exposing user secret
+   material. This release does not assume authorization-entry support.
+2. A browser session proves wallet control but grants no payment authority.
+3. The model can select only a server-allowlisted source ID. It cannot provide a
+   URL, merchant, amount, asset, network, contract, or signer.
+4. Every tool call binds one session, mandate, and source. Repeated IDs cannot
+   change those inputs or issue a second payment.
+5. Mainnet has no fallback contract ID and fails closed without complete
+   contract, asset, governance, source, hosted-origin, durable-store, and signer
+   evidence.
+
+| Additional attack or failure | Control |
+|---|---|
+| Wallet challenge replay | Short HMAC-bound expiry plus atomic one-time durable consumption |
+| Cross-site wallet/session action | Exact Origin validation plus HttpOnly, Secure, SameSite=Strict cookies |
+| Wallet returns another signer | Exact address check and Ed25519 verification over the issued transaction hash |
+| Model redirects payment | Fixed catalog, fixed HTTPS origin, safe relative path, fixed price/merchant/asset |
+| Duplicate model tool execution | Durable unique session/tool-call reservation and input binding |
+| Paid response cannot be parsed or persisted | Retain exact receipt, mark delivery pending, refuse a new payment |
+| Agent signer leaks to browser/model | Server-only boundary and safe config/diagnostics projection |
+| Stale or invented mainnet IDs | Strict completed-manifest parser; no built-in mainnet default |
+| Dependency advisory introduced | CI and local gate fail on high or critical npm advisory results |
+
+Mainnet remains blocked until custody/rotation, 2-of-3 governance, timelock
+evidence, shared durable stores, independent review, monitoring, real-USDC
+canaries, CLI and both reference-agent runs, hosted wallet/chat evidence, and
+the final immutable-release decision all pass. Unknown authority or payment
+paths are release stops, not accepted residual risk.

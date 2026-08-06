@@ -14,7 +14,15 @@
  */
 import { Buffer } from "buffer";
 import { Keypair, hash, rpc } from "@stellar/stellar-sdk";
-import { TESTNET, keypairSigner, registryClient, token, type NetworkConfig } from "@reapp-sdk/stellar";
+import {
+  TESTNET,
+  keypairSigner,
+  registryClient,
+  stellarSigner,
+  token,
+  type NetworkConfig,
+  type StellarSigner,
+} from "@reapp-sdk/stellar";
 import {
   BOUND_PAYMENT_CAPABILITY,
   BOUND_PAYMENT_SCHEME,
@@ -63,7 +71,7 @@ export interface IntentMandate {
 }
 
 export interface SignerInput {
-  signer: Keypair | string;
+  signer: Keypair | string | StellarSigner;
 }
 
 export type PaymentProofPolicy = "legacy-compatible" | "bound-v2-only";
@@ -258,6 +266,18 @@ export function toStroops(human: string, decimals = DEFAULT_DECIMALS): bigint {
 
 const asKeypair = (s: Keypair | string): Keypair =>
   typeof s === "string" ? Keypair.fromSecret(s) : s;
+
+const mandateUserSigner = (
+  mandate: IntentMandate,
+  input: SignerInput["signer"],
+  net: NetworkConfig,
+): StellarSigner => {
+  const signer = stellarSigner(input, net.networkPassphrase);
+  if (signer.publicKey !== mandate.user) {
+    throw new Error("the transaction signer must match the mandate user");
+  }
+  return signer;
+};
 
 /** An agent bound to a registered mandate. Its only power is `pay`, and every
  *  payment is enforced on-chain against the mandate. */
@@ -881,7 +901,7 @@ export const reapp = {
     opts: SignerInput,
     net: NetworkConfig = TESTNET,
   ): Promise<string> {
-    const signer = keypairSigner(asKeypair(opts.signer), net.networkPassphrase);
+    const signer = mandateUserSigner(mandate, opts.signer, net);
     const client = registryClient(net, signer);
     const at = await client.register_mandate({
       user: mandate.user,
@@ -906,7 +926,7 @@ export const reapp = {
     return token.approve(
       net,
       mandate.asset,
-      asKeypair(opts.signer),
+      mandateUserSigner(mandate, opts.signer, net),
       net.mandateRegistryId,
       mandate.maxAmount,
     );
@@ -918,7 +938,7 @@ export const reapp = {
     opts: SignerInput,
     net: NetworkConfig = TESTNET,
   ): Promise<string> {
-    const signer = keypairSigner(asKeypair(opts.signer), net.networkPassphrase);
+    const signer = mandateUserSigner(mandate, opts.signer, net);
     const client = registryClient(net, signer);
     const at = await client.revoke_mandate({ mandate_id: mandate.idBuffer });
     const sent = await at.signAndSend();

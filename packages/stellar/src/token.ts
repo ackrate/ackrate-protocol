@@ -4,13 +4,13 @@
 import {
   Address,
   Contract,
-  Keypair,
   TransactionBuilder,
   nativeToScVal,
   scValToNative,
   rpc,
 } from "@stellar/stellar-sdk";
 import type { NetworkConfig } from "./config.js";
+import { stellarSigner, type StellarSignerInput } from "./signer.js";
 
 const INCLUSION_FEE = "100000";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -30,17 +30,18 @@ async function settle(server: rpc.Server, hash: string): Promise<void> {
 export async function approve(
   net: NetworkConfig,
   tokenId: string,
-  owner: Keypair,
+  owner: StellarSignerInput,
   spender: string,
   amount: bigint,
   expirationLedger?: number,
 ): Promise<string> {
+  const signer = stellarSigner(owner, net.networkPassphrase);
   const server = new rpc.Server(net.rpcUrl, { allowHttp: net.rpcUrl.startsWith("http://") });
-  const source = await server.getAccount(owner.publicKey());
+  const source = await server.getAccount(signer.publicKey);
   const exp = expirationLedger ?? (await server.getLatestLedger()).sequence + 17280;
   const op = new Contract(tokenId).call(
     "approve",
-    new Address(owner.publicKey()).toScVal(),
+    new Address(signer.publicKey).toScVal(),
     new Address(spender).toScVal(),
     nativeToScVal(amount, { type: "i128" }),
     nativeToScVal(exp, { type: "u32" }),
@@ -53,8 +54,19 @@ export async function approve(
     .setTimeout(60)
     .build();
   const prepared = await server.prepareTransaction(built);
-  prepared.sign(owner);
-  const sent = await server.sendTransaction(prepared);
+  const signed = await signer.signTransaction(prepared.toXDR(), {
+    address: signer.publicKey,
+    networkPassphrase: net.networkPassphrase,
+  });
+  if (signed.error) throw new Error(`approve signing failed: ${signed.error.message}`);
+  if (signed.signerAddress && signed.signerAddress !== signer.publicKey) {
+    throw new Error("approve signing failed: wallet returned a different signer address");
+  }
+  const signedTransaction = TransactionBuilder.fromXDR(
+    signed.signedTxXdr,
+    net.networkPassphrase,
+  );
+  const sent = await server.sendTransaction(signedTransaction);
   if (sent.errorResult) throw new Error(`approve submit failed: ${sent.status}`);
   await settle(server, sent.hash);
   return sent.hash;

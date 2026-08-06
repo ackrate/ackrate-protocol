@@ -1,0 +1,39 @@
+{
+  "name": "@reapp-sdk/wallet-chat",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LOBSTR wallet and mandate-aware chat application for contract-enforced REAPP payments.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "4.0.33",
+    "@ai-sdk/react": "4.0.58",
+    "@assistant-ui/react": "0.15.5",
+    "@assistant-ui/react-ai-sdk": "1.4.4",
+    "@lobstrco/signer-extension-api": "2.1.0",
+    "@neondatabase/serverless": "1.1.0",
+    "@reapp-sdk/core": "*",
+    "@reapp-sdk/stellar": "*",
+    "@stellar/stellar-sdk": "^14.6.1",
+    "ai": "7.0.55",
+    "buffer": "6.0.3",
+    "lucide-react": "1.24.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.18",
+    "@types/node": "^22.10.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "tailwindcss": "4.1.18",
+    "typescript": "^5.7.2"
+  }
+}
