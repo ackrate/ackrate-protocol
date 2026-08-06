@@ -11,6 +11,11 @@ import { runPay } from "./commands/pay.js";
 import { runDemo } from "./commands/demo.js";
 import { runSettlementAcknowledge, runSettlementReconcile } from "./commands/reconcile.js";
 import { CLI_VERSION } from "./version.js";
+import {
+  runOpsCombine,
+  runOpsCreate,
+  runOpsVerify,
+} from "./commands/ops.js";
 
 const program = new Command();
 
@@ -56,6 +61,29 @@ settlement
   .description("acknowledge one exact durably recorded successful payment")
   .argument("<tx-hash>", "the exact 64-character lowercase transaction hash")
   .action((txHash) => runSettlementAcknowledge(txHash));
+
+const ops = program
+  .command("ops")
+  .description("coordinate exact 2-of-3 authority requests without handling secrets");
+ops
+  .command("create")
+  .description("bind one unsigned transaction XDR to an immutable signing request")
+  .requiredOption("--xdr <path>", "file containing unsigned transaction-envelope XDR")
+  .requiredOption("--manifest <path>", "public 2-of-3 authority manifest")
+  .requiredOption("--out <path>", "new request JSON file; refuses to overwrite")
+  .action((options) => runOpsCreate(options.xdr, options.manifest, options.out));
+ops
+  .command("verify")
+  .description("independently verify a request ID, XDR, source, network, and effect")
+  .requiredOption("--request <path>", "immutable request JSON file")
+  .action((options) => runOpsVerify(options.request));
+ops
+  .command("combine")
+  .description("verify and combine exactly two independently signed envelopes")
+  .requiredOption("--request <path>", "immutable request JSON file")
+  .requiredOption("--signed <path...>", "exactly two single-signature XDR files")
+  .requiredOption("--out <path>", "new two-signature XDR file; refuses to overwrite")
+  .action((options) => runOpsCombine(options.request, options.signed, options.out));
 
 program
   .command("demo")

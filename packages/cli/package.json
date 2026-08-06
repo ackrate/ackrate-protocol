@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/version.test.ts src/settlement-store.test.ts src/payment-failure.test.ts",
+    "test": "node --import tsx --test src/version.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts",
     "start": "tsx src/index.ts",
     "prepack": "npm --prefix ../.. run cli:bundle"
   },
