@@ -25,6 +25,7 @@ function validManifest() {
       branch: "main",
       commit: "1".repeat(40),
       dirty: false,
+      rust_toolchain_version: "1.96.0",
       stellar_cli_version: "26.1.0",
     },
     artifacts: {
@@ -124,6 +125,10 @@ test("rejects stale source, unsafe delay, and incorrect governance wiring", () =
   const shortDelay = validManifest();
   shortDelay.public_configuration.timelock_min_delay_ledgers = 120;
   assert.throws(() => mainnetNetworkFromDeploymentManifest(shortDelay), /at least 17280/);
+
+  const wrongCompiler = validManifest();
+  wrongCompiler.source.rust_toolchain_version = "1.97.1";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongCompiler), /Rust toolchain version/);
 
   const wrongAdmin = validManifest();
   wrongAdmin.constructor_arguments.mandate_registry.admin = contract(9);

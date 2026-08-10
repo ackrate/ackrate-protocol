@@ -8,6 +8,8 @@ export const MAINNET_USDC = Object.freeze({
 });
 
 export const MAINNET_MIN_TIMELOCK_DELAY_LEDGERS = 17_280;
+export const MAINNET_RUST_TOOLCHAIN_VERSION = "1.96.0";
+export const MAINNET_STELLAR_CLI_VERSION = "26.1.0";
 
 export interface ReleaseNetworkConfig extends NetworkConfig {
   settlementAsset: {
@@ -137,8 +139,11 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
   const sourceCommit = textAt(source, "commit").toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(sourceCommit)) throw new Error("release manifest source commit is invalid");
   if (textAt(source, "branch") !== "main") throw new Error("release manifest source branch must be main");
-  if (textAt(source, "stellar_cli_version") !== "26.1.0") {
-    throw new Error("release manifest Stellar CLI version must be 26.1.0");
+  if (textAt(source, "rust_toolchain_version") !== MAINNET_RUST_TOOLCHAIN_VERSION) {
+    throw new Error(`release manifest Rust toolchain version must be ${MAINNET_RUST_TOOLCHAIN_VERSION}`);
+  }
+  if (textAt(source, "stellar_cli_version") !== MAINNET_STELLAR_CLI_VERSION) {
+    throw new Error(`release manifest Stellar CLI version must be ${MAINNET_STELLAR_CLI_VERSION}`);
   }
   if (source.dirty !== false) throw new Error("release manifest source must be clean");
 
