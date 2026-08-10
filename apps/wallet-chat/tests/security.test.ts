@@ -13,7 +13,9 @@ test("signed session tokens verify only for the requested kind", () => {
 
 test("token tampering and expiry fail closed", () => {
   const { token } = createSessionToken("GTEST", "testnet", secret, 1_000);
-  assert.equal(openToken(`${token.slice(0, -1)}x`, secret, "session", 1_001), null);
+  const [body, signature] = token.split(".");
+  const replacement = body[0] === "A" ? "B" : "A";
+  assert.equal(openToken(`${replacement}${body.slice(1)}.${signature}`, secret, "session", 1_001), null);
   assert.equal(openToken(token, `${secret}!`, "session", 1_001), null);
   assert.equal(openToken(token, secret, "session", 4_601), null);
 });
