@@ -98,7 +98,63 @@ REAPP_HOME=$(mktemp -d) reapp setup
 | `reapp pay [amount]` | Makes an agent-signed payment against the active mandate. |
 | `reapp settlement reconcile` | Resolves the exact durable transaction hash before another payment is allowed. |
 | `reapp settlement acknowledge <tx-hash>` | Explicitly accepts one exact durably recorded success and reopens the payment path. |
+| `reapp ops create` | Binds one unsigned authority transaction to an immutable, human-readable signing request. |
+| `reapp ops verify` | Independently verifies the request, network, transaction hash, source, and exact contract call. |
+| `reapp ops combine` | Accepts exactly two different valid custodian signatures and emits the ready envelope. |
 | `reapp demo research-agent` | Runs the complete budget-capped research-agent flow on testnet. |
+
+## Mainnet 2-of-3 coordination
+
+The `ops` commands are the secret-free coordination layer for governed
+operations such as scheduling, cancelling, or executing a timelocked upgrade.
+They do not accept or store custodian secrets. Start from
+[`examples/mainnet-authority-manifest.template.json`](examples/mainnet-authority-manifest.template.json)
+and replace every placeholder with the public account and signer addresses.
+
+The coordinator creates a request from an already built and simulated unsigned
+transaction:
+
+```bash
+reapp ops create \
+  --xdr unsigned.xdr \
+  --manifest mainnet-authority.json \
+  --out request.json
+```
+
+Each custodian verifies `request.json` on an independent machine, then signs
+the unchanged XDR with a local secure identity or hardware wallet:
+
+```bash
+reapp ops verify --request request.json
+stellar tx sign unsigned.xdr \
+  --network-passphrase 'Public Global Stellar Network ; September 2015' \
+  --sign-with-key <local-custodian-identity> > signed-a.xdr
+```
+
+The coordinator combines two different valid signatures. A single, duplicate,
+unknown, wrong-network, changed-payload, or mixed-request signature is rejected:
+
+```bash
+reapp ops combine \
+  --request request.json \
+  --signed signed-a.xdr signed-b.xdr \
+  --out ready.xdr
+```
+
+Before submission, both custodians verify the ready envelope hash still equals
+the request hash. The operator then sends it through the reviewed mainnet RPC:
+
+```bash
+stellar tx hash ready.xdr \
+  --network-passphrase 'Public Global Stellar Network ; September 2015'
+stellar tx send ready.xdr \
+  --rpc-url <reviewed-mainnet-rpc> \
+  --network-passphrase 'Public Global Stellar Network ; September 2015'
+```
+
+The public authority manifest and request JSON contain no secrets and may be
+retained as evidence. Custodian identity stores and recovery material remain on
+their independent devices.
 
 ## How it works
 

@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "network": "mainnet",
+  "authorityAccount": "REPLACE_WITH_2_OF_3_ACCOUNT_G_ADDRESS",
+  "requiredSignatures": 2,
+  "signers": [
+    {
+      "label": "A",
+      "publicKey": "REPLACE_WITH_SIGNER_A_G_ADDRESS"
+    },
+    {
+      "label": "B",
+      "publicKey": "REPLACE_WITH_SIGNER_B_G_ADDRESS"
+    },
+    {
+      "label": "C",
+      "publicKey": "REPLACE_WITH_SIGNER_C_G_ADDRESS"
+    }
+  ]
+}

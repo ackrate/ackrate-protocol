@@ -22,7 +22,7 @@ function validManifest() {
     },
     source: {
       repository: "https://github.com/reapp-protocol/reapp-protocol-contracts",
-      branch: "t3",
+      branch: "main",
       commit: "1".repeat(40),
       dirty: false,
       stellar_cli_version: "26.1.0",
@@ -35,14 +35,28 @@ function validManifest() {
       deployment_source_account: source,
       authority_2_of_3_account: authority,
       emergency_pauser: pauser,
-      timelock_min_delay_ledgers: 120,
+      timelock_min_delay_ledgers: 17_280,
       usdc_asset_code: MAINNET_USDC.code,
       usdc_issuer: MAINNET_USDC.issuer,
-      usdc_sac: contract(3),
+      usdc_sac: MAINNET_USDC.contractId,
       usdc_derivation_evidence: "independent derivation record",
       usdc_independent_verifier: "Verifier A",
     },
-    constructor_arguments: {},
+    constructor_arguments: {
+      timelock: {
+        proposers: [authority],
+        executors: [],
+        admin: null,
+      },
+      mandate_registry: {
+        admin: contract(1),
+        asset_policy: contract(1),
+        pauser,
+        unpauser: authority,
+        upgrader: contract(1),
+        initial_asset: MAINNET_USDC.contractId,
+      },
+    },
     deployment: {
       authorized_by: "approved release record",
       authorized_at: "2026-08-01T00:00:00.000Z",
@@ -100,4 +114,30 @@ test("rejects a conflicting USDC identity or observed artifact hash", () => {
   const wrongHash = validManifest();
   wrongHash.deployment.registry_observed_wasm_hash = hash("e");
   assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongHash), /registry artifact/);
+});
+
+test("rejects stale source, unsafe delay, and incorrect governance wiring", () => {
+  const staleBranch = validManifest();
+  staleBranch.source.branch = "t3";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(staleBranch), /branch must be main/);
+
+  const shortDelay = validManifest();
+  shortDelay.public_configuration.timelock_min_delay_ledgers = 120;
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(shortDelay), /at least 17280/);
+
+  const wrongAdmin = validManifest();
+  wrongAdmin.constructor_arguments.mandate_registry.admin = contract(9);
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAdmin), /admin must be the timelock/);
+
+  const alternateExecutor = validManifest();
+  (alternateExecutor.constructor_arguments.timelock.executors as string[]).push(
+    alternateExecutor.public_configuration.authority_2_of_3_account,
+  );
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(alternateExecutor), /executors must be empty/);
+});
+
+test("rejects contract addresses where public G-accounts are required", () => {
+  const wrongAuthorityType = validManifest();
+  wrongAuthorityType.public_configuration.authority_2_of_3_account = contract(8);
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAuthorityType), /G-account/);
 });
