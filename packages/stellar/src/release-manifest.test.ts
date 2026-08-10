@@ -25,6 +25,7 @@ function validManifest() {
       branch: "main",
       commit: "1".repeat(40),
       dirty: false,
+      build_platform: "ubuntu-24.04-x86_64",
       rust_toolchain_version: "1.96.0",
       stellar_cli_version: "26.1.0",
     },
@@ -129,6 +130,10 @@ test("rejects stale source, unsafe delay, and incorrect governance wiring", () =
   const wrongCompiler = validManifest();
   wrongCompiler.source.rust_toolchain_version = "1.97.1";
   assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongCompiler), /Rust toolchain version/);
+
+  const wrongPlatform = validManifest();
+  wrongPlatform.source.build_platform = "macos-arm64";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongPlatform), /build platform/);
 
   const wrongAdmin = validManifest();
   wrongAdmin.constructor_arguments.mandate_registry.admin = contract(9);

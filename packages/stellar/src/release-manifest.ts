@@ -8,6 +8,7 @@ export const MAINNET_USDC = Object.freeze({
 });
 
 export const MAINNET_MIN_TIMELOCK_DELAY_LEDGERS = 17_280;
+export const MAINNET_BUILD_PLATFORM = "ubuntu-24.04-x86_64";
 export const MAINNET_RUST_TOOLCHAIN_VERSION = "1.96.0";
 export const MAINNET_STELLAR_CLI_VERSION = "26.1.0";
 
@@ -139,6 +140,9 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
   const sourceCommit = textAt(source, "commit").toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(sourceCommit)) throw new Error("release manifest source commit is invalid");
   if (textAt(source, "branch") !== "main") throw new Error("release manifest source branch must be main");
+  if (textAt(source, "build_platform") !== MAINNET_BUILD_PLATFORM) {
+    throw new Error(`release manifest build platform must be ${MAINNET_BUILD_PLATFORM}`);
+  }
   if (textAt(source, "rust_toolchain_version") !== MAINNET_RUST_TOOLCHAIN_VERSION) {
     throw new Error(`release manifest Rust toolchain version must be ${MAINNET_RUST_TOOLCHAIN_VERSION}`);
   }
