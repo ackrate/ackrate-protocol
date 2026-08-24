@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [main]
+    branches: [main, prod]
 
 permissions:
   contents: read
@@ -64,4 +64,3 @@ jobs:
           production_url="$(vercel deploy --prebuilt --archive=tgz --prod --token="$VERCEL_TOKEN")"
           echo "### Vercel production" >> "$GITHUB_STEP_SUMMARY"
           echo "[$production_url]($production_url)" >> "$GITHUB_STEP_SUMMARY"
-
