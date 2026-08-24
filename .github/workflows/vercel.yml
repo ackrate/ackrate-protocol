@@ -1,0 +1,67 @@
+name: Vercel Deployments
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59.5.0
+
+      - name: Pull preview environment
+        if: github.event_name == 'pull_request'
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      - name: Pull production environment
+        if: github.event_name == 'push'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build preview
+        if: github.event_name == 'pull_request'
+        run: vercel build --token="$VERCEL_TOKEN"
+
+      - name: Build production
+        if: github.event_name == 'push'
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy preview
+        if: github.event_name == 'pull_request'
+        run: |
+          preview_url="$(vercel deploy --prebuilt --archive=tgz --token="$VERCEL_TOKEN")"
+          echo "### Vercel preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "[$preview_url]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy production
+        if: github.event_name == 'push'
+        run: |
+          production_url="$(vercel deploy --prebuilt --archive=tgz --prod --token="$VERCEL_TOKEN")"
+          echo "### Vercel production" >> "$GITHUB_STEP_SUMMARY"
+          echo "[$production_url]($production_url)" >> "$GITHUB_STEP_SUMMARY"
+
