@@ -5,10 +5,10 @@
 | Path | Public surface | Ownership |
 |---|---|---|
 | `packages/sdk` | `@ackrate/core@0.3.3` | High-level mandates, contract payments, bound-v2 client, receipts and recovery. |
-| `packages/stellar` | `@ackrate/stellar@0.2.4` | Generated typed bindings, permanent testnet contract config, signer and SEP-41 helpers. |
+| `packages/stellar` | `@ackrate/stellar@0.2.5` | Generated typed bindings, verified Mainnet manifest gate, signer and SEP-41 helpers. |
 | `packages/ap2` | `@ackrate/ap2@0.3.2` | Signed AP2 v0.1 profile validator and replay admission. |
 | `packages/express-middleware` | `@ackrate/express-middleware@0.2.4` | Exact-origin GET proof, Stellar verifier, and atomic claim/immutable-result route. |
-| `packages/cli` | `@ackrate/cli@0.1.9` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo flow. |
+| `packages/cli` | `@ackrate/cli@0.1.10` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and Mainnet demo flow. |
 
 ## Reference applications
 

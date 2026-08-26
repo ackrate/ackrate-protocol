@@ -33,7 +33,7 @@ npm install @ackrate/core@0.3.3 @stellar/stellar-sdk
 Pinned testnet SDK packages:
 
 ```bash
-npm install @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
+npm install @ackrate/stellar@0.2.5 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
 ```
 
 ## Bound-v2 client API
@@ -129,10 +129,10 @@ Registry proof is a separate external check:
 
 ```bash
 npm view @ackrate/core@0.3.3 version dist.integrity
-npm view @ackrate/stellar@0.2.4 version dist.integrity
+npm view @ackrate/stellar@0.2.5 version dist.integrity
 npm view @ackrate/ap2@0.3.2 version dist.integrity
 npm view @ackrate/express-middleware@0.2.4 version dist.integrity
-npm view @ackrate/cli@0.1.9 version dist.integrity
+npm view @ackrate/cli@0.1.10 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,

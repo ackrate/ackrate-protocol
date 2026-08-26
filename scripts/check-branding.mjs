@@ -9,7 +9,7 @@ const RETIRED_BRAND_FORMS = [
   ["RE", "APP"].join(""),
   ["Re", "app"].join(""),
 ];
-const SKIP_DIRECTORIES = new Set([".git", "node_modules", "target"]);
+const SKIP_DIRECTORIES = new Set([".git", ".next", "node_modules", "target"]);
 const SKIP_EXTENSIONS = new Set([".gif", ".ico", ".jpeg", ".jpg", ".pdf", ".png", ".wasm", ".webp"]);
 const matches = [];
 
@@ -18,7 +18,7 @@ function visit(directory) {
     const absolute = path.join(directory, entry.name);
     const relative = path.relative(ROOT, absolute);
     if (entry.isDirectory()) {
-      if (SKIP_DIRECTORIES.has(entry.name) || relative === "apps/wallet-chat/.next/cache") continue;
+      if (SKIP_DIRECTORIES.has(entry.name)) continue;
       visit(absolute);
       continue;
     }

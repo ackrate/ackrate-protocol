@@ -6,7 +6,7 @@ The `@ackrate` scope is unavailable to this project, so the packages map one-to-
 `@ackrate/express-middleware` → `@ackrate/express-middleware`.
 
 ```bash
-npm install @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
+npm install @ackrate/stellar@0.2.5 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
 ```
 
 Each package contains TypeScript declarations, API documentation, and a usage example

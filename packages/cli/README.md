@@ -16,7 +16,7 @@ testnet burners and must never be reused on mainnet. The one-command mainnet
 flow is separately manifest-gated, uses canonical Circle USDC, and signs through
 named Stellar CLI identities rather than accepting secrets in arguments.
 
-Package version: `@ackrate/cli@0.1.9`. Installed command: `ackrate`.
+Package version: `@ackrate/cli@0.1.10`. Installed command: `ackrate`.
 
 ## Install
 

@@ -12,7 +12,7 @@ USDC, named external Stellar CLI identities, and a visible real-value confirmati
 ## Evidence
 
 ```bash
-npx --yes @ackrate/cli@0.1.9 demo research-agent --network testnet
+npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet
 ```
 
 The package installs the `ackrate` command. The
@@ -23,8 +23,12 @@ Friday's bounded canary uses the completed deployment manifest without a source
 edit:
 
 ```bash
-npx --yes @ackrate/cli@0.1.9 demo research-agent \
+npx --yes @ackrate/cli@0.1.10 demo research-agent \
   --network mainnet --manifest ./mainnet-deployment.json \
   --user-signer ackrate-canary-user --agent-signer ackrate-canary-agent \
   --merchant G... --price 0.01 --budget 0.03 --confirm-real-usdc
 ```
+
+The completed Mainnet run, exact transaction links, contract rejection, and
+recipient balance delta are published in
+[`mainnet-live-usdc-evidence.md`](mainnet-live-usdc-evidence.md).

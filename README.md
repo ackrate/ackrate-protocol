@@ -79,11 +79,11 @@ submission and live demo use this exact set:
 
 | Deliverable | Package release | Protocol/specification target |
 |---|---:|---|
-| Stellar binding | `@ackrate/stellar@0.2.4` | Simple MandateRegistry `0.2.3` |
+| Stellar binding | `@ackrate/stellar@0.2.5` | Verified Mainnet manifest and typed contract bindings |
 | High-level SDK | `@ackrate/core@0.3.3` | Ackrate testnet toolkit |
 | AP2 validator | `@ackrate/ap2@0.3.2` | AP2 `0.1.0` profile |
 | Express middleware | `@ackrate/express-middleware@0.2.4` | bound-v2 proof flow |
-| CLI | `@ackrate/cli@0.1.9` | installed command `ackrate` |
+| CLI | `@ackrate/cli@0.1.10` | installed command `ackrate` |
 
 In particular, `@ackrate/ap2@0.3.2` implements the AP2 `0.1.0` profile;
 the package version is not the AP2 specification version.
@@ -119,7 +119,7 @@ npm run gatecheck:release
 Run the reviewer CLI from any clean directory:
 
 ```bash
-npx --yes @ackrate/cli@0.1.9 demo research-agent --network testnet
+npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet
 ```
 
 Run both reference agents from this repository with one command:

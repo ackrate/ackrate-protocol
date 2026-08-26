@@ -27,7 +27,7 @@ function validManifest() {
       dirty: false,
       build_platform: "ubuntu-24.04-x86_64",
       rust_toolchain_version: "1.96.0",
-      stellar_cli_version: "26.1.0",
+      stellar_cli_version: "27.0.0",
     },
     artifacts: {
       timelock_controller: { path: "timelock.wasm", sha256: hash("a"), size_bytes: 1 },
@@ -134,6 +134,10 @@ test("rejects stale source, unsafe delay, and incorrect governance wiring", () =
   const wrongPlatform = validManifest();
   wrongPlatform.source.build_platform = "macos-arm64";
   assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongPlatform), /build platform/);
+
+  const wrongStellarCli = validManifest();
+  wrongStellarCli.source.stellar_cli_version = "26.1.0";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongStellarCli), /Stellar CLI version/);
 
   const wrongAdmin = validManifest();
   wrongAdmin.constructor_arguments.mandate_registry.admin = contract(9);

@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/stellar",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Soroban client + typed MandateRegistry bindings, network config, and signing helpers for Ackrate.",
   "repository": {
     "type": "git",

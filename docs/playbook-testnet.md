@@ -12,7 +12,7 @@ stage consumes the verified evidence from the prior stage.
 | Composite contract | `CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW`, 0.3.0, hash `b3368d7f…f0a1` |
 | Core / Stellar | 0.3.1 / 0.2.2 |
 | Express / AP2 | 0.2.2 / 0.3.0 |
-| CLI | `@ackrate/cli@0.1.9` |
+| CLI | `@ackrate/cli@0.1.10` |
 
 All commands use Stellar testnet. Never place secrets in command history,
 documentation, commits, screenshots, or logs. Use a configured Stellar identity

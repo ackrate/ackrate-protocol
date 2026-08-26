@@ -10,7 +10,7 @@ export const MAINNET_USDC = Object.freeze({
 export const MAINNET_MIN_TIMELOCK_DELAY_LEDGERS = 17_280;
 export const MAINNET_BUILD_PLATFORM = "ubuntu-24.04-x86_64";
 export const MAINNET_RUST_TOOLCHAIN_VERSION = "1.96.0";
-export const MAINNET_STELLAR_CLI_VERSION = "26.1.0";
+export const MAINNET_STELLAR_CLI_VERSION = "27.0.0";
 
 export interface ReleaseNetworkConfig extends NetworkConfig {
   settlementAsset: {
