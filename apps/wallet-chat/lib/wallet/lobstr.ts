@@ -6,7 +6,7 @@ import {
   signTransaction,
 } from "@lobstrco/signer-extension-api";
 import { StrKey } from "@stellar/stellar-sdk";
-import type { StellarSigner } from "@reapp-sdk/stellar";
+import type { StellarSigner } from "@ackrate/stellar";
 
 export async function connectLobstr(): Promise<string> {
   const connected = await isConnected();

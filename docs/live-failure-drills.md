@@ -75,6 +75,6 @@ private challenge secret, a shared durable linearizable redemption store across
 all workers, an encrypted protected receipt store, and a transactional job/outbox
 for external side effects. Only after proving the original execution owner is
 dead, a trusted operator/outbox may call
-`resolveBoundReappInterruptedDelivery` to store one terminal result; it never
+`resolveBoundAckrateInterruptedDelivery` to store one terminal result; it never
 reruns. In-memory stores are demo-only; the included file stores are
 single-process references.

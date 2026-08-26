@@ -1,20 +1,20 @@
-# @reapp-sdk/stellar 0.2.2
+# @ackrate/stellar 0.2.2
 
-The Soroban layer for **REAPP**, agent-driven payments on Stellar, enforced
+The Soroban layer for **Ackrate**, agent-driven payments on Stellar, enforced
 on-chain by the **MandateRegistry** contract.
 
 This package is the low-level building block: a **typed MandateRegistry client**
 generated from the contract interface that passed the gate check, network config for testnet, a keypair
 signing adapter, and minimal SEP-41 token helpers.
 
-> **Most apps want [`@reapp-sdk/core`](https://www.npmjs.com/package/@reapp-sdk/core), not this.**
+> **Most apps want [`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core), not this.**
 > `core` wraps these pieces into a mandate-validated payment in under 10 lines.
-> Reach for `@reapp-sdk/stellar` when you need direct, typed access to the contract.
+> Reach for `@ackrate/stellar` when you need direct, typed access to the contract.
 
 ## Install
 
 ```
-npm install @reapp-sdk/stellar@0.2.2 @stellar/stellar-sdk@14.5.0
+npm install @ackrate/stellar@0.2.4 @stellar/stellar-sdk@14.5.0
 ```
 
 ## What it exports
@@ -31,7 +31,7 @@ npm install @reapp-sdk/stellar@0.2.2 @stellar/stellar-sdk@14.5.0
 [`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM).
 Its on-chain WASM hash is
 `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`,
-matching the [`simple-v0.2.3` release artifact](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0).
+matching the [`simple-v0.2.3` release artifact](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0).
 The binding exposes `get_admin`, `set_admin`, `pause`, `unpause`, `is_paused`,
 `get_pending_upgrade`, `get_upgrade_delay`, and the one-hour
 `schedule_upgrade`, `cancel_upgrade`, and `execute_upgrade` lifecycle alongside
@@ -57,7 +57,7 @@ an elapsed delay, and paused state; the contract ID and storage are preserved.
 ## Example: read a mandate straight from the contract
 
 ```ts
-import { TESTNET, keypairSigner, registryClient } from "@reapp-sdk/stellar";
+import { TESTNET, keypairSigner, registryClient } from "@ackrate/stellar";
 import { Keypair } from "@stellar/stellar-sdk";
 
 const signer = keypairSigner(Keypair.fromSecret(SECRET), TESTNET.networkPassphrase);
@@ -78,6 +78,6 @@ const delay = (await registry.get_upgrade_delay()).result; // 3600n
 The contract is the source of truth: every spend is validated and consumed
 on-chain by `execute_payment`, so a buggy or malicious client cannot exceed the
 mandate. For the full agent → pay flow, use
-[`@reapp-sdk/core`](https://www.npmjs.com/package/@reapp-sdk/core).
+[`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core).
 
 Apache-2.0.

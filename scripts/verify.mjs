@@ -40,15 +40,17 @@ for (const workspace of [
   "packages/ap2",
   "packages/express-middleware",
   "packages/cli",
-  "packages/reapp-stellar-alias",
-  "packages/reapp-ap2-alias",
-  "packages/reapp-express-middleware-alias",
+  "packages/ackrate-stellar-alias",
+  "packages/ackrate-ap2-alias",
+  "packages/ackrate-express-middleware-alias",
   "apps/consumer-agent",
   "apps/fulfillment-agent",
 ]) {
   rmSync(path.join(ROOT, workspace, "dist"), { recursive: true, force: true });
 }
+rmSync(path.join(ROOT, "apps", "wallet-chat", ".next"), { recursive: true, force: true });
 run("npm run build (clean)", "npm", ["run", "build"], ROOT);
+run("brand check", process.execPath, ["scripts/check-branding.mjs"], ROOT);
 run("npm test", "npm", ["test"], ROOT);
 run("npm audit (high/critical release stop)", "npm", ["audit", "--audit-level=high"], ROOT);
 

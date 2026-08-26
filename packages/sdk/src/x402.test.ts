@@ -5,17 +5,18 @@ import { Keypair } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_SCHEME,
   createBoundPaymentProof,
+  createBoundPaymentProofWithSigner,
   decodePaymentProof,
   encodePaymentProof,
   parse402,
   verifyBoundPaymentProofSignature,
   type BoundPaymentChallengeV2,
   type PaymentProof,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 
 /** A complete, well-formed settlement proof. */
 const PROOF: PaymentProof = {
-  scheme: "reapp-soroban",
+  scheme: "ackrate-soroban",
   network: "stellar-testnet",
   txHash: "a".repeat(64),
   mandateId: "b".repeat(64),
@@ -95,7 +96,7 @@ test("parse402 parses a full challenge", async () => {
       x402Version: 1,
       accepts: [
         {
-          scheme: "reapp-soroban",
+          scheme: "ackrate-soroban",
           network: "stellar-testnet",
           maxAmountRequired: "1.00",
           asset: "CASSET",
@@ -107,7 +108,7 @@ test("parse402 parses a full challenge", async () => {
     }),
   );
   assert.deepEqual(req, {
-    scheme: "reapp-soroban",
+    scheme: "ackrate-soroban",
     network: "stellar-testnet",
     amount: "1.00",
     asset: "CASSET",
@@ -119,7 +120,7 @@ test("parse402 parses a full challenge", async () => {
 
 test("parse402 applies defaults for a minimal challenge", async () => {
   const req = await parse402(res402({ accepts: [{ maxAmountRequired: "2.50", payTo: "GMERCHANT" }] }));
-  assert.equal(req.scheme, "reapp-soroban");
+  assert.equal(req.scheme, "ackrate-soroban");
   assert.equal(req.network, "stellar-testnet");
   assert.equal(req.amount, "2.50");
   assert.equal(req.asset, "");
@@ -185,6 +186,37 @@ test("bound-v2 proof strictly round-trips and verifies only for the on-chain age
   assert.deepEqual(decoded, proof);
   assert.equal(verifyBoundPaymentProofSignature(proof, agent.publicKey()), true);
   assert.equal(verifyBoundPaymentProofSignature(proof, stranger.publicKey()), false);
+});
+
+test("bound-v2 proof supports an injected secret-free payload signer", async () => {
+  const agent = Keypair.random();
+  const proof = await createBoundPaymentProofWithSigner({
+    challenge: BOUND_CHALLENGE,
+    txHash: "a".repeat(64),
+    mandateId: "b".repeat(64),
+    signer: {
+      publicKey: agent.publicKey(),
+      signPayload: async (payload) => agent.sign(Buffer.from(payload)),
+    },
+  });
+  assert.equal(verifyBoundPaymentProofSignature(proof, agent.publicKey()), true);
+});
+
+test("bound-v2 proof rejects an external signer returning another key's signature", async () => {
+  const agent = Keypair.random();
+  const stranger = Keypair.random();
+  await assert.rejects(
+    createBoundPaymentProofWithSigner({
+      challenge: BOUND_CHALLENGE,
+      txHash: "a".repeat(64),
+      mandateId: "b".repeat(64),
+      signer: {
+        publicKey: agent.publicKey(),
+        signPayload: async (payload) => stranger.sign(Buffer.from(payload)),
+      },
+    }),
+    /invalid bound-proof signature/,
+  );
 });
 
 test("bound-v2 signature binds the request, mandate, and transaction", () => {
@@ -266,7 +298,7 @@ test("bound-v2 decoder rejects unknown fields and noncanonical encodings", () =>
   );
   assert.throws(
     () => decodePaymentProof(b64({
-      scheme: "reapp-soroban",
+      scheme: "ackrate-soroban",
       network: "stellar-testnet",
       txHash: proof.txHash,
       mandateId: proof.mandateId,
@@ -277,16 +309,16 @@ test("bound-v2 decoder rejects unknown fields and noncanonical encodings", () =>
   );
 });
 
-test("parse402 rejects unsupported advertised REAPP proof versions", async () => {
+test("parse402 rejects unsupported advertised Ackrate proof versions", async () => {
   await assert.rejects(
     () => parse402(res402({
       accepts: [{
         maxAmountRequired: "1.00",
         payTo: "GMERCHANT",
-        extra: { reappProofVersion: 3, challenge: {} },
+        extra: { ackrateProofVersion: 3, challenge: {} },
       }],
     })),
-    /unsupported REAPP payment proof version/,
+    /unsupported Ackrate payment proof version/,
   );
 });
 
@@ -302,7 +334,7 @@ test("parse402 exposes a strict bound-v2 challenge without changing legacy outpu
       resource: BOUND_CHALLENGE.resource,
       extra: {
         contract: "CREGISTRY",
-        reappProofVersion: 2,
+        ackrateProofVersion: 2,
         challenge: BOUND_CHALLENGE,
       },
     }],

@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Buffer } from "buffer";
 import { Keypair } from "@stellar/stellar-sdk";
-import { reapp } from "@reapp-sdk/core";
+import { ackrate } from "@ackrate/core";
 import {
   Ap2ValidationError,
   InMemoryAp2ReplayStore,
-  REAPP_AP2_SIGNATURE_ALGORITHM,
+  ACKRATE_AP2_SIGNATURE_ALGORITHM,
   createAp2ComplianceValidator,
   signAp2Mandate,
   type Ap2ReplayRecord,
@@ -36,7 +36,7 @@ const baseInput: BindIntentMandateInput = {
   stellar: {
     user: userKey.publicKey(),
     agent: agentKey.publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "5.00",
     decimals: 7,
     nonce: "validator-vector-1",
@@ -92,7 +92,7 @@ test("valid signed AP2 mandate succeeds", async () => {
   assert.equal(result.acceptedAt, NOW);
 });
 
-test("returned mandate hash equals the recomputed REAPP id", async () => {
+test("returned mandate hash equals the recomputed Ackrate id", async () => {
   const result = await validator().validateAndConsume(request());
   assert.equal(result.binding.mandate.id, result.mandateHash);
   assert.equal(result.binding.mandate.idBuffer.toString("hex"), result.mandateHash);
@@ -107,15 +107,15 @@ test("fixed seed and nonce produce a deterministic signature digest and signatur
     first.mandateHash,
   );
   assert.equal(digest.length, 32);
-  assert.equal(first.mandateHash, "f2c3f0063aa31ca4c7a78ffb19e4afa533a7e380ef175c22f71720154d6ae796");
-  assert.equal(digest.toString("hex"), "de249e6e3b555b81efcb451cb87276fb698507717b506dd5d7ea4e78df8eaf4e");
+  assert.equal(first.mandateHash, "f5059e836b2c07cfdbaaa10af057ce0668f7d664793debbf35d816e0afcac678");
+  assert.equal(digest.toString("hex"), "4aaad07f2d4799995f4fb6b9a6c160c9eb92d3f9d8bb93361eaebb1bca8a5565");
   assert.equal(
     first.signature.value,
-    "HLxF/L7penthmocH62WwELvuPQf7rYNeqLAOHK0mcp710SUzKrmLRnV4awG4u8U+2qILLXChu+s9DEIizdibAw==",
+    "jXOKcstA8KXJ+M5seIJmG5PI6bH1bONR73GCUif+LTZ7jQayfzv+zcqq3/Jm9XvdJnJ8KFK++gHEluxZDMQdCQ==",
   );
   assert.equal(first.mandateHash, second.mandateHash);
   assert.equal(first.signature.value, second.signature.value);
-  assert.equal(first.signature.algorithm, REAPP_AP2_SIGNATURE_ALGORITHM);
+  assert.equal(first.signature.algorithm, ACKRATE_AP2_SIGNATURE_ALGORITHM);
 });
 
 test("exact signed maximum amount succeeds", async () => {
@@ -219,7 +219,7 @@ test("unsupported signature algorithm is rejected", async () => {
 
 test("unsupported credential version is rejected", async () => {
   const credential = mutable();
-  credential.credentialVersion = "reapp-ap2-credential/2" as typeof credential.credentialVersion;
+  credential.credentialVersion = "ackrate-ap2-credential/2" as typeof credential.credentialVersion;
   await expectCode(validator().validateAndConsume(request(credential)), "UNSUPPORTED_VERSION");
 });
 
@@ -229,9 +229,9 @@ test("unsupported AP2 version is rejected", async () => {
   await expectCode(validator().validateAndConsume(request(credential)), "UNSUPPORTED_VERSION");
 });
 
-test("unsupported REAPP binding version is rejected", async () => {
+test("unsupported Ackrate binding version is rejected", async () => {
   const credential = mutable();
-  credential.payload.bindingVersion = "reapp-ap2/2" as typeof credential.payload.bindingVersion;
+  credential.payload.bindingVersion = "ackrate-ap2/2" as typeof credential.payload.bindingVersion;
   await expectCode(validator().validateAndConsume(request(credential)), "UNSUPPORTED_VERSION");
 });
 

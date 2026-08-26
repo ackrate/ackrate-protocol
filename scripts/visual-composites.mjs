@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Visual UI test for the /composites demo route in reapp-protocol-demo.
+ * Visual UI test for the /composites demo route in ackrate-protocol-demo.
  *
- *   1. cd ../reapp-protocol-demo && npm run build && npm start
+ *   1. cd ../ackrate-protocol-demo && npm run build && npm start
  *   2. node scripts/visual-composites.mjs
  *
  * Drives a full live group-buy run in headless Chromium against the local
@@ -34,7 +34,7 @@ async function main() {
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
   // Skip the once-per-session 3D intro so captures start at the page itself.
-  await context.addInitScript(() => sessionStorage.setItem("reapp_intro_seen_v1", "1"));
+  await context.addInitScript(() => sessionStorage.setItem("ackrate_intro_seen_v1", "1"));
   const page = await context.newPage();
   const consoleErrors = [];
   page.on("pageerror", (e) => consoleErrors.push(`pageerror: ${e.message}`));

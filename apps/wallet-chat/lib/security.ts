@@ -122,11 +122,11 @@ function secureCookies(): boolean {
 }
 
 export function sessionCookieName(): string {
-  return secureCookies() ? "__Host-reapp_session" : "reapp_session";
+  return secureCookies() ? "__Host-ackrate_session" : "ackrate_session";
 }
 
 export function challengeCookieName(): string {
-  return secureCookies() ? "__Host-reapp_challenge" : "reapp_challenge";
+  return secureCookies() ? "__Host-ackrate_challenge" : "ackrate_challenge";
 }
 
 export const cookieOptions = (maxAge: number) => ({
@@ -142,7 +142,7 @@ export async function requireSameOrigin(): Promise<void> {
   const origin = incoming.get("origin");
   const host = incoming.get("x-forwarded-host") ?? incoming.get("host");
   const proto = incoming.get("x-forwarded-proto") ?? (process.env.NODE_ENV === "production" ? "https" : "http");
-  const expected = process.env.REAPP_APP_ORIGIN?.trim() || (host ? `${proto}://${host}` : null);
+  const expected = process.env.ACKRATE_APP_ORIGIN?.trim() || (host ? `${proto}://${host}` : null);
   if (!origin || !expected || origin !== expected) {
     throw new Error("cross-origin request rejected");
   }

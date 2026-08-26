@@ -9,16 +9,16 @@ import {
   BOUND_PAYMENT_SCHEME,
   DeliveryPendingError,
   SettlementUncertainError,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   createSettlementReceiptId,
   getSettlementReceipt,
   isBoundPaymentProof,
-  reapp,
+  ackrate,
   decodePaymentProof,
   X_PAYMENT_HEADER,
   type BoundPaymentChallengeV2,
   type SettlementReceiptStore,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 
 // Unit coverage for the Agent.fetch x402 orchestration: the 402 handling, the
 // pre-flight merchant/asset checks, the on-chain settle, and the proof-carrying
@@ -41,16 +41,17 @@ function memoryReceiptStore(): SettlementReceiptStore {
 }
 
 function makeAgent() {
-  const mandate = reapp.createIntentMandate({
+  const signer = Keypair.random();
+  const mandate = ackrate.createIntentMandate({
     user: "GUSER_TEST_ADDRESS",
-    agent: "GAGENT_TEST_ADDRESS",
+    agent: signer.publicKey(),
     merchant: MERCHANT,
     asset: ASSET,
     maxAmount: "5.00",
     expiry: Math.floor(Date.now() / 1000) + 3600,
   });
   return {
-    agent: reapp.agent({ mandate, signer: Keypair.random(), receiptStore: memoryReceiptStore() }),
+    agent: ackrate.agent({ mandate, signer, receiptStore: memoryReceiptStore() }),
     mandate,
   };
 }
@@ -62,7 +63,7 @@ const challenge402 = (over: Record<string, unknown> = {}): Response =>
       x402Version: 1,
       accepts: [
         {
-          scheme: "reapp-soroban",
+          scheme: "ackrate-soroban",
           network: "stellar-testnet",
           maxAmountRequired: "1.00",
           asset: ASSET,
@@ -124,18 +125,18 @@ test("same-mandate agents claim synchronously before the first chain read", asyn
   if (!address || typeof address === "string") assert.fail("test RPC did not bind");
 
   const key = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: key.publicKey(),
     agent: key.publicKey(),
     merchant: Keypair.random().publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "2.00",
     expiry: Math.floor(Date.now() / 1_000) + 3_600,
     nonce: "same-mandate-operation-claim",
   });
-  const net = { ...reapp.testnet, rpcUrl: `http://127.0.0.1:${address.port}` };
-  const firstAgent = reapp.agent({ mandate, signer: key }, net);
-  const secondAgent = reapp.agent({ mandate, signer: key }, net);
+  const net = { ...ackrate.testnet, rpcUrl: `http://127.0.0.1:${address.port}` };
+  const firstAgent = ackrate.agent({ mandate, signer: key }, net);
+  const secondAgent = ackrate.agent({ mandate, signer: key }, net);
   const lifecycle = { onPrepared: async () => undefined };
 
   const first = firstAgent.pay("1.00", lifecycle);
@@ -302,7 +303,7 @@ test("retryDelivery rejects a receipt for another mandate before any HTTP reques
       submittedAt: 1_700_000_000,
       validUntil: 1_700_000_060,
       proof: {
-        scheme: "reapp-soroban",
+        scheme: "ackrate-soroban",
         network: "stellar-testnet",
         txHash: TXHASH,
         mandateId: "different",
@@ -319,11 +320,11 @@ function makeBoundAgent(receiptStore: SettlementReceiptStore = memoryReceiptStor
   const user = Keypair.random();
   const signer = Keypair.random();
   const merchant = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: user.publicKey(),
     agent: signer.publicKey(),
     merchant: merchant.publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "5.00",
     expiry: Math.floor(Date.now() / 1000) + 3600,
     nonce: "bound-fetch-tests",
@@ -331,7 +332,7 @@ function makeBoundAgent(receiptStore: SettlementReceiptStore = memoryReceiptStor
   return {
     signer,
     mandate,
-    agent: reapp.agent({
+    agent: ackrate.agent({
       mandate,
       signer,
       proofPolicy: "bound-v2-only",
@@ -355,8 +356,8 @@ function boundChallenge(
     resource: "/source/market",
     bodySha256: null,
     network: "stellar-testnet",
-    networkId: hash(Buffer.from(reapp.testnet.networkPassphrase, "utf8")).toString("hex"),
-    registryId: reapp.testnet.mandateRegistryId,
+    networkId: hash(Buffer.from(ackrate.testnet.networkPassphrase, "utf8")).toString("hex"),
+    registryId: ackrate.testnet.mandateRegistryId,
     merchant: mandate.merchant,
     asset: mandate.asset,
     amountStroops: "10000000",
@@ -379,8 +380,8 @@ function boundChallenge(
       payTo: mandate.merchant,
       resource: "/source/market",
       extra: {
-        contract: reapp.testnet.mandateRegistryId,
-        reappProofVersion: 2,
+        contract: ackrate.testnet.mandateRegistryId,
+        ackrateProofVersion: 2,
         challenge,
       },
       ...requirementOverrides,
@@ -413,7 +414,7 @@ test("bound-only fetch pays once, signs the exact challenge, and retains the dur
     assert.equal(stub.calls.length, 2);
     for (const call of stub.calls) {
       const headers = new Headers(call.init?.headers);
-      assert.equal(headers.get(REAPP_PAYMENT_CAPABILITIES_HEADER), BOUND_PAYMENT_CAPABILITY);
+      assert.equal(headers.get(ACKRATE_PAYMENT_CAPABILITIES_HEADER), BOUND_PAYMENT_CAPABILITY);
       assert.equal(call.init?.redirect, "manual");
     }
     const proofHeader = new Headers(stub.calls[1]?.init?.headers).get(X_PAYMENT_HEADER);
@@ -490,7 +491,7 @@ const BOUND_MISMATCHES: Array<[
   ["decimals", { decimals: 6 }],
   ["expiry", { expiresAt: 1 }],
   ["outer resource", {}, { resource: "/source/other" }],
-  ["outer contract", {}, { extra: { contract: "CDIFFERENT", reappProofVersion: 2 } }],
+  ["outer contract", {}, { extra: { contract: "CDIFFERENT", ackrateProofVersion: 2 } }],
 ];
 
 for (const [label, challengeOverrides, requirementOverrides = {}] of BOUND_MISMATCHES) {
@@ -740,7 +741,7 @@ test("submitted-but-unconfirmed settlement survives Agent restart and blocks a s
   assert.equal(payCalls, 1);
   stub.restore();
 
-  const restarted = reapp.agent({
+  const restarted = ackrate.agent({
     mandate,
     signer,
     proofPolicy: "bound-v2-only",

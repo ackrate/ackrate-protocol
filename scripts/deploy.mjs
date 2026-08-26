@@ -7,7 +7,7 @@
  * - Resolves .env from the repo root (cwd-proof).
  * - Verifies the `stellar` CLI and `cargo` are installed.
  * - Builds the contract to WASM (`stellar contract build`).
- * - Reads the deployer SECRET from REAPP_BURNER_SECRET_KEY, or prompts for it
+ * - Reads the deployer SECRET from ACKRATE_BURNER_SECRET_KEY, or prompts for it
  *   at runtime (hidden input) — never stored, never echoed.
  * - Deploys, captures the contract ID, writes it back to .env, and prints the
  *   stellar.expert link.
@@ -172,7 +172,7 @@ function writeContractIdToEnv(id) {
 async function main() {
   log("");
   log(RULE(c.magenta));
-  log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("deploy MandateRegistry")} ${c.dim("→ Stellar testnet")}`);
+  log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("deploy MandateRegistry")} ${c.dim("→ Stellar testnet")}`);
   log(RULE(c.magenta));
 
   step("Environment");
@@ -182,7 +182,7 @@ async function main() {
   const passphrase = process.env.NETWORK_PASSPHRASE;
   debug("rpc url", c.dim(rpcUrl || "(unset)"));
   debug("passphrase", c.dim(passphrase || "(unset)"));
-  debug("deployer", c.yellow(process.env.REAPP_BURNER_PUBLIC_KEY || "(unset)"));
+  debug("deployer", c.yellow(process.env.ACKRATE_BURNER_PUBLIC_KEY || "(unset)"));
   if (!rpcUrl || !passphrase) die("SOROBAN_RPC_URL and NETWORK_PASSPHRASE must be set in .env");
 
   step("Toolchain check");
@@ -199,7 +199,7 @@ async function main() {
   debug("path", c.dim(wasm));
 
   step("Deployer secret");
-  let secret = process.env.REAPP_BURNER_SECRET_KEY?.trim();
+  let secret = process.env.ACKRATE_BURNER_SECRET_KEY?.trim();
   if (secret && secret.startsWith("S") && secret.length === 56) {
     debug("source", `${c.dim(".env →")} ${maskSecret(secret)}`);
   } else {

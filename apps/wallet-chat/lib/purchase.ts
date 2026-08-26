@@ -1,10 +1,10 @@
 import {
   DeliveryPendingError,
   getSettlementReceipt,
-  reapp,
+  ackrate,
   toStroops,
   type IntentMandate,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 import type { AppConfig } from "./app-config";
 import { boundedResponseJson } from "./http";
 import { completeToolCall, DurableReceiptStore, reserveToolCall } from "./journal";
@@ -63,7 +63,7 @@ export async function purchaseCatalogItem(input: PurchaseInput): Promise<unknown
     decimals: config.public.asset.decimals,
   };
   const receiptStore = new DurableReceiptStore(input.sessionId, input.mandateId);
-  const consumer = reapp.agent({
+  const consumer = ackrate.agent({
     mandate,
     signer: config.agentSecret,
     proofPolicy: "bound-v2-only",

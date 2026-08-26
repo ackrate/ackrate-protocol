@@ -1,15 +1,15 @@
-# @reapp-sdk/core 0.3.1
+# @ackrate/core 0.3.1
 
 Create an agent, connect to the live MandateRegistry contract on Stellar, and run a crash-safe mandate-validated payment through a small typed surface.
 
-`@reapp-sdk/core` is the high-level client for REAPP, a protocol for agent-driven payments where the spending limit lives inside a Soroban smart contract instead of the application. A user signs a mandate that fixes a budget, a single payee, and an expiry. An agent spends against that mandate, and every payment is validated and consumed on-chain by the contract before any money moves.
+`@ackrate/core` is the high-level client for Ackrate, a protocol for agent-driven payments where the spending limit lives inside a Soroban smart contract instead of the application. A user signs a mandate that fixes a budget, a single payee, and an expiry. An agent spends against that mandate, and every payment is validated and consumed on-chain by the contract before any money moves.
 
 The SDK is untrusted by design. It never custodies funds and it never enforces the limit. If the SDK has a bug, or the agent key is stolen, the contract still rejects anything outside the mandate: overspending, paying the wrong merchant, replaying a payment, or paying after the user revokes.
 
 ## Install
 
 ```
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk@14.5.0
+npm install @ackrate/core@0.3.3 @stellar/stellar-sdk@14.5.0
 ```
 
 `@stellar/stellar-sdk` is a direct dependency you also import yourself for `Keypair`. The package ships its own ESM build with TypeScript types.
@@ -17,24 +17,24 @@ npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk@14.5.0
 ## Quick start (Stellar testnet)
 
 ```ts
-import { reapp } from "@reapp-sdk/core";
+import { ackrate } from "@ackrate/core";
 import { Keypair } from "@stellar/stellar-sdk";
 
 const user = Keypair.fromSecret(USER_SECRET);   // owns the funds, signs the mandate
 const agent = Keypair.fromSecret(AGENT_SECRET);  // the autonomous spender
 
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(),
   agent: agent.publicKey(),
   merchant: MERCHANT_ADDRESS,
-  asset: reapp.testnet.nativeSac,        // native XLM as a SEP-41 token
+  asset: ackrate.testnet.nativeSac,        // native XLM as a SEP-41 token
   maxAmount: "5.00",                      // total budget the agent may spend
   expiry: Math.floor(Date.now() / 1000) + 3600,
 });
 
-await reapp.registerMandate(mandate, { signer: user });  // store the mandate on-chain
-await reapp.approveBudget(mandate, { signer: user });     // SEP-41 allowance to the contract
-const hash = await reapp.agent({ mandate, signer: agent }).pay("1.00", {
+await ackrate.registerMandate(mandate, { signer: user });  // store the mandate on-chain
+await ackrate.approveBudget(mandate, { signer: user });     // SEP-41 allowance to the contract
+const hash = await ackrate.agent({ mandate, signer: agent }).pay("1.00", {
   // Must durably save the signed hash before the SDK broadcasts it.
   onPrepared: (pending) => paymentJournal.save(pending),
 });
@@ -66,9 +66,9 @@ over-budget, replayed, or out-of-scope payment is rejected on-chain; neither the
 SDK nor a cached mandate can bypass `execute_payment`.
 
 ```ts
-import { getSettlementReceipt } from "@reapp-sdk/core";
+import { getSettlementReceipt } from "@ackrate/core";
 
-const agent = reapp.agent({
+const agent = ackrate.agent({
   mandate,
   signer: agentKey,
   proofPolicy: "bound-v2-only",
@@ -92,7 +92,7 @@ because a fresh `402` could create another payment. Reconcile and retry the exac
 existing proof:
 
 ```ts
-import { DeliveryPendingError } from "@reapp-sdk/core";
+import { DeliveryPendingError } from "@ackrate/core";
 
 try {
   await agent.fetch("https://merchant.example/report");
@@ -123,13 +123,13 @@ same bytes without charging or running fulfillment again.
 
 The x402 wire format lives in its own module, so it tracks the evolving x402 spec
 without touching the mandate or the contract. Use
-[`@reapp-sdk/express-middleware`](https://www.npmjs.com/package/@reapp-sdk/express-middleware)
+[`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware)
 to build an Express 4/5 merchant that independently verifies the on-chain
 settlement before serving.
 
 ## API
 
-### `reapp.createIntentMandate(input, net?)`
+### `ackrate.createIntentMandate(input, net?)`
 
 Builds an AP2-style mandate and its on-chain id locally, with no chain call. The default nonce makes each id unique; pass an explicit `nonce` for a deterministic id.
 
@@ -138,7 +138,7 @@ Builds an AP2-style mandate and its on-chain id locally, with no chain call. The
 | `user` | `string` | Stellar address that owns the funds and signs the mandate |
 | `agent` | `string` | The only address allowed to call `execute_payment` |
 | `merchant` | `string` | The single payee this mandate is scoped to |
-| `asset` | `string` | SEP-41 / SAC contract id of the token (use `reapp.testnet.nativeSac` for XLM) |
+| `asset` | `string` | SEP-41 / SAC contract id of the token (use `ackrate.testnet.nativeSac` for XLM) |
 | `maxAmount` | `string` | Total budget as a decimal string, e.g. `"5.00"` |
 | `expiry` | `number` | Unix seconds after which the mandate is dead |
 | `decimals` | `number?` | Token decimals, default 7 (Stellar assets) |
@@ -146,22 +146,22 @@ Builds an AP2-style mandate and its on-chain id locally, with no chain call. The
 
 Returns an `IntentMandate` with the hex `id`, the raw `idBuffer`, the parsed fields, and `maxAmount` as a `bigint` in stroops.
 
-### `reapp.registerMandate(mandate, { signer }, net?)`
+### `ackrate.registerMandate(mandate, { signer }, net?)`
 
 Stores the mandate on-chain. Signed by the user. Returns the transaction hash.
 
-### `reapp.approveBudget(mandate, { signer }, net?)`
+### `ackrate.approveBudget(mandate, { signer }, net?)`
 
 Approves the contract for a SEP-41 allowance up to the mandate budget. Signed by the user. Returns the transaction hash.
 
-### `reapp.agent({ mandate, signer }, net?).pay(amount, lifecycle)`
+### `ackrate.agent({ mandate, signer }, net?).pay(amount, lifecycle)`
 
 Reads the current mandate sequence, then calls `execute_payment` for `amount` (a decimal string), signed by the agent. Returns the transaction hash. Throws if the contract rejects the payment.
 
 Every direct `pay` call must pass a `PaymentSubmissionLifecycle`. Its async
 `onPrepared` hook receives the signed hash, sequence, and exact validity deadline
 before any broadcast; persist that record atomically or throw to abort without
-sending. REAPP's CLI uses this hook and refuses another payment until
+sending. Ackrate's CLI uses this hook and refuses another payment until
 `settlement reconcile` proves the result and an exact successful hash is
 explicitly acknowledged.
 
@@ -172,7 +172,7 @@ fails before another transaction is created; the contract repeats the same check
 at execution. Concurrent same-mandate operations in one process are rejected by
 a synchronous claim before the first chain read.
 
-### `reapp.agent({ mandate, signer, proofPolicy?, receiptStore? }, net?)`
+### `ackrate.agent({ mandate, signer, proofPolicy?, receiptStore? }, net?)`
 
 Creates an agent. Set `proofPolicy` to `"bound-v2-only"` for every new paid
 endpoint. The default `"legacy-compatible"` exists only for migrations.
@@ -250,7 +250,7 @@ attempted and the transaction may have been submitted, but the SDK did not prove
 a final ledger result. Retain its transaction hash and call
 `reconcilePendingSettlement` on the same agent before attempting any other spend.
 
-### `reapp.revokeMandate(mandate, { signer }, net?)`
+### `ackrate.revokeMandate(mandate, { signer }, net?)`
 
 Marks the mandate revoked. Signed by the user. After this, every `pay` is rejected on-chain.
 
@@ -290,7 +290,7 @@ When `pay` (or any call) is rejected on-chain, the SDK throws and the reason map
 
 ```ts
 try {
-  await reapp.agent({ mandate, signer: agent }).pay("100.00", {
+  await ackrate.agent({ mandate, signer: agent }).pay("100.00", {
     onPrepared: (pending) => paymentJournal.save(pending),
   });
 } catch (err) {
@@ -301,25 +301,25 @@ try {
 
 ## Network
 
-`@reapp-sdk/core` defaults to Stellar testnet and the upgradeable simple
-MandateRegistry pinned in `@reapp-sdk/stellar`:
+`@ackrate/core` defaults to Stellar testnet and the upgradeable simple
+MandateRegistry pinned in `@ackrate/stellar`:
 [`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM).
 Pass a custom `NetworkConfig` as the last argument to any call to select a
 different compatible deployment, RPC, or passphrase.
 
 The current contract WASM SHA-256 is
 `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`,
-matching the reproducible [`simple-v0.2.3` release](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0).
+matching the reproducible [`simple-v0.2.3` release](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0).
 
 ```ts
-reapp.testnet            // the default NetworkConfig
-reapp.testnet.nativeSac  // native XLM as a SEP-41 contract id
-reapp.testnet.mandateRegistryId // the live contract id
+ackrate.testnet            // the default NetworkConfig
+ackrate.testnet.nativeSac  // native XLM as a SEP-41 contract id
+ackrate.testnet.mandateRegistryId // the live contract id
 ```
 
-## Relationship to `@reapp-sdk/stellar`
+## Relationship to `@ackrate/stellar`
 
-`@reapp-sdk/core` is built on [`@reapp-sdk/stellar`](https://www.npmjs.com/package/@reapp-sdk/stellar), which holds the typed MandateRegistry bindings, network config, signing adapter, and SEP-41 helpers. Use `core` for the agent and payment flow. Drop down to `@reapp-sdk/stellar` only when you need direct, typed access to the contract.
+`@ackrate/core` is built on [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar), which holds the typed MandateRegistry bindings, network config, signing adapter, and SEP-41 helpers. Use `core` for the agent and payment flow. Drop down to `@ackrate/stellar` only when you need direct, typed access to the contract.
 
 ## License
 

@@ -1,4 +1,4 @@
-# gitleaks config for reapp-protocol.
+# gitleaks config for ackrate-protocol.
 # Extends the default ruleset and adds Stellar-specific detection.
 # See https://github.com/gitleaks/gitleaks
 

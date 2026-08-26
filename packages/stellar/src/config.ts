@@ -1,6 +1,6 @@
 import { DEPLOYMENTS } from "./deployments.js";
 
-/** Network configuration for REAPP's Soroban layer. */
+/** Network configuration for Ackrate's Soroban layer. */
 export interface NetworkConfig {
   rpcUrl: string;
   networkPassphrase: string;

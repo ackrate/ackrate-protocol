@@ -1,4 +1,5 @@
 /** Signer shapes shared by Node keypairs and user-controlled wallets. */
+import { Buffer } from "buffer";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
 import {
   basicNodeSigner,
@@ -7,13 +8,20 @@ import {
 } from "@stellar/stellar-sdk/contract";
 
 /**
- * Minimum signer boundary accepted by REAPP's transaction builders. Wallets
+ * Minimum signer boundary accepted by Ackrate's transaction builders. Wallets
  * implement this shape without exposing secret material to the SDK or app.
  */
 export interface StellarSigner {
   publicKey: string;
   signTransaction: SignTransaction;
   signAuthEntry?: SignAuthEntry;
+  /**
+   * Optional detached Ed25519 signing boundary used to bind an x402 challenge
+   * to its settled transaction. External wallets can implement this without
+   * disclosing key material. A transaction-only signer can still call `pay`,
+   * but `fetch` fails closed before broadcast when a bound proof is required.
+   */
+  signPayload?: (payload: Uint8Array) => Promise<Uint8Array>;
 }
 
 export interface KeypairSigner extends StellarSigner {
@@ -46,6 +54,7 @@ export function keypairSigner(
     keypair,
     signTransaction: node.signTransaction,
     signAuthEntry: node.signAuthEntry,
+    signPayload: async (payload) => keypair.sign(Buffer.from(payload)),
   };
 }
 

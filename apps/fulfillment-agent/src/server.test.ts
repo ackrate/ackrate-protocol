@@ -5,20 +5,20 @@ import { afterEach, test } from "node:test";
 import { Keypair } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
   createBoundPaymentProof,
   encodePaymentProof,
   parse402,
   type BoundPaymentProofV2,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 import {
   InMemoryBoundRedemptionStore,
   type BoundRedemptionStore,
   type PaymentVerifier,
   type VerifiedPayment,
-} from "@reapp-sdk/express-middleware";
-import { TESTNET } from "@reapp-sdk/stellar";
+} from "@ackrate/express-middleware";
+import { TESTNET } from "@ackrate/stellar";
 import { createFulfillmentApp } from "./server.js";
 
 const merchant = "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG";
@@ -45,7 +45,7 @@ const verifiedPayment = (): VerifiedPayment => ({
   merchant,
   asset: TESTNET.nativeSac,
   registryId: TESTNET.mandateRegistryId,
-  scheme: "reapp-soroban-bound",
+  scheme: "ackrate-soroban-bound",
   network: "stellar-testnet",
 });
 
@@ -80,7 +80,7 @@ async function start(
 }
 
 const capabilityHeaders = {
-  [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY,
+  [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY,
 };
 
 async function proofFor(url: string, source = "market"): Promise<BoundPaymentProofV2> {

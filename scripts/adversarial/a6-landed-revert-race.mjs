@@ -8,8 +8,8 @@
 // Submit both. The network runs S first: it settles and advances mandate seq
 // 0->1. Then S+1 runs: the contract replay guard sees expected_seq 0 != current
 // 1 and REVERTS -> that tx is INCLUDED in a ledger as FAILED with its own hash.
-import { reapp, toStroops } from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { ackrate, toStroops } from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
 import { Keypair, Contract, Address, nativeToScVal, TransactionBuilder, BASE_FEE, rpc } from "@stellar/stellar-sdk";
 
 const server = new rpc.Server(TESTNET.rpcUrl);
@@ -22,12 +22,12 @@ async function fund(kp) { const r = await fetch(`https://friendbot.stellar.org?a
 const user = Keypair.random(), agent = Keypair.random(), merchant = Keypair.random();
 await fund(user); await fund(agent); await fund(merchant);
 
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
   asset: TESTNET.nativeSac, maxAmount: "2.00", expiry: Math.floor(Date.now() / 1000) + 3600,
 });
-await reapp.registerMandate(mandate, { signer: user });
-await reapp.approveBudget(mandate, { signer: user });
+await ackrate.registerMandate(mandate, { signer: user });
+await ackrate.approveBudget(mandate, { signer: user });
 console.log(`mandate ${mandate.id} live; budget 2.00 XLM`);
 
 function execOp() {

@@ -1,12 +1,12 @@
 // Unit tests for the money-parsing and mandate-construction guards in
-// @reapp-sdk/core. Runs on the built package (CI builds before testing) with
+// @ackrate/core. Runs on the built package (CI builds before testing) with
 // Node's built-in test runner — no extra dependencies.
 //
 //   npm test   (from packages/sdk, or via the workspace)
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Keypair } from "@stellar/stellar-sdk";
-import { toStroops, reapp } from "@reapp-sdk/core";
+import { toStroops, ackrate } from "@ackrate/core";
 
 const now = Math.floor(Date.now() / 1000);
 const baseMandate = { user: "U", agent: "A", merchant: "M", asset: "S", maxAmount: "5.00" };
@@ -38,37 +38,37 @@ test("toStroops rejects amounts that do not fit i128 (no silent wrap)", () => {
 });
 
 test("createIntentMandate builds a 32-byte hex id with no chain call", () => {
-  const m = reapp.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
+  const m = ackrate.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
   assert.match(m.id, /^[0-9a-f]{64}$/);
   assert.equal(m.maxAmount, 50000000n);
   assert.equal(m.idBuffer.length, 32);
 });
 
 test("createIntentMandate validates expiry against the u64 range", () => {
-  assert.throws(() => reapp.createIntentMandate({ ...baseMandate, expiry: Number.NaN }), /expiry must be/);
-  assert.throws(() => reapp.createIntentMandate({ ...baseMandate, expiry: now + 0.5 }), /expiry must be/);
-  assert.throws(() => reapp.createIntentMandate({ ...baseMandate, expiry: 0 }), /expiry must be/);
-  assert.throws(() => reapp.createIntentMandate({ ...baseMandate, expiry: -1 }), /expiry must be/);
-  assert.throws(() => reapp.createIntentMandate({ ...baseMandate, expiry: 1e20 }), /expiry must be/);
+  assert.throws(() => ackrate.createIntentMandate({ ...baseMandate, expiry: Number.NaN }), /expiry must be/);
+  assert.throws(() => ackrate.createIntentMandate({ ...baseMandate, expiry: now + 0.5 }), /expiry must be/);
+  assert.throws(() => ackrate.createIntentMandate({ ...baseMandate, expiry: 0 }), /expiry must be/);
+  assert.throws(() => ackrate.createIntentMandate({ ...baseMandate, expiry: -1 }), /expiry must be/);
+  assert.throws(() => ackrate.createIntentMandate({ ...baseMandate, expiry: 1e20 }), /expiry must be/);
 });
 
 test("a unique nonce keeps ids distinct for identical fields", () => {
-  const a = reapp.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
-  const b = reapp.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
+  const a = ackrate.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
+  const b = ackrate.createIntentMandate({ ...baseMandate, expiry: now + 3600 });
   assert.notEqual(a.id, b.id);
 });
 
 test("direct pay refuses to touch the network without a pre-broadcast durable journal", async () => {
   const signer = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: signer.publicKey(),
     agent: signer.publicKey(),
     merchant: Keypair.random().publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "1.00",
     expiry: now + 3600,
   });
-  const agent = reapp.agent({ mandate, signer });
+  const agent = ackrate.agent({ mandate, signer });
   await assert.rejects(() => agent.pay("1.00"), /onPrepared durable settlement journal/);
   await assert.rejects(() => agent.reconcilePendingSettlement({
     txHash: "a".repeat(64),

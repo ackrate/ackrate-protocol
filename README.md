@@ -1,11 +1,11 @@
-# ⚡ reapp-protocol
+# ⚡ ackrate-protocol
 
 **Protocol, SDK, CLI, and reference agents for mandate-enforced agent payments on Stellar. The SDK prepares requests; the contract decides whether money moves.**
 
 [![Stellar](https://img.shields.io/badge/Stellar-Testnet-7B73FF?logo=stellar&logoColor=white)](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
-[![CI](https://github.com/reapp-protocol/reapp-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/reapp-protocol/reapp-protocol/actions/workflows/ci.yml)
+[![CI](https://github.com/ackrate/ackrate-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/ackrate/ackrate-protocol/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-3178C6?logo=typescript&logoColor=white)](packages/sdk)
-[![npm](https://img.shields.io/badge/npm-%40reapp--sdk%2Fcore-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@reapp-sdk/core)
+[![npm](https://img.shields.io/badge/npm-%40ackrate%2Fcore-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@ackrate/core)
 [![x402](https://img.shields.io/badge/x402-Reference%20Flow-00A67E)](docs/x402-roundtrip.md)
 
 ---
@@ -45,7 +45,7 @@ flowchart LR
 
 ---
 
-## Why REAPP Is Different
+## Why Ackrate Is Different
 
 | Property | Protocol guarantee |
 |---|---|
@@ -63,14 +63,14 @@ flowchart LR
 
 | Surface | Current source or deployment |
 |---|---|
-| Default simple MandateRegistry | [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM) — [`simple-v0.2.3`](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0), WASM `ba370a80…76e87`, verified source, pause, authority rotation, and one-hour same-address upgrades |
+| Default simple MandateRegistry | [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM) — [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0), WASM `ba370a80…76e87`, verified source, pause, authority rotation, and one-hour same-address upgrades |
 | Composite MandateRegistry | [`CCYRF7FK…HEYW`](https://stellar.expert/explorer/testnet/contract/CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW) — deterministic clearing pools with the same operational controls |
-| Contract releases and hashes | [`reapp-protocol-contracts`](https://github.com/reapp-protocol/reapp-protocol-contracts) |
-| High-level SDK | [`@reapp-sdk/core`](https://www.npmjs.com/package/@reapp-sdk/core) — mandates, payments, and `agent.fetch()` |
-| Stellar binding | [`@reapp-sdk/stellar`](https://www.npmjs.com/package/@reapp-sdk/stellar) — typed contract client, network config, signers, and SEP-41 helpers |
-| AP2 profile | [`@reapp-sdk/ap2`](https://www.npmjs.com/package/@reapp-sdk/ap2) — signed, version-pinned AP2 v0.1 validation plus fail-closed binding into the contract mandate |
-| Express middleware | [`@reapp-sdk/express-middleware`](https://www.npmjs.com/package/@reapp-sdk/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
-| CLI | [`reapp-protocol-cli`](https://www.npmjs.com/package/reapp-protocol-cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
+| Contract releases and hashes | [`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts) |
+| High-level SDK | [`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core) — mandates, payments, and `agent.fetch()` |
+| Stellar binding | [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar) — typed contract client, network config, signers, and SEP-41 helpers |
+| AP2 profile | [`@ackrate/ap2`](https://www.npmjs.com/package/@ackrate/ap2) — signed, version-pinned AP2 v0.1 validation plus fail-closed binding into the contract mandate |
+| Express middleware | [`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
+| CLI | [`@ackrate/cli`](https://www.npmjs.com/package/@ackrate/cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
 
 ### Pinned testnet release map
 
@@ -79,13 +79,13 @@ submission and live demo use this exact set:
 
 | Deliverable | Package release | Protocol/specification target |
 |---|---:|---|
-| Stellar binding | `@reapp-sdk/stellar@0.2.2` | Simple MandateRegistry `0.2.3` |
-| High-level SDK | `@reapp-sdk/core@0.3.1` | REAPP testnet toolkit |
-| AP2 validator | `@reapp-sdk/ap2@0.3.0` | AP2 `0.1.0` profile |
-| Express middleware | `@reapp-sdk/express-middleware@0.2.2` | bound-v2 proof flow |
-| CLI | `reapp-protocol-cli@0.1.7` | installed commands `reapp` and `reapp-protocol-cli` |
+| Stellar binding | `@ackrate/stellar@0.2.4` | Simple MandateRegistry `0.2.3` |
+| High-level SDK | `@ackrate/core@0.3.3` | Ackrate testnet toolkit |
+| AP2 validator | `@ackrate/ap2@0.3.2` | AP2 `0.1.0` profile |
+| Express middleware | `@ackrate/express-middleware@0.2.4` | bound-v2 proof flow |
+| CLI | `@ackrate/cli@0.1.9` | installed command `ackrate` |
 
-In particular, `@reapp-sdk/ap2@0.3.0` implements the AP2 `0.1.0` profile;
+In particular, `@ackrate/ap2@0.3.2` implements the AP2 `0.1.0` profile;
 the package version is not the AP2 specification version.
 
 The contract is authoritative. SDK-side checks only fail fast; they never replace on-chain validation.
@@ -96,11 +96,11 @@ The contract is authoritative. SDK-side checks only fail fast; they never replac
 
 | Path | Purpose |
 |---|---|
-| [`packages/sdk`](packages/sdk) | `@reapp-sdk/core`: contract client, bound-v2 adapter, durable settlement receipts, and no-second-payment recovery |
-| [`packages/stellar`](packages/stellar) | `@reapp-sdk/stellar`: generated binding, network config, signer, and token helpers |
-| [`packages/ap2`](packages/ap2) | `@reapp-sdk/ap2`: signed AP2 v0.1 REAPP profile validator with deterministic binding evidence and 59 tests |
-| [`packages/express-middleware`](packages/express-middleware) | `@reapp-sdk/express-middleware`: exact-origin GET verification and at-most-once paid JSON fulfillment |
-| [`packages/cli`](packages/cli) | `reapp-protocol-cli`: terminal workflow, pre-broadcast journal, exact-hash reconciliation, and explicit success acknowledgment |
+| [`packages/sdk`](packages/sdk) | `@ackrate/core`: contract client, bound-v2 adapter, durable settlement receipts, and no-second-payment recovery |
+| [`packages/stellar`](packages/stellar) | `@ackrate/stellar`: generated binding, network config, signer, and token helpers |
+| [`packages/ap2`](packages/ap2) | `@ackrate/ap2`: signed AP2 v0.1 Ackrate profile validator with deterministic binding evidence and 59 tests |
+| [`packages/express-middleware`](packages/express-middleware) | `@ackrate/express-middleware`: exact-origin GET verification and at-most-once paid JSON fulfillment |
+| [`packages/cli`](packages/cli) | `@ackrate/cli`: terminal workflow, pre-broadcast journal, exact-hash reconciliation, and explicit success acknowledgment |
 | [`apps/consumer-agent`](apps/consumer-agent) | Reference ResearchAgent that buys data through `agent.fetch()` |
 | [`apps/fulfillment-agent`](apps/fulfillment-agent) | Reference 402-gated API that verifies settlement before serving |
 | [`apps/wallet-chat`](apps/wallet-chat) | Next.js + LOBSTR wallet flow and mandate-aware AI consumer chat |
@@ -119,7 +119,7 @@ npm run gatecheck:release
 Run the reviewer CLI from any clean directory:
 
 ```bash
-npx --yes reapp-protocol-cli@0.1.7 demo research-agent
+npx --yes @ackrate/cli@0.1.9 demo research-agent --network testnet
 ```
 
 Run both reference agents from this repository with one command:
@@ -135,13 +135,18 @@ rejected by the contract-enforced budget. The run also proves exact bound-v2
 receipts and rejects an old settlement re-signed for a fresh request. No local
 key or environment file is required.
 
+The published CLI also contains an explicit, fail-closed mainnet mode. It does
+not embed a contract ID or accept an arbitrary production mapping: Friday's
+real-USDC canary will consume the completed verified deployment manifest and
+named external Stellar CLI signer identities without changing source.
+
 Run the three named SDK failure drills separately:
 
 ```bash
 npm run drills:testnet
 ```
 
-Use the public browser companion at [reapp.live/express](https://reapp.live/express),
+Use the public browser companion at [ackrate.live/express](https://ackrate.live/express),
 or follow the verified [clean VS Code project guide](docs/express-vscode-quickstart.md).
 Operational evidence and boundaries are in the [live drill record](docs/live-failure-drills.md),
 [threat model](security/threat-model.md), [data flow](security/data-flow.md), and

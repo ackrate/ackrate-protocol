@@ -1,11 +1,20 @@
 {
-  "name": "@reapp-sdk/stellar",
-  "version": "0.2.2",
-  "description": "Soroban client + typed MandateRegistry bindings, network config, and signing helpers for REAPP.",
+  "name": "@ackrate/stellar",
+  "version": "0.2.4",
+  "description": "Soroban client + typed MandateRegistry bindings, network config, and signing helpers for Ackrate.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ackrate/ackrate-protocol.git",
+    "directory": "packages/stellar"
+  },
+  "homepage": "https://github.com/ackrate/ackrate-protocol/tree/main/packages/stellar#readme",
+  "bugs": {
+    "url": "https://github.com/ackrate/ackrate-protocol/issues"
+  },
   "keywords": [
     "stellar",
     "soroban",
-    "reapp",
+    "ackrate",
     "mandate",
     "agent-payments",
     "x402",

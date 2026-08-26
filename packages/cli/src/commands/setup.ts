@@ -1,10 +1,10 @@
 /**
- * `reapp setup` — configure keys + fund testnet accounts.
+ * `ackrate setup` — configure keys + fund testnet accounts.
  *
  * Generates three fresh testnet burners (user / agent / merchant), funds them
- * via friendbot, and persists the secrets to ~/.reapp/credentials.json (0600,
+ * via friendbot, and persists the secrets to ~/.ackrate/credentials.json (0600,
  * outside the repo). Idempotent: refuses to overwrite existing credentials
- * unless --force is passed. Mirrors the demo's reapp-server.init().
+ * unless --force is passed. Mirrors the demo's ackrate-server.init().
  */
 import { Keypair, rpc } from "@stellar/stellar-sdk";
 import { log, c } from "../ui.js";
@@ -34,7 +34,7 @@ async function fund(pub: string, server: rpc.Server): Promise<void> {
 
 export async function runSetup(opts: SetupOptions = {}): Promise<void> {
   if (!configExists()) {
-    log.warn("no reapp.config.json here — run `reapp init` first");
+    log.warn("no ackrate.config.json here — run `ackrate init` first");
     return;
   }
   if (credentialsExist() && !opts.force) {
@@ -84,5 +84,5 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
       c.gray("  merchant ") + c.white(merchant.publicKey()) + c.dim("  " + accountUrl(merchant.publicKey())) +
       "\n",
   );
-  log.info("next", { run: "reapp mandate create" });
+  log.info("next", { run: "ackrate mandate create" });
 }

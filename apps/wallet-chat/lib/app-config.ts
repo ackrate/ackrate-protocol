@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { Asset, Keypair, Networks, StrKey } from "@stellar/stellar-sdk";
-import { TESTNET, mainnetNetworkFromDeploymentManifest, type NetworkConfig } from "@reapp-sdk/stellar";
+import { TESTNET, mainnetNetworkFromDeploymentManifest, type NetworkConfig } from "@ackrate/stellar";
 import type { CatalogItem, NetworkName, SafeAppConfig } from "./types";
 
-export const MAINNET_CONFIRMATION = "ACTIVATE_VERIFIED_REAPP_MAINNET";
+export const MAINNET_CONFIRMATION = "ACTIVATE_VERIFIED_ACKRATE_MAINNET";
 
 const DEFAULT_CATALOG: CatalogItem[] = [
   {
@@ -39,7 +39,7 @@ function readCatalog(raw: string | null): CatalogItem[] {
   if (!raw) return DEFAULT_CATALOG;
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > 12) {
-    throw new Error("REAPP_CHAT_CATALOG_JSON must contain between 1 and 12 entries");
+    throw new Error("ACKRATE_CHAT_CATALOG_JSON must contain between 1 and 12 entries");
   }
   const ids = new Set<string>();
   return parsed.map((entry, index) => {
@@ -73,15 +73,15 @@ function safeMerchantUrl(raw: string | null): string | null {
   if (!raw) return null;
   const url = new URL(raw);
   if (url.protocol !== "https:" || url.username || url.password || url.pathname !== "/" || url.search || url.hash) {
-    throw new Error("REAPP_CHAT_MERCHANT_URL must be a credential-free HTTPS origin");
+    throw new Error("ACKRATE_CHAT_MERCHANT_URL must be a credential-free HTTPS origin");
   }
   return url.origin;
 }
 
 export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const requested = present(env.REAPP_WALLET_NETWORK) ?? "testnet";
+  const requested = present(env.ACKRATE_WALLET_NETWORK) ?? "testnet";
   if (requested !== "testnet" && requested !== "mainnet") {
-    throw new Error("REAPP_WALLET_NETWORK must be testnet or mainnet");
+    throw new Error("ACKRATE_WALLET_NETWORK must be testnet or mainnet");
   }
   const networkName = requested as NetworkName;
   let network: NetworkConfig = TESTNET;
@@ -97,10 +97,10 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       nativeSac: Asset.native().contractId(Networks.PUBLIC),
     };
     asset = { code: "USDC", contractId: "", decimals: 7 };
-    if (env.REAPP_ENABLE_MAINNET !== MAINNET_CONFIRMATION) {
-      blockers.push(`REAPP_ENABLE_MAINNET must equal ${MAINNET_CONFIRMATION}`);
+    if (env.ACKRATE_ENABLE_MAINNET !== MAINNET_CONFIRMATION) {
+      blockers.push(`ACKRATE_ENABLE_MAINNET must equal ${MAINNET_CONFIRMATION}`);
     }
-    const manifestJson = present(env.REAPP_MAINNET_DEPLOYMENT_MANIFEST_JSON);
+    const manifestJson = present(env.ACKRATE_MAINNET_DEPLOYMENT_MANIFEST_JSON);
     if (!manifestJson) {
       blockers.push("completed mainnet deployment manifest is missing");
     } else {
@@ -123,12 +123,12 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
   }
 
-  const agentAddress = present(env.REAPP_CHAT_AGENT_PUBLIC_KEY);
-  const merchantAddress = present(env.REAPP_CHAT_MERCHANT_PUBLIC_KEY);
+  const agentAddress = present(env.ACKRATE_CHAT_AGENT_PUBLIC_KEY);
+  const merchantAddress = present(env.ACKRATE_CHAT_MERCHANT_PUBLIC_KEY);
   if (!gAddress(agentAddress)) blockers.push("valid agent G-address is missing");
   if (!gAddress(merchantAddress)) blockers.push("valid merchant G-address is missing");
 
-  const agentSecret = present(env.REAPP_CHAT_AGENT_SECRET);
+  const agentSecret = present(env.ACKRATE_CHAT_AGENT_SECRET);
   if (!agentSecret) {
     blockers.push("server-only agent signer is missing");
   } else {
@@ -142,13 +142,13 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   let merchantUrl: string | null = null;
   try {
-    merchantUrl = safeMerchantUrl(present(env.REAPP_CHAT_MERCHANT_URL));
+    merchantUrl = safeMerchantUrl(present(env.ACKRATE_CHAT_MERCHANT_URL));
   } catch (error) {
     blockers.push(error instanceof Error ? error.message : String(error));
   }
   if (!merchantUrl) blockers.push("merchant HTTPS origin is missing");
 
-  const sessionSecret = present(env.REAPP_SESSION_SECRET);
+  const sessionSecret = present(env.ACKRATE_SESSION_SECRET);
   if (!sessionSecret || Buffer.byteLength(sessionSecret, "utf8") < 32) {
     blockers.push("session secret must contain at least 32 bytes");
   }
@@ -159,16 +159,16 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   let catalog = DEFAULT_CATALOG;
   try {
-    catalog = readCatalog(present(env.REAPP_CHAT_CATALOG_JSON));
+    catalog = readCatalog(present(env.ACKRATE_CHAT_CATALOG_JSON));
   } catch (error) {
     blockers.push(error instanceof Error ? error.message : String(error));
   }
 
-  const sourceCommit = present(env.REAPP_APP_SOURCE_COMMIT);
+  const sourceCommit = present(env.ACKRATE_APP_SOURCE_COMMIT);
   if (networkName === "mainnet" && (!sourceCommit || !/^[0-9a-f]{40}$/.test(sourceCommit))) {
     blockers.push("exact 40-character application source commit is required on mainnet");
   }
-  const appOrigin = present(env.REAPP_APP_ORIGIN);
+  const appOrigin = present(env.ACKRATE_APP_ORIGIN);
   if (appOrigin) {
     try {
       const parsed = new URL(appOrigin);
@@ -176,7 +176,7 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         throw new Error();
       }
     } catch {
-      blockers.push("REAPP_APP_ORIGIN must be an exact credential-free HTTPS origin");
+      blockers.push("ACKRATE_APP_ORIGIN must be an exact credential-free HTTPS origin");
     }
   } else if (networkName === "mainnet") {
     blockers.push("exact hosted application origin is required on mainnet");
@@ -196,7 +196,7 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     agentAddress: gAddress(agentAddress) ? agentAddress : null,
     merchant: {
       address: gAddress(merchantAddress) ? merchantAddress : null,
-      name: present(env.REAPP_CHAT_MERCHANT_NAME) ?? "Research Source",
+      name: present(env.ACKRATE_CHAT_MERCHANT_NAME) ?? "Research Source",
     },
     catalog,
     explorerNetwork: networkName === "mainnet" ? "public" : "testnet",

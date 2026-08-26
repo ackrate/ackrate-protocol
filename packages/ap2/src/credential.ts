@@ -1,23 +1,23 @@
 import { Buffer } from "buffer";
 import { Keypair, hash } from "@stellar/stellar-sdk";
-import { reapp, type IntentMandate } from "@reapp-sdk/core";
+import { ackrate, type IntentMandate } from "@ackrate/core";
 import type {
   Ap2MandateBinding,
   BindIntentMandateInput,
   NormalizedAp2IntentMandate,
 } from "./index.js";
 
-export const REAPP_AP2_CREDENTIAL_VERSION = "reapp-ap2-credential/1" as const;
-export const REAPP_AP2_SIGNATURE_ALGORITHM = "stellar-ed25519-sha256" as const;
+export const ACKRATE_AP2_CREDENTIAL_VERSION = "ackrate-ap2-credential/1" as const;
+export const ACKRATE_AP2_SIGNATURE_ALGORITHM = "stellar-ed25519-sha256" as const;
 
-const SIGNATURE_DOMAIN = "REAPP\0AP2\0SIGNED-MANDATE\0V1\0";
+const SIGNATURE_DOMAIN = "ACKRATE\0AP2\0SIGNED-MANDATE\0V1\0";
 const LOWER_HEX_32 = /^[0-9a-f]{64}$/;
 const CANONICAL_BASE64_64 = /^(?:[A-Za-z0-9+/]{4}){21}[A-Za-z0-9+/]{2}==$/;
 
-export interface ReappAp2CredentialPayload {
+export interface AckrateAp2CredentialPayload {
   ap2SpecVersion: "0.1.0";
   ap2DataKey: "ap2.mandates.IntentMandate";
-  bindingVersion: "reapp-ap2/1";
+  bindingVersion: "ackrate-ap2/1";
   intent: NormalizedAp2IntentMandate;
   stellar: {
     user: string;
@@ -30,11 +30,11 @@ export interface ReappAp2CredentialPayload {
 }
 
 export interface SignedAp2Mandate {
-  credentialVersion: typeof REAPP_AP2_CREDENTIAL_VERSION;
-  payload: ReappAp2CredentialPayload;
+  credentialVersion: typeof ACKRATE_AP2_CREDENTIAL_VERSION;
+  payload: AckrateAp2CredentialPayload;
   mandateHash: string;
   signature: {
-    algorithm: typeof REAPP_AP2_SIGNATURE_ALGORITHM;
+    algorithm: typeof ACKRATE_AP2_SIGNATURE_ALGORITHM;
     value: string;
   };
 }
@@ -104,7 +104,7 @@ function canonicalize(value: unknown): string {
 export function ap2CredentialSigningDigest(
   credentialVersion: string,
   payload: Pick<
-    ReappAp2CredentialPayload,
+    AckrateAp2CredentialPayload,
     "ap2SpecVersion" | "ap2DataKey" | "bindingVersion"
   >,
   mandateHash: string,
@@ -137,7 +137,7 @@ export function createSignedAp2Credential(
   if (signer.publicKey() !== binding.mandate.user) {
     throw new Error("the signing key must match stellar.user.");
   }
-  const payload: ReappAp2CredentialPayload = {
+  const payload: AckrateAp2CredentialPayload = {
     ap2SpecVersion: binding.ap2SpecVersion,
     ap2DataKey: binding.ap2DataKey,
     bindingVersion: binding.bindingVersion,
@@ -152,16 +152,16 @@ export function createSignedAp2Credential(
     },
   };
   const digest = ap2CredentialSigningDigest(
-    REAPP_AP2_CREDENTIAL_VERSION,
+    ACKRATE_AP2_CREDENTIAL_VERSION,
     payload,
     binding.mandate.id,
   );
   return deepFreeze({
-    credentialVersion: REAPP_AP2_CREDENTIAL_VERSION,
+    credentialVersion: ACKRATE_AP2_CREDENTIAL_VERSION,
     payload,
     mandateHash: binding.mandate.id,
     signature: {
-      algorithm: REAPP_AP2_SIGNATURE_ALGORITHM,
+      algorithm: ACKRATE_AP2_SIGNATURE_ALGORITHM,
       value: signer.sign(digest).toString("base64"),
     },
   });
@@ -232,20 +232,20 @@ export function parseSignedAp2Mandate(value: unknown): SignedAp2Mandate {
     credentialVersion: requireText(
       "credential.credentialVersion",
       envelope.credentialVersion,
-    ) as typeof REAPP_AP2_CREDENTIAL_VERSION,
+    ) as typeof ACKRATE_AP2_CREDENTIAL_VERSION,
     payload: {
       ap2SpecVersion: requireText(
         "credential.payload.ap2SpecVersion",
         payloadValue.ap2SpecVersion,
-      ) as ReappAp2CredentialPayload["ap2SpecVersion"],
+      ) as AckrateAp2CredentialPayload["ap2SpecVersion"],
       ap2DataKey: requireText(
         "credential.payload.ap2DataKey",
         payloadValue.ap2DataKey,
-      ) as ReappAp2CredentialPayload["ap2DataKey"],
+      ) as AckrateAp2CredentialPayload["ap2DataKey"],
       bindingVersion: requireText(
         "credential.payload.bindingVersion",
         payloadValue.bindingVersion,
-      ) as ReappAp2CredentialPayload["bindingVersion"],
+      ) as AckrateAp2CredentialPayload["bindingVersion"],
       intent: {
         user_cart_confirmation_required: false,
         natural_language_description: requireText(
@@ -277,7 +277,7 @@ export function parseSignedAp2Mandate(value: unknown): SignedAp2Mandate {
       algorithm: requireText(
         "credential.signature.algorithm",
         signatureValue.algorithm,
-      ) as typeof REAPP_AP2_SIGNATURE_ALGORITHM,
+      ) as typeof ACKRATE_AP2_SIGNATURE_ALGORITHM,
       value: requireText("credential.signature.value", signatureValue.value),
     },
   };
@@ -294,7 +294,7 @@ export function decodeCanonicalSignature(value: string): Buffer {
   return bytes;
 }
 
-export function rebuildCredentialBinding(payload: ReappAp2CredentialPayload): Ap2MandateBinding {
+export function rebuildCredentialBinding(payload: AckrateAp2CredentialPayload): Ap2MandateBinding {
   const canonicalIntent = canonicalize(payload.intent);
   const intentHash = hash(Buffer.from(canonicalIntent, "utf8")).toString("hex");
   const expiryMs = Date.parse(payload.intent.intent_expiry);
@@ -309,7 +309,7 @@ export function rebuildCredentialBinding(payload: ReappAp2CredentialPayload): Ap
   }
   const unixExpiry = expiryMs / 1000;
   const coreNonce = `${payload.bindingVersion}:${intentHash}:${payload.stellar.nonce}`;
-  const mandate: IntentMandate = reapp.createIntentMandate({
+  const mandate: IntentMandate = ackrate.createIntentMandate({
     user: payload.stellar.user,
     agent: payload.stellar.agent,
     merchant: payload.intent.merchants[0],

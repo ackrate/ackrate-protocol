@@ -10,7 +10,7 @@ import { Address, StrKey } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
   BOUND_PAYMENT_SCHEME,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
   boundChallengeAuthorizationBytes,
   canonicalPaymentOrigin,
@@ -20,12 +20,12 @@ import {
   verifyBoundPaymentProofSignature,
   type BoundPaymentChallengeV2,
   type UnsignedBoundPaymentChallengeV2,
-} from "@reapp-sdk/core";
-import { TESTNET, type NetworkConfig } from "@reapp-sdk/stellar";
+} from "@ackrate/core";
+import { TESTNET, type NetworkConfig } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { createStellarPaymentVerifier } from "./verification.js";
 import {
-  REAPP_PAYMENT_LOCALS_KEY,
+  ACKRATE_PAYMENT_LOCALS_KEY,
   createRedemptionKey,
 } from "./middleware.js";
 import type {
@@ -42,7 +42,7 @@ import type {
   VerifiedPayment,
 } from "./types.js";
 
-export interface BoundReappPaymentMiddlewareOptions {
+export interface BoundAckratePaymentMiddlewareOptions {
   /** Merchant address that must receive the contract-authorized transfer. */
   merchant: string;
   /** Price as a human decimal string, or a request-specific resolver. */
@@ -57,7 +57,7 @@ export interface BoundReappPaymentMiddlewareOptions {
   resource?: RequestValue;
   /** SEP-41 asset contract. Defaults to networkConfig.nativeSac. */
   asset?: string;
-  /** Contract/RPC configuration. Defaults to REAPP testnet. */
+  /** Contract/RPC configuration. Defaults to Ackrate testnet. */
   networkConfig?: NetworkConfig;
   /** x402 network label. Defaults to stellar-testnet. */
   network?: string;
@@ -91,13 +91,13 @@ export interface BoundX402Challenge {
     resource: string;
     extra: {
       contract: string;
-      reappProofVersion: 2;
+      ackrateProofVersion: 2;
       challenge: BoundPaymentChallengeV2;
     };
   }>;
 }
 
-export const REAPP_BOUND_DELIVERY_LOCALS_KEY = "reappBoundDelivery";
+export const ACKRATE_BOUND_DELIVERY_LOCALS_KEY = "ackrateBoundDelivery";
 
 export interface BoundDeliveryContext {
   kind: "claimed" | "completed";
@@ -105,7 +105,7 @@ export interface BoundDeliveryContext {
 }
 
 export function getBoundDeliveryContext(response: Response): BoundDeliveryContext | undefined {
-  return response.locals[REAPP_BOUND_DELIVERY_LOCALS_KEY] as BoundDeliveryContext | undefined;
+  return response.locals[ACKRATE_BOUND_DELIVERY_LOCALS_KEY] as BoundDeliveryContext | undefined;
 }
 
 const DEFAULT_MAX_HEADER_BYTES = 8_192;
@@ -136,7 +136,7 @@ function resolveRequestValue(label: string, value: RequestValue, request: Reques
 function setPrivateResponseHeaders(response: Response): void {
   response.set("cache-control", "private, no-store");
   response.vary("X-PAYMENT");
-  response.vary("REAPP-PAYMENT-CAPABILITIES");
+  response.vary("ACKRATE-PAYMENT-CAPABILITIES");
 }
 
 function json(response: Response, status: number, body: unknown, retryAfter?: string): void {
@@ -205,11 +205,11 @@ function challengeMacIsValid(challenge: BoundPaymentChallengeV2, secret: Buffer)
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-export function createBoundReappPaymentMiddleware(
-  options: BoundReappPaymentMiddlewareOptions,
+export function createBoundAckratePaymentMiddleware(
+  options: BoundAckratePaymentMiddlewareOptions,
 ): RequestHandler {
   if (!options || typeof options !== "object") {
-    throw new Error("REAPP bound payment middleware options are required.");
+    throw new Error("Ackrate bound payment middleware options are required.");
   }
   if (
     !options.redemptionStore
@@ -329,7 +329,7 @@ export function createBoundReappPaymentMiddleware(
         asset,
         payTo: merchant,
         resource: requirement.resource,
-        extra: { contract: registryId, reappProofVersion: 2, challenge },
+        extra: { contract: registryId, ackrateProofVersion: 2, challenge },
       }],
     };
   }
@@ -359,10 +359,10 @@ export function createBoundReappPaymentMiddleware(
 
     let capability: string | undefined;
     try {
-      capability = oneRawHeader(request, REAPP_PAYMENT_CAPABILITIES_HEADER, 256);
+      capability = oneRawHeader(request, ACKRATE_PAYMENT_CAPABILITIES_HEADER, 256);
     } catch {
       json(response, 426, {
-        error: "a single canonical REAPP payment capability is required",
+        error: "a single canonical Ackrate payment capability is required",
         requiredCapability: BOUND_PAYMENT_CAPABILITY,
       });
       return;
@@ -484,8 +484,8 @@ export function createBoundReappPaymentMiddleware(
         json(response, 503, { error: "stored payment recovery evidence failed closed" }, "1");
         return;
       }
-      response.locals[REAPP_PAYMENT_LOCALS_KEY] = existing.record.payment;
-      response.locals[REAPP_BOUND_DELIVERY_LOCALS_KEY] = Object.freeze({
+      response.locals[ACKRATE_PAYMENT_LOCALS_KEY] = existing.record.payment;
+      response.locals[ACKRATE_BOUND_DELIVERY_LOCALS_KEY] = Object.freeze({
         kind: "completed" as const,
         record: existing.record,
       });
@@ -571,8 +571,8 @@ export function createBoundReappPaymentMiddleware(
       return;
     }
 
-    response.locals[REAPP_PAYMENT_LOCALS_KEY] = claimed.record.payment;
-    response.locals[REAPP_BOUND_DELIVERY_LOCALS_KEY] = Object.freeze({
+    response.locals[ACKRATE_PAYMENT_LOCALS_KEY] = claimed.record.payment;
+    response.locals[ACKRATE_BOUND_DELIVERY_LOCALS_KEY] = Object.freeze({
       kind: claimed.kind,
       record: claimed.record,
     });

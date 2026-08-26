@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * reapp gatecheck — independent, on-chain checker for a REAPP mandate.
+ * ackrate gatecheck — independent, on-chain checker for a Ackrate mandate.
  *
  *   node scripts/gatecheck-mandate.mjs <mandate-id-hex> [--source <PUBKEY>] [--json]
  *   npm run gatecheck -- <mandate-id-hex>
  *
- * The whole point of REAPP is that the spending limit lives in the contract, not
+ * The whole point of Ackrate is that the spending limit lives in the contract, not
  * the app or the SDK. This tool proves that from the outside: it reads the mandate
  * straight from the MandateRegistry (the source of truth), plus the on-chain
  * SEP-41 allowance the user approved for the contract and the user's balance, and
  * reports the TRUE amount the agent can still spend — derived purely from chain
  * state, trusting no application claim.
  *
- * The mandate read goes through the published @reapp-sdk/stellar surface; nothing
+ * The mandate read goes through the published @ackrate/stellar surface; nothing
  * here trusts a cached or app-reported value.
  */
 import { exit, argv, stdout } from "node:process";
@@ -28,7 +28,7 @@ import {
   scValToNative,
   rpc,
 } from "@stellar/stellar-sdk";
-import { TESTNET, registryClient, token, Errors } from "@reapp-sdk/stellar";
+import { TESTNET, registryClient, token, Errors } from "@ackrate/stellar";
 
 dotenv.config({
   path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".env"),
@@ -46,7 +46,7 @@ const die = (m) => { console.error(`\n${c.red("✖")} ${c.red(m)}\n`); exit(1); 
 const xlm = (stroops) => `${(Number(stroops) / 1e7).toFixed(7).replace(/0+$/, "").replace(/\.$/, ".0")} (${stroops} stroops)`;
 
 function parseArgs(args) {
-  const out = { json: false, source: process.env.REAPP_BURNER_PUBLIC_KEY?.trim() || "", id: "" };
+  const out = { json: false, source: process.env.ACKRATE_BURNER_PUBLIC_KEY?.trim() || "", id: "" };
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === "--json") out.json = true;
@@ -87,7 +87,7 @@ async function main() {
 
   if (!id) die("usage: node scripts/gatecheck-mandate.mjs <mandate-id-hex> [--source <PUBKEY>] [--json]");
   if (!/^[0-9a-fA-F]{64}$/.test(id)) die(`mandate id must be 64 hex chars (a 32-byte sha256); got ${JSON.stringify(id)}`);
-  if (!source || !source.startsWith("G")) die("need a funded testnet source account for the read: pass --source <PUBKEY> or set REAPP_BURNER_PUBLIC_KEY in .env");
+  if (!source || !source.startsWith("G")) die("need a funded testnet source account for the read: pass --source <PUBKEY> or set ACKRATE_BURNER_PUBLIC_KEY in .env");
 
   const mandateId = Buffer.from(id, "hex");
   const registry = registryClient(net, readOnlySigner(source));
@@ -156,7 +156,7 @@ async function main() {
   const statusColor = status === "Active" ? c.green : status === "Exhausted" ? c.yellow : c.red;
   console.log("");
   console.log(RULE(c.magenta));
-  console.log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("mandate gatecheck")} ${c.dim("— read straight from the contract, no app trust")}`);
+  console.log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("mandate gatecheck")} ${c.dim("— read straight from the contract, no app trust")}`);
   console.log(RULE(c.magenta));
   const f = (l, v) => console.log(`  ${c.gray("·")} ${c.dim(`${l}`.padEnd(18))} ${v}`);
   f("network", "testnet");

@@ -1,16 +1,16 @@
 # Bound-v2 402 round trip
 
-REAPP isolates the evolving HTTP payment wire format from the MandateRegistry.
+Ackrate isolates the evolving HTTP payment wire format from the MandateRegistry.
 The contract owns spending authorization; the HTTP layer decides whether a
 merchant may release one exact resource after independently proving settlement.
 
-Current implementation: `@reapp-sdk/core@0.3.1` and
-`@reapp-sdk/express-middleware@0.2.2` on Stellar testnet.
+Current implementation: `@ackrate/core@0.3.3` and
+`@ackrate/express-middleware@0.2.4` on Stellar testnet.
 
 ## Sequence
 
 1. The agent sends `GET` with
-   `REAPP-PAYMENT-CAPABILITIES: reapp-bound-v2`. Redirect handling is manual.
+   `ACKRATE-PAYMENT-CAPABILITIES: ackrate-bound-v2`. Redirect handling is manual.
 2. An unsupported client receives `426` before payment.
 3. The merchant returns `402` with an HMAC-authenticated challenge containing:
    exact configured public origin, method, path and query, `bodySha256: null`, network
@@ -113,7 +113,7 @@ The merchant challenge secret must remain stable across restarts. The consumer
 receipt store must save before broadcast, enumerate on restart, clear only after
 application acknowledgment, and protect proofs as secrets. Confirmed orphaned
 merchant executions resolve through the trusted operator/outbox-only
-`resolveBoundReappInterruptedDelivery` API to one stored terminal result; they
+`resolveBoundAckrateInterruptedDelivery` API to one stored terminal result; they
 never rerun. Use it only after proving the original execution owner is dead.
 
 ## Run it

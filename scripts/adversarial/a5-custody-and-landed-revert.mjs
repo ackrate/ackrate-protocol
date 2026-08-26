@@ -6,8 +6,8 @@
 //  (Claim 3) A genuinely LANDED-AND-REVERTED negative transaction: force a
 //            BadSequence revert to be INCLUDED in a ledger (not just rejected at
 //            simulation) and capture its failed tx hash for Horizon lookup.
-import { reapp, toStroops } from "@reapp-sdk/core";
-import { registryClient, keypairSigner, TESTNET } from "@reapp-sdk/stellar";
+import { ackrate, toStroops } from "@ackrate/core";
+import { registryClient, keypairSigner, TESTNET } from "@ackrate/stellar";
 import {
   Keypair, Contract, Address, nativeToScVal, scValToNative,
   TransactionBuilder, BASE_FEE, rpc,
@@ -48,12 +48,12 @@ await fund(user, "user");
 await fund(agent, "agent");
 await fund(merchant, "merchant");
 
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
   asset: SAC, maxAmount: "2.00", expiry: Math.floor(Date.now() / 1000) + 3600,
 });
-await reapp.registerMandate(mandate, { signer: user });
-await reapp.approveBudget(mandate, { signer: user });
+await ackrate.registerMandate(mandate, { signer: user });
+await ackrate.approveBudget(mandate, { signer: user });
 console.log(`mandate ${mandate.id} registered; budget 2.00 XLM`);
 
 // ---- Claim 2, discriminating: who actually holds the allowance? ----

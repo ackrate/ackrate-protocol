@@ -44,7 +44,7 @@ scripts in [`scripts/adversarial/`](../scripts/adversarial/).
 `InMemoryBoundRedemptionStore` is demo-only. The included file store is a restart-safe,
 single-process reference. An interrupted execution never reruns; after confirming its
 owner is dead, trusted operator/outbox code resolves its execution id through
-`resolveBoundReappInterruptedDelivery` to one immutable terminal result. Multi-worker
+`resolveBoundAckrateInterruptedDelivery` to one immutable terminal result. Multi-worker
 production requires a shared durable linearizable store, stable challenge-secret
 custody, and a transactional job/outbox for external side effects. Those are explicit
 mainnet gates, not hidden testnet claims.

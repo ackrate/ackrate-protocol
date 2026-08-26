@@ -1,6 +1,6 @@
 # Upgrade authority and key recovery
 
-This document records the operational boundary for the upgradeable REAPP
+This document records the operational boundary for the upgradeable Ackrate
 MandateRegistry contracts. It contains public addresses and custody roles only.
 Private keys, seed phrases, device locations, recovery shares, and personal
 contact details belong in the private custody register and must never enter this
@@ -18,8 +18,8 @@ Both current testnet contracts report the same administrator:
 | [Composite 0.3.0](https://stellar.expert/explorer/testnet/contract/CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW) | `CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW` | 24-hour delayed same-address upgrade; money paths currently unpaused |
 
 The administrator is currently a single-signer testnet account. Its public
-Horizon record has one signer. The signer is held by the REAPP founder/operator
-and is accessed through the local Stellar identity named `reapp-agent` on the
+Horizon record has one signer. The signer is held by the Ackrate founder/operator
+and is accessed through the local Stellar identity named `ackrate-agent` on the
 authorized operator workstation. This is acceptable only for the current
 testnet window. It is not the intended early-mainnet custody model.
 
@@ -38,7 +38,7 @@ composite CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW
 Reproduce with the typed client against testnet RPC (read-only simulation):
 
 ```ts
-import { registryClient, keypairSigner, TESTNET } from "@reapp-sdk/stellar";
+import { registryClient, keypairSigner, TESTNET } from "@ackrate/stellar";
 const c = registryClient({ ...TESTNET, mandateRegistryId: CONTRACT_ID }, signer);
 const admin = (await c.get_admin()).result; // === GA2B3YY27OY6AWT2VXMXUDBSAHVOLU2ST6QWJJJLOIGDQHJDXO4RL4XH
 ```
@@ -54,8 +54,8 @@ on testnet before either MandateRegistry calls `set_admin`.
 
 | Key | Holder | Storage boundary | Status |
 |---|---|---|---|
-| A — operating signer | REAPP founder/operator | Dedicated hardware signer; encrypted offline recovery | Assigned by role; device and recovery details stay in the private custody register |
-| B — technical co-signer | Independent REAPP technical custodian | Separate hardware signer on a different device and physical site | Must be named and acknowledged in the private custody register before activation |
+| A — operating signer | Ackrate founder/operator | Dedicated hardware signer; encrypted offline recovery | Assigned by role; device and recovery details stay in the private custody register |
+| B — technical co-signer | Independent Ackrate technical custodian | Separate hardware signer on a different device and physical site | Must be named and acknowledged in the private custody register before activation |
 | C — recovery signer | Independent recovery custodian | Normally offline hardware signer; sealed recovery stored separately from A and B | Must be named and acknowledged in the private custody register before activation |
 
 Keys A, B, and C each carry one unit of authority; any two are required. No one

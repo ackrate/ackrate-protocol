@@ -90,3 +90,23 @@ export async function balance(net: NetworkConfig, tokenId: string, who: string):
   if (rpc.Api.isSimulationError(sim)) throw new Error(`balance sim failed: ${sim.error}`);
   return scValToNative(sim.result!.retval) as bigint;
 }
+
+/** Read the token's SEP-41 decimals from chain. */
+export async function decimals(net: NetworkConfig, tokenId: string, sourceAccount: string): Promise<number> {
+  const server = new rpc.Server(net.rpcUrl, { allowHttp: net.rpcUrl.startsWith("http://") });
+  const source = await server.getAccount(sourceAccount);
+  const tx = new TransactionBuilder(source, {
+    fee: INCLUSION_FEE,
+    networkPassphrase: net.networkPassphrase,
+  })
+    .addOperation(new Contract(tokenId).call("decimals"))
+    .setTimeout(60)
+    .build();
+  const sim = await server.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) throw new Error(`decimals sim failed: ${sim.error}`);
+  const value = scValToNative(sim.result!.retval) as unknown;
+  if (!Number.isInteger(value) || (value as number) < 0 || (value as number) > 18) {
+    throw new Error("token decimals response is invalid");
+  }
+  return value as number;
+}

@@ -1,5 +1,5 @@
 /**
- * Single source of truth for REAPP's deployed contract addresses.
+ * Single source of truth for Ackrate's deployed contract addresses.
  *
  * An address lives in exactly one place: here. Everything else — the SDK network
  * config (`config.ts`), the generated contract binding (`client.ts`), the scripts,

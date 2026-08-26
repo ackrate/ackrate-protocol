@@ -1,8 +1,8 @@
 {
-  "name": "@reapp-sdk/consumer-agent",
+  "name": "@ackrate/consumer-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Reference ResearchAgent: signs/registers a mandate and pays via @reapp-sdk/core agent.fetch.",
+  "description": "Reference ResearchAgent: signs/registers a mandate and pays via @ackrate/core agent.fetch.",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -10,6 +10,6 @@
     "test": "node --import tsx --test src/research-agent.test.ts src/receipt-store.test.ts src/outcome-store.test.ts"
   },
   "dependencies": {
-    "@reapp-sdk/core": "*"
+    "@ackrate/core": "*"
   }
 }

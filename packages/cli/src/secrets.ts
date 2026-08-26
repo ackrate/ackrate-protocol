@@ -1,7 +1,7 @@
 /**
- * Secrets store: testnet burner keys written to ~/.reapp/credentials.json,
+ * Secrets store: testnet burner keys written to ~/.ackrate/credentials.json,
  * OUTSIDE any repo, with tight permissions (dir 0700, file 0600). These are
- * throwaway testnet keys — never mainnet, never committed. Set REAPP_HOME to
+ * throwaway testnet keys — never mainnet, never committed. Set ACKRATE_HOME to
  * relocate the store (handy for tests and CI).
  */
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
@@ -18,12 +18,12 @@ export type Credentials = {
   merchantPublic: string;
 };
 
-export function reappHome(): string {
-  return process.env.REAPP_HOME ?? join(homedir(), ".reapp");
+export function ackrateHome(): string {
+  return process.env.ACKRATE_HOME ?? join(homedir(), ".ackrate");
 }
 
 export function credentialsPath(): string {
-  return join(reappHome(), "credentials.json");
+  return join(ackrateHome(), "credentials.json");
 }
 
 export function credentialsExist(): boolean {
@@ -35,7 +35,7 @@ export function loadCredentials(): Credentials {
 }
 
 export function saveCredentials(creds: Credentials): string {
-  const home = reappHome();
+  const home = ackrateHome();
   mkdirSync(home, { recursive: true, mode: 0o700 });
   const path = credentialsPath();
   writeFileSync(path, JSON.stringify(creds, null, 2) + "\n", { mode: 0o600 });

@@ -9,15 +9,17 @@ import {
   rm,
 } from "node:fs/promises";
 import { join } from "node:path";
-import type { PendingSettlement } from "@reapp-sdk/core";
-import { reappHome } from "./secrets.js";
+import type { PendingSettlement } from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
+import { ackrateHome } from "./secrets.js";
 
 export type SettlementSource = "pay" | "demo";
 
 interface StoredSettlementBase {
-  version: 2;
+  version: 3;
   source: SettlementSource;
-  network: "testnet";
+  network: "testnet" | "mainnet";
+  rpcUrl: string;
   contractId: string;
   pending: Readonly<PendingSettlement>;
 }
@@ -43,7 +45,7 @@ const DIRECTORY = "pending-settlement";
 const STATE = "state.json";
 
 export function settlementDirectory(): string {
-  return join(reappHome(), DIRECTORY);
+  return join(ackrateHome(), DIRECTORY);
 }
 
 function statePath(): string {
@@ -88,16 +90,27 @@ function validateRecord(value: unknown): Readonly<StoredSettlement> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("settlement journal is not an object");
   }
-  const record = value as StoredSettlement;
+  const raw = value as Record<string, unknown>;
+  const legacy = raw.version === 2 && raw.network === "testnet";
+  const record = (legacy ? { ...raw, version: 3, rpcUrl: TESTNET.rpcUrl } : raw) as unknown as StoredSettlement;
   const expectedKeys = record.state === "completed"
-    ? ["version", "state", "source", "network", "contractId", "pending", "completedAt"]
-    : ["version", "state", "source", "network", "contractId", "pending"];
+    ? ["version", "state", "source", "network", "rpcUrl", "contractId", "pending", "completedAt"]
+    : ["version", "state", "source", "network", "rpcUrl", "contractId", "pending"];
+  let rpc: URL | undefined;
+  try {
+    rpc = new URL(record.rpcUrl);
+  } catch {
+    // Rejected by the schema condition below.
+  }
   if (
     !exactKeys(record, expectedKeys)
-    || record.version !== 2
+    || record.version !== 3
     || (record.state !== "pending" && record.state !== "completed")
     || (record.source !== "pay" && record.source !== "demo")
-    || record.network !== "testnet"
+    || (record.network !== "testnet" && record.network !== "mainnet")
+    || !rpc
+    || rpc.protocol !== "https:"
+    || Boolean(rpc.username || rpc.password)
     || typeof record.contractId !== "string"
     || !/^C[A-Z2-7]{55}$/.test(record.contractId)
   ) {
@@ -133,7 +146,7 @@ export async function assertNoPendingSettlement(): Promise<void> {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return;
     throw error;
   }
-  throw new Error("a payment is unresolved or unacknowledged; run `reapp settlement reconcile` before another payment");
+  throw new Error("a payment is unresolved or unacknowledged; run `ackrate settlement reconcile` before another payment");
 }
 
 async function writeState(record: Readonly<StoredSettlement>): Promise<void> {
@@ -165,8 +178,12 @@ export async function claimPendingSettlement(
   source: SettlementSource,
   contractId: string,
   pending: Readonly<PendingSettlement>,
+  context: Readonly<{ network: "testnet" | "mainnet"; rpcUrl: string }> = {
+    network: "testnet",
+    rpcUrl: TESTNET.rpcUrl,
+  },
 ): Promise<void> {
-  const home = reappHome();
+  const home = ackrateHome();
   await mkdir(home, { recursive: true, mode: 0o700 });
   await chmod(home, 0o700);
   const directory = settlementDirectory();
@@ -174,17 +191,18 @@ export async function claimPendingSettlement(
     await mkdir(directory, { mode: 0o700 });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new Error("another prepared payment is unresolved; run `reapp settlement reconcile`");
+      throw new Error("another prepared payment is unresolved; run `ackrate settlement reconcile`");
     }
     throw error;
   }
 
   try {
     const record = validateRecord({
-      version: 2,
+      version: 3,
       state: "pending",
       source,
-      network: "testnet",
+      network: context.network,
+      rpcUrl: context.rpcUrl,
       contractId,
       pending,
     });

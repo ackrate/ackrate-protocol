@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PaymentRejectedError, SettlementUncertainError } from "@reapp-sdk/core";
+import { PaymentRejectedError, SettlementUncertainError } from "@ackrate/core";
 import { isFinalPaymentRejection } from "./payment-failure.js";
 
 test("only a typed finalized rejection may clear a prepared payment journal", () => {

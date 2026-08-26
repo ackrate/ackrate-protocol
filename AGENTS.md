@@ -29,7 +29,7 @@ contract that is **not** part of the npm workspace.
   Runs rustfmt, clippy (`-D warnings`), `cargo test`, then a *clean* workspace
   build + `npm test`. Mirrors `.github/workflows/ci.yml`. Wired as a git pre-push
   hook via `git config core.hooksPath .githooks` (one-time, per clone).
-- `npm run build` — builds `@reapp-sdk/stellar` first (the others depend on it),
+- `npm run build` — builds `@ackrate/stellar` first (the others depend on it),
   then all workspaces.
 - `npm test` — runs every workspace's tests.
 - `npm run typecheck` — root `tsc` (project references).
@@ -80,14 +80,14 @@ strictly one-way dependency graph (no cycles), documented at the top of `src/lib
 - `test.rs` + `pool_test.rs` + `test_snapshots/` — the negative suite (§10), which
   CI runs from commit one. `reentry_probe.rs` is a reentrancy guard test.
 
-### `packages/stellar/` — `@reapp-sdk/stellar` (typed Soroban layer)
+### `packages/stellar/` — `@ackrate/stellar` (typed Soroban layer)
 Network config (`TESTNET`), the generated/typed `registryClient` contract bindings,
 SEP-41 `token` helpers, and `keypairSigner`. Built first; everything else depends on it.
 
-### `packages/sdk/` — `@reapp-sdk/core` (thin, untrusted client)
-The under-10-line flow (`reapp.createIntentMandate` → `registerMandate` →
+### `packages/sdk/` — `@ackrate/core` (thin, untrusted client)
+The under-10-line flow (`ackrate.createIntentMandate` → `registerMandate` →
 `approveBudget` → `agent()` → `agent.pay`/`agent.fetch`). Key files:
-- `index.ts` — `reapp` facade + the `Agent` class. `createIntentMandate` defines the
+- `index.ts` — `ackrate` facade + the `Agent` class. `createIntentMandate` defines the
   **canonical hash** (mandate id) by a fixed JSON field order — *changing that order
   changes every id*; keep it stable. `toStroops` is strict-by-design money parsing
   (rejects anything that could wrap to a wrong on-chain i128).
@@ -97,7 +97,7 @@ The under-10-line flow (`reapp.createIntentMandate` → `registerMandate` →
   *settlement* proof (payment already happened on-chain); the merchant re-verifies
   the txHash on-chain — the header is never trusted on its own.
 
-### `packages/ap2/` — `@reapp-sdk/ap2` (version-pinned bridge)
+### `packages/ap2/` — `@ackrate/ap2` (version-pinned bridge)
 Maps the supported AP2 v0.1.0 human-not-present IntentMandate subset into the
 existing core mandate without changing core's canonical hash. Unsupported SKU,
 refundability, multi-merchant, and cart-confirmation semantics fail closed. AP2
@@ -121,6 +121,9 @@ only enforcement boundary.
 - The contract is gatechecked and live on testnet; treat its interface as a published
   contract. The negative/§10 suite is not optional and must stay green from commit one.
 - `security/` holds the contract, SDK, and x402 gatecheck records; the release docs
-  `docs/mandate-registry-contract.md`, `docs/reapp-sdk-npm.md`, and `docs/x402-roundtrip.md`
+  `docs/mandate-registry-contract.md`, `docs/ackrate-sdk-npm.md`, and `docs/x402-roundtrip.md`
   document each shipped step. Update them when the matching surface changes.
-- Testnet only in this repo: hot burner keys, never reused on mainnet, never committed.
+- Testnet remains the default. Hot burner keys are testnet-only, never reused on
+  mainnet, and never committed. Mainnet paths require the complete verified
+  deployment manifest, canonical USDC, explicit real-value confirmation, and
+  external or secret-manager-backed signing; they must never fall back to testnet.

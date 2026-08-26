@@ -1,9 +1,18 @@
 {
-  "name": "@reapp-sdk/express-middleware",
-  "version": "0.2.2",
-  "description": "Fail-closed Express middleware for REAPP x402 APIs with independent on-chain settlement verification.",
+  "name": "@ackrate/express-middleware",
+  "version": "0.2.4",
+  "description": "Fail-closed Express middleware for Ackrate x402 APIs with independent on-chain settlement verification.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ackrate/ackrate-protocol.git",
+    "directory": "packages/express-middleware"
+  },
+  "homepage": "https://github.com/ackrate/ackrate-protocol/tree/main/packages/express-middleware#readme",
+  "bugs": {
+    "url": "https://github.com/ackrate/ackrate-protocol/issues"
+  },
   "keywords": [
-    "reapp",
+    "ackrate",
     "express",
     "middleware",
     "x402",
@@ -27,8 +36,8 @@
     "test": "node --import tsx --test src/middleware.test.ts src/bound.test.ts src/bound-route.test.ts src/verification.test.ts"
   },
   "dependencies": {
-    "@reapp-sdk/core": "^0.3.1",
-    "@reapp-sdk/stellar": "^0.2.2",
+    "@ackrate/core": "^0.3.3",
+    "@ackrate/stellar": "^0.2.4",
     "@stellar/stellar-sdk": "^14.5.0",
     "buffer": "6.0.3"
   },

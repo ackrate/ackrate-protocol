@@ -7,12 +7,12 @@ function validEnv(): NodeJS.ProcessEnv {
   const agent = Keypair.random();
   return {
     NODE_ENV: "test",
-    REAPP_WALLET_NETWORK: "testnet",
-    REAPP_CHAT_AGENT_PUBLIC_KEY: agent.publicKey(),
-    REAPP_CHAT_AGENT_SECRET: agent.secret(),
-    REAPP_CHAT_MERCHANT_PUBLIC_KEY: Keypair.random().publicKey(),
-    REAPP_CHAT_MERCHANT_URL: "https://merchant.example",
-    REAPP_SESSION_SECRET: "s".repeat(48),
+    ACKRATE_WALLET_NETWORK: "testnet",
+    ACKRATE_CHAT_AGENT_PUBLIC_KEY: agent.publicKey(),
+    ACKRATE_CHAT_AGENT_SECRET: agent.secret(),
+    ACKRATE_CHAT_MERCHANT_PUBLIC_KEY: Keypair.random().publicKey(),
+    ACKRATE_CHAT_MERCHANT_URL: "https://merchant.example",
+    ACKRATE_SESSION_SECRET: "s".repeat(48),
     OPENAI_API_KEY: "test-only-key",
   };
 }
@@ -27,15 +27,15 @@ test("testnet becomes ready only with complete matching configuration", () => {
 
 test("agent secret mismatch fails closed without exposing the secret", () => {
   const env = validEnv();
-  env.REAPP_CHAT_AGENT_SECRET = Keypair.random().secret();
+  env.ACKRATE_CHAT_AGENT_SECRET = Keypair.random().secret();
   const config = loadAppConfig(env);
   assert.equal(config.public.ready, false);
   assert(config.public.blockers.includes("agent signer does not match the public agent address"));
-  assert.equal(JSON.stringify(config.public).includes(env.REAPP_CHAT_AGENT_SECRET), false);
+  assert.equal(JSON.stringify(config.public).includes(env.ACKRATE_CHAT_AGENT_SECRET), false);
 });
 
 test("mainnet has no default or testnet fallback", () => {
-  const config = loadAppConfig({ ...validEnv(), REAPP_WALLET_NETWORK: "mainnet" });
+  const config = loadAppConfig({ ...validEnv(), ACKRATE_WALLET_NETWORK: "mainnet" });
   assert.equal(config.public.ready, false);
   assert(config.public.blockers.some((item) => item.includes(MAINNET_CONFIRMATION)));
   assert(config.public.blockers.includes("completed mainnet deployment manifest is missing"));
@@ -46,13 +46,13 @@ test("mainnet has no default or testnet fallback", () => {
 });
 
 test("merchant URL and catalog cannot redirect payments off the allowlisted origin", () => {
-  const badUrl = loadAppConfig({ ...validEnv(), REAPP_CHAT_MERCHANT_URL: "https://user:pass@merchant.example/path" });
+  const badUrl = loadAppConfig({ ...validEnv(), ACKRATE_CHAT_MERCHANT_URL: "https://user:pass@merchant.example/path" });
   assert.equal(badUrl.public.ready, false);
-  assert(badUrl.public.blockers.includes("REAPP_CHAT_MERCHANT_URL must be a credential-free HTTPS origin"));
+  assert(badUrl.public.blockers.includes("ACKRATE_CHAT_MERCHANT_URL must be a credential-free HTTPS origin"));
 
   const badCatalog = loadAppConfig({
     ...validEnv(),
-    REAPP_CHAT_CATALOG_JSON: JSON.stringify([{ id: "escape", title: "Escape", description: "bad", path: "//evil.example", price: "1.00" }]),
+    ACKRATE_CHAT_CATALOG_JSON: JSON.stringify([{ id: "escape", title: "Escape", description: "bad", path: "//evil.example", price: "1.00" }]),
   });
   assert.equal(badCatalog.public.ready, false);
   assert(badCatalog.public.blockers.some((item) => item.includes("safe origin-relative path")));

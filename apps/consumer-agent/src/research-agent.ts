@@ -19,11 +19,16 @@ import { randomUUID } from "node:crypto";
 import {
   DeliveryPendingError,
   getSettlementReceipt,
-  reapp,
+  ackrate,
   type IntentMandate,
   type SettlementReceipt,
   type SettlementReceiptStore,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
+import {
+  TESTNET,
+  type NetworkConfig,
+  type StellarSignerInput,
+} from "@ackrate/stellar";
 import {
   createPurchaseIdentity,
   createStoredPurchaseOutcome,
@@ -94,35 +99,55 @@ function eventFromResult(result: Readonly<BuyResult>): BuyEvent {
     : { type: "blocked", id: result.id, txHash: result.txHash, receipt: result.receipt, reason: result.blockedReason };
 }
 
+function resolveAgentSigner(opts: {
+  agentSecret?: string;
+  agentSigner?: StellarSignerInput;
+}): StellarSignerInput {
+  if (opts.agentSecret !== undefined && opts.agentSigner !== undefined) {
+    throw new Error("provide agentSigner or agentSecret, not both");
+  }
+  const signer = opts.agentSigner ?? opts.agentSecret;
+  if (signer === undefined || (typeof signer === "string" && signer.length === 0)) {
+    throw new Error("an agent signer is required");
+  }
+  return signer;
+}
+
 /** Resume delivery from an existing settlement. This function cannot pay. */
 export async function resumePendingDelivery(opts: {
   mandate: IntentMandate;
-  agentSecret: string;
+  agentSecret?: string;
+  agentSigner?: StellarSignerInput;
+  networkConfig?: NetworkConfig;
   receipt: Readonly<SettlementReceipt>;
   receiptStore: SettlementReceiptStore;
 }): Promise<Response> {
-  const agent = reapp.agent({
+  const signer = resolveAgentSigner(opts);
+  const agent = ackrate.agent({
     mandate: opts.mandate,
-    signer: opts.agentSecret,
+    signer,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig ?? TESTNET);
   return agent.retryDelivery(opts.receipt);
 }
 
 /** Commit delivery only after the caller has durably accepted the response. */
 export async function acknowledgePendingDelivery(opts: {
   mandate: IntentMandate;
-  agentSecret: string;
+  agentSecret?: string;
+  agentSigner?: StellarSignerInput;
+  networkConfig?: NetworkConfig;
   receipt: Readonly<SettlementReceipt>;
   receiptStore: SettlementReceiptStore;
 }): Promise<void> {
-  const agent = reapp.agent({
+  const signer = resolveAgentSigner(opts);
+  const agent = ackrate.agent({
     mandate: opts.mandate,
-    signer: opts.agentSecret,
+    signer,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig ?? TESTNET);
   await agent.acknowledgeDelivery(opts.receipt);
 }
 
@@ -135,17 +160,22 @@ export async function buyResearch(opts: {
   serverUrl: string;
   sourceIds: string[];
   mandate: IntentMandate;
-  agentSecret: string;
+  /** Legacy local-key path for testnet and secret-manager-backed services. */
+  agentSecret?: string;
+  /** External signer path; preferred when custody stays outside the agent. */
+  agentSigner?: StellarSignerInput;
+  networkConfig?: NetworkConfig;
   receiptStore: SettlementReceiptStore;
   outcomeStore: PurchaseOutcomeStore;
   onEvent?: (e: BuyEvent) => void;
 }): Promise<BuyResult[]> {
-  const agent = reapp.agent({
+  const signer = resolveAgentSigner(opts);
+  const agent = ackrate.agent({
     mandate: opts.mandate,
-    signer: opts.agentSecret,
+    signer,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig ?? TESTNET);
   const results: BuyResult[] = [];
 
   for (const id of opts.sourceIds) {

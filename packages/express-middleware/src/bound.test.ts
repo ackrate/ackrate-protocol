@@ -6,7 +6,7 @@ import express, { type Response } from "express";
 import { Keypair } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
   createBoundPaymentProof,
   encodePaymentProof,
@@ -14,8 +14,8 @@ import {
   type BoundPaymentChallengeV2,
   type BoundPaymentProofV2,
   type LegacyPaymentProof,
-} from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
+} from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
 import {
   getVerifiedPayment,
   InMemoryBoundRedemptionStore,
@@ -24,8 +24,8 @@ import {
   type VerifiedPayment,
 } from "./index.js";
 import {
-  createBoundReappPaymentMiddleware,
-  type BoundReappPaymentMiddlewareOptions,
+  createBoundAckratePaymentMiddleware,
+  type BoundAckratePaymentMiddlewareOptions,
 } from "./bound.js";
 
 const merchant = "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG";
@@ -55,7 +55,7 @@ function payment(overrides: Partial<VerifiedPayment> = {}): VerifiedPayment {
     merchant,
     asset: TESTNET.nativeSac,
     registryId: TESTNET.mandateRegistryId,
-    scheme: "reapp-soroban-bound",
+    scheme: "ackrate-soroban-bound",
     network: "stellar-testnet",
     ...overrides,
   };
@@ -79,13 +79,13 @@ async function start(options: {
   now?: () => number;
   audience?: string;
   handler?: (response: Response) => void;
-  middleware?: Partial<BoundReappPaymentMiddlewareOptions>;
+  middleware?: Partial<BoundAckratePaymentMiddlewareOptions>;
   store?: BoundRedemptionStore;
 } = {}): Promise<{ url: string; handled: () => number }> {
   let handled = 0;
   let runtimeAudience = "";
   const app = express();
-  const requirePayment = createBoundReappPaymentMiddleware({
+  const requirePayment = createBoundAckratePaymentMiddleware({
     merchant,
     amount: "1.00",
     audience: options.audience ?? (() => runtimeAudience),
@@ -118,7 +118,7 @@ async function start(options: {
   return { url, handled: () => handled };
 }
 
-const capabilities = { [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY };
+const capabilities = { [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY };
 
 async function quote(baseUrl: string, resource = "/source/market"): Promise<BoundPaymentChallengeV2> {
   const response = await fetch(`${baseUrl}${resource}`, { headers: capabilities });
@@ -188,7 +188,7 @@ test("public transaction data without the agent signature cannot unlock", async 
   let verifies = 0;
   const app = await start({ verifier: successfulVerifier(() => { verifies += 1; }) });
   const legacy: LegacyPaymentProof = {
-    scheme: "reapp-soroban",
+    scheme: "ackrate-soroban",
     network: "stellar-testnet",
     txHash,
     mandateId,
@@ -362,7 +362,7 @@ for (const [label, overrides] of [
   ["merchant", { merchant: user }],
   ["asset", { asset: TESTNET.mandateRegistryId }],
   ["registry", { registryId: TESTNET.nativeSac }],
-  ["scheme", { scheme: "reapp-soroban" }],
+  ["scheme", { scheme: "ackrate-soroban" }],
   ["network", { network: "other-network" }],
 ] as const) {
   test(`chain-derived ${label} mismatch cannot unlock`, async () => {

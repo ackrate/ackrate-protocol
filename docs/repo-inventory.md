@@ -4,11 +4,11 @@
 
 | Path | Public surface | Ownership |
 |---|---|---|
-| `packages/sdk` | `@reapp-sdk/core@0.3.1` | High-level mandates, contract payments, bound-v2 client, receipts and recovery. |
-| `packages/stellar` | `@reapp-sdk/stellar@0.2.2` | Generated typed bindings, permanent testnet contract config, signer and SEP-41 helpers. |
-| `packages/ap2` | `@reapp-sdk/ap2@0.3.0` | Signed AP2 v0.1 profile validator and replay admission. |
-| `packages/express-middleware` | `@reapp-sdk/express-middleware@0.2.2` | Exact-origin GET proof, Stellar verifier, and atomic claim/immutable-result route. |
-| `packages/cli` | `reapp-protocol-cli@0.1.7` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo flow. |
+| `packages/sdk` | `@ackrate/core@0.3.3` | High-level mandates, contract payments, bound-v2 client, receipts and recovery. |
+| `packages/stellar` | `@ackrate/stellar@0.2.4` | Generated typed bindings, permanent testnet contract config, signer and SEP-41 helpers. |
+| `packages/ap2` | `@ackrate/ap2@0.3.2` | Signed AP2 v0.1 profile validator and replay admission. |
+| `packages/express-middleware` | `@ackrate/express-middleware@0.2.4` | Exact-origin GET proof, Stellar verifier, and atomic claim/immutable-result route. |
+| `packages/cli` | `@ackrate/cli@0.1.9` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo flow. |
 
 ## Reference applications
 
@@ -24,7 +24,7 @@ requires shared linearizable storage.
 
 The protocol repository includes a compatible contract workspace for development
 and tests. The authoritative source-verification releases and deployment gate
-live in `reapp-protocol-contracts`:
+live in `ackrate-protocol-contracts`:
 
 - simple/default `CCHQ5G4Y…CZRM`, release 0.2.3;
 - composite `CCYRF7FK…HEYW`, release 0.3.0.
@@ -56,7 +56,7 @@ They are not current version or deployment sources.
 
 ## Private-file boundary
 
-`REAPP_PROGRESS_LOG.md` and `CONTRACT_UPGRADE_PLAYBOOK.md` are private operator
+`ACKRATE_PROGRESS_LOG.md` and `CONTRACT_UPGRADE_PLAYBOOK.md` are private operator
 documents outside this repository. The release gate fails if either filename becomes
 tracked. Credentials, testnet secrets, receipt files, and redemption files also
 remain untracked.

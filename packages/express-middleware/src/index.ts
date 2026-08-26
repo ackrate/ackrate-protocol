@@ -3,7 +3,7 @@ export * from "./proof-store.js";
 export * from "./verification.js";
 export * from "./middleware.js";
 export type {
-  BoundReappPaymentMiddlewareOptions,
+  BoundAckratePaymentMiddlewareOptions,
   BoundX402Challenge,
 } from "./bound.js";
 export * from "./bound-route.js";

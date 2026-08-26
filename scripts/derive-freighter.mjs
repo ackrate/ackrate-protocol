@@ -15,13 +15,13 @@ if (!loaded.error) {
   const keys = Object.keys(loaded.parsed ?? {});
   console.log(`dotenv: parsed ${keys.length} keys -> ${keys.join(", ") || "(none)"}`);
   console.log(
-    `dotenv: REAPP_BURNER_PUBLIC_KEY = ${process.env.REAPP_BURNER_PUBLIC_KEY || "(empty)"}`,
+    `dotenv: ACKRATE_BURNER_PUBLIC_KEY = ${process.env.ACKRATE_BURNER_PUBLIC_KEY || "(empty)"}`,
   );
 }
 
 const expectedPublicKey =
   process.argv.find((arg) => arg.startsWith("--public="))?.slice("--public=".length) ??
-  process.env.REAPP_BURNER_PUBLIC_KEY ??
+  process.env.ACKRATE_BURNER_PUBLIC_KEY ??
   "";
 
 const scanCount = Number(
@@ -82,7 +82,7 @@ function askHidden(question) {
 
 console.log();
 console.log("============================================================");
-console.log("REAPP FREIGHTER SEED PHRASE -> STELLAR SECRET KEY");
+console.log("Ackrate FREIGHTER SEED PHRASE -> STELLAR SECRET KEY");
 console.log("============================================================");
 console.log();
 console.log("This runs locally and does not write your seed phrase anywhere.");
@@ -91,7 +91,7 @@ console.log(`Scanning account indexes: 0-${scanCount - 1}`);
 console.log();
 
 if (!expectedPublicKey) {
-  console.error("Missing REAPP_BURNER_PUBLIC_KEY in .env or --public=G...");
+  console.error("Missing ACKRATE_BURNER_PUBLIC_KEY in .env or --public=G...");
   exit(1);
 }
 
@@ -137,7 +137,7 @@ console.log(`Public key: ${match.publicKey}`);
 console.log(`Secret key: ${match.secretKey}`);
 console.log();
 console.log("Put this in .env:");
-console.log(`REAPP_BURNER_PUBLIC_KEY=${match.publicKey}`);
-console.log(`REAPP_BURNER_SECRET_KEY=${match.secretKey}`);
+console.log(`ACKRATE_BURNER_PUBLIC_KEY=${match.publicKey}`);
+console.log(`ACKRATE_BURNER_SECRET_KEY=${match.secretKey}`);
 console.log("============================================================");
 console.log();

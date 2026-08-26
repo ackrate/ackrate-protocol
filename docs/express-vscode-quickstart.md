@@ -1,15 +1,15 @@
-# VS Code to a live REAPP Express endpoint
+# VS Code to a live Ackrate Express endpoint
 
 This guide creates a clean local consumer and connects it to an ephemeral
-bound-v2 fulfillment endpoint from [`reapp.live/express`](https://reapp.live/express).
+bound-v2 fulfillment endpoint from [`ackrate.live/express`](https://ackrate.live/express).
 The browser workbench shows the same challenges, settlements, receipts, and
 contract rejection produced by the local project.
 
 ## 1. Verify the source flow first
 
 ```bash
-git clone https://github.com/reapp-protocol/reapp-protocol.git
-cd reapp-protocol
+git clone https://github.com/ackrate/ackrate-protocol.git
+cd ackrate-protocol
 npm ci
 npm run agents:testnet
 ```
@@ -19,7 +19,7 @@ three 1 XLM resources, and the fourth purchase is rejected by the 3 XLM mandate.
 
 ## 2. Create an endpoint in the browser
 
-1. Open [`reapp.live/express`](https://reapp.live/express).
+1. Open [`ackrate.live/express`](https://ackrate.live/express).
 2. Choose **Create endpoint**.
 3. Wait for the testnet user, agent, merchant, allowance, and mandate evidence.
 4. Copy the endpoint base, merchant address, and generated consumer example.
@@ -34,14 +34,14 @@ Open an empty folder in VS Code, then run:
 ```bash
 npm init -y
 npm pkg set type=module
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @ackrate/core@0.3.3 @stellar/stellar-sdk
 ```
 
 Create `index.mjs` from the browser's generated example. The load-bearing client
 configuration must include:
 
 ```js
-const consumer = reapp.agent({
+const consumer = ackrate.agent({
   mandate,
   signer: agentKey,
   proofPolicy: "bound-v2-only",
@@ -112,19 +112,19 @@ different proof, origin, path, query, or challenge returns `409`.
 From the protocol clone:
 
 ```bash
-REAPP_MERCHANT=G... \
-REAPP_READ_SOURCE=G... \
-REAPP_PUBLIC_ORIGIN='https://api.example' \
-REAPP_CHALLENGE_SECRET='at-least-32-stable-private-bytes' \
-REAPP_REDEMPTION_STORE='./private/redemptions.json' \
-npm run start -w @reapp-sdk/fulfillment-agent
+ACKRATE_MERCHANT=G... \
+ACKRATE_READ_SOURCE=G... \
+ACKRATE_PUBLIC_ORIGIN='https://api.example' \
+ACKRATE_CHALLENGE_SECRET='at-least-32-stable-private-bytes' \
+ACKRATE_REDEMPTION_STORE='./private/redemptions.json' \
+npm run start -w @ackrate/fulfillment-agent
 ```
 
 The included file store is restart-safe for one process. Multiple workers or
 hosts require a shared durable linearizable `BoundRedemptionStore`. Recovery
 never re-enters the callback. External side effects require a transactional
 job/outbox. Only after proving the original execution owner is dead, a trusted
-operator may call `resolveBoundReappInterruptedDelivery` to store one terminal
+operator may call `resolveBoundAckrateInterruptedDelivery` to store one terminal
 result without rerunning work.
 
 ## 7. Recording checklist

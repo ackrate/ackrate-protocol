@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { Buffer } from "buffer";
 import { Keypair, xdr } from "@stellar/stellar-sdk";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { TESTNET } from "@ackrate/stellar";
 import {
   createStellarPaymentVerifier,
   extractContractEvents,
@@ -46,7 +46,7 @@ const transferEvent = (overrides: Partial<DecodedEvent> = {}): DecodedEvent => (
 });
 
 const requirement: PaymentRequirement = {
-  scheme: "reapp-soroban",
+  scheme: "ackrate-soroban",
   network: "stellar-testnet",
   resource: "/source/market",
   merchant,

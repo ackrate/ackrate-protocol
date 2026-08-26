@@ -1,17 +1,17 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
-import type { SettlementReceipt, SettlementReceiptStore } from "@reapp-sdk/core";
+import type { SettlementReceipt, SettlementReceiptStore } from "@ackrate/core";
 
 type Sql = NeonQueryFunction<false, false>;
 
 const memory = globalThis as typeof globalThis & {
-  __reappChallenges?: Set<string>;
-  __reappToolCalls?: Map<string, ToolCallRecord>;
-  __reappReceipts?: Map<string, SettlementReceipt>;
+  __ackrateChallenges?: Set<string>;
+  __ackrateToolCalls?: Map<string, ToolCallRecord>;
+  __ackrateReceipts?: Map<string, SettlementReceipt>;
 };
 
-memory.__reappChallenges ??= new Set();
-memory.__reappToolCalls ??= new Map();
-memory.__reappReceipts ??= new Map();
+memory.__ackrateChallenges ??= new Set();
+memory.__ackrateToolCalls ??= new Map();
+memory.__ackrateReceipts ??= new Map();
 
 let sqlClient: Sql | null | undefined;
 let initialization: Promise<void> | undefined;
@@ -27,14 +27,14 @@ async function initialize(): Promise<Sql | null> {
   if (!client) return null;
   initialization ??= (async () => {
     await client.query(`
-      CREATE TABLE IF NOT EXISTS reapp_auth_challenges (
+      CREATE TABLE IF NOT EXISTS ackrate_auth_challenges (
         jti text PRIMARY KEY,
         expires_at bigint NOT NULL,
         consumed_at bigint NOT NULL
       )
     `);
     await client.query(`
-      CREATE TABLE IF NOT EXISTS reapp_tool_calls (
+      CREATE TABLE IF NOT EXISTS ackrate_tool_calls (
         session_id text NOT NULL,
         tool_call_id text NOT NULL,
         mandate_id text NOT NULL,
@@ -47,7 +47,7 @@ async function initialize(): Promise<Sql | null> {
       )
     `);
     await client.query(`
-      CREATE TABLE IF NOT EXISTS reapp_payment_receipts (
+      CREATE TABLE IF NOT EXISTS ackrate_payment_receipts (
         receipt_id text PRIMARY KEY,
         session_id text NOT NULL,
         mandate_id text NOT NULL,
@@ -63,12 +63,12 @@ async function initialize(): Promise<Sql | null> {
 export async function consumeChallenge(jti: string, expiresAt: number): Promise<boolean> {
   const client = await initialize();
   if (!client) {
-    if (memory.__reappChallenges!.has(jti)) return false;
-    memory.__reappChallenges!.add(jti);
+    if (memory.__ackrateChallenges!.has(jti)) return false;
+    memory.__ackrateChallenges!.add(jti);
     return true;
   }
   const rows = await client.query(
-    `INSERT INTO reapp_auth_challenges (jti, expires_at, consumed_at)
+    `INSERT INTO ackrate_auth_challenges (jti, expires_at, consumed_at)
      VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING jti`,
     [jti, expiresAt, Math.floor(Date.now() / 1_000)],
   );
@@ -91,21 +91,21 @@ export async function reserveToolCall(input: Omit<ToolCallRecord, "status" | "re
   const record: ToolCallRecord = { ...input, status: "running", result: null };
   if (!client) {
     const key = toolKey(input.sessionId, input.toolCallId);
-    const existing = memory.__reappToolCalls!.get(key);
+    const existing = memory.__ackrateToolCalls!.get(key);
     if (existing) return { created: false, record: existing };
-    memory.__reappToolCalls!.set(key, record);
+    memory.__ackrateToolCalls!.set(key, record);
     return { created: true, record };
   }
   const now = Math.floor(Date.now() / 1_000);
   const inserted = await client.query(
-    `INSERT INTO reapp_tool_calls
+    `INSERT INTO ackrate_tool_calls
        (session_id, tool_call_id, mandate_id, source_id, status, result, created_at, updated_at)
      VALUES ($1, $2, $3, $4, 'running', NULL, $5, $5)
      ON CONFLICT DO NOTHING RETURNING *`,
     [input.sessionId, input.toolCallId, input.mandateId, input.sourceId, now],
   );
   const rows = inserted.length ? inserted : await client.query(
-    `SELECT * FROM reapp_tool_calls WHERE session_id = $1 AND tool_call_id = $2`,
+    `SELECT * FROM ackrate_tool_calls WHERE session_id = $1 AND tool_call_id = $2`,
     [input.sessionId, input.toolCallId],
   );
   const row = rows[0] as Record<string, unknown>;
@@ -128,13 +128,13 @@ export async function completeToolCall(
   const client = await initialize();
   if (!client) {
     const key = toolKey(input.sessionId, input.toolCallId);
-    const prior = memory.__reappToolCalls!.get(key);
+    const prior = memory.__ackrateToolCalls!.get(key);
     if (!prior) throw new Error("tool call was not reserved");
-    memory.__reappToolCalls!.set(key, { ...prior, status: input.status, result: input.result });
+    memory.__ackrateToolCalls!.set(key, { ...prior, status: input.status, result: input.result });
     return;
   }
   await client.query(
-    `UPDATE reapp_tool_calls SET status = $3, result = $4::jsonb, updated_at = $5
+    `UPDATE ackrate_tool_calls SET status = $3, result = $4::jsonb, updated_at = $5
      WHERE session_id = $1 AND tool_call_id = $2`,
     [input.sessionId, input.toolCallId, input.status, JSON.stringify(input.result), Math.floor(Date.now() / 1_000)],
   );
@@ -146,11 +146,11 @@ export class DurableReceiptStore implements SettlementReceiptStore {
   async savePending(receipt: Readonly<SettlementReceipt>): Promise<void> {
     const client = await initialize();
     if (!client) {
-      memory.__reappReceipts!.set(receipt.receiptId, receipt);
+      memory.__ackrateReceipts!.set(receipt.receiptId, receipt);
       return;
     }
     await client.query(
-      `INSERT INTO reapp_payment_receipts (receipt_id, session_id, mandate_id, receipt, created_at)
+      `INSERT INTO ackrate_payment_receipts (receipt_id, session_id, mandate_id, receipt, created_at)
        VALUES ($1, $2, $3, $4::jsonb, $5)
        ON CONFLICT (receipt_id) DO UPDATE SET receipt = EXCLUDED.receipt`,
       [receipt.receiptId, this.sessionId, this.mandateId, JSON.stringify(receipt), Math.floor(Date.now() / 1_000)],
@@ -160,11 +160,11 @@ export class DurableReceiptStore implements SettlementReceiptStore {
   async clearPending(receiptId: string): Promise<void> {
     const client = await initialize();
     if (!client) {
-      memory.__reappReceipts!.delete(receiptId);
+      memory.__ackrateReceipts!.delete(receiptId);
       return;
     }
     await client.query(
-      `DELETE FROM reapp_payment_receipts WHERE receipt_id = $1 AND session_id = $2 AND mandate_id = $3`,
+      `DELETE FROM ackrate_payment_receipts WHERE receipt_id = $1 AND session_id = $2 AND mandate_id = $3`,
       [receiptId, this.sessionId, this.mandateId],
     );
   }
@@ -172,10 +172,10 @@ export class DurableReceiptStore implements SettlementReceiptStore {
   async listPending(): Promise<ReadonlyArray<Readonly<SettlementReceipt>>> {
     const client = await initialize();
     if (!client) {
-      return [...memory.__reappReceipts!.values()].filter((receipt) => receipt.mandateId === this.mandateId);
+      return [...memory.__ackrateReceipts!.values()].filter((receipt) => receipt.mandateId === this.mandateId);
     }
     const rows = await client.query(
-      `SELECT receipt FROM reapp_payment_receipts WHERE session_id = $1 AND mandate_id = $2 ORDER BY created_at ASC`,
+      `SELECT receipt FROM ackrate_payment_receipts WHERE session_id = $1 AND mandate_id = $2 ORDER BY created_at ASC`,
       [this.sessionId, this.mandateId],
     );
     return rows.map((row) => (row as { receipt: SettlementReceipt }).receipt);

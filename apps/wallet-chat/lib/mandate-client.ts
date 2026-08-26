@@ -1,8 +1,8 @@
 "use client";
 
 import { Buffer } from "buffer";
-import { reapp, type IntentMandate } from "@reapp-sdk/core";
-import type { NetworkConfig } from "@reapp-sdk/stellar";
+import { ackrate, type IntentMandate } from "@ackrate/core";
+import type { NetworkConfig } from "@ackrate/stellar";
 import type { SafeAppConfig } from "./types";
 import { lobstrSigner } from "./wallet/lobstr";
 
@@ -24,7 +24,7 @@ export function publicNetwork(config: SafeAppConfig): NetworkConfig {
 
 export function buildMandate(config: SafeAppConfig, user: string, form: CreateMandateForm): IntentMandate {
   if (!config.agentAddress || !config.merchant.address) throw new Error("agent and merchant configuration is incomplete");
-  return reapp.createIntentMandate({
+  return ackrate.createIntentMandate({
     user,
     agent: config.agentAddress,
     merchant: config.merchant.address,
@@ -36,7 +36,7 @@ export function buildMandate(config: SafeAppConfig, user: string, form: CreateMa
 }
 
 export async function registerWithLobstr(config: SafeAppConfig, mandate: IntentMandate): Promise<string> {
-  return reapp.registerMandate(
+  return ackrate.registerMandate(
     mandate,
     { signer: lobstrSigner(mandate.user, config.networkPassphrase) },
     publicNetwork(config),
@@ -44,7 +44,7 @@ export async function registerWithLobstr(config: SafeAppConfig, mandate: IntentM
 }
 
 export async function approveWithLobstr(config: SafeAppConfig, mandate: IntentMandate): Promise<string> {
-  return reapp.approveBudget(
+  return ackrate.approveBudget(
     mandate,
     { signer: lobstrSigner(mandate.user, config.networkPassphrase) },
     publicNetwork(config),
@@ -52,7 +52,7 @@ export async function approveWithLobstr(config: SafeAppConfig, mandate: IntentMa
 }
 
 export async function revokeWithLobstr(config: SafeAppConfig, mandate: IntentMandate): Promise<string> {
-  return reapp.revokeMandate(
+  return ackrate.revokeMandate(
     mandate,
     { signer: lobstrSigner(mandate.user, config.networkPassphrase) },
     publicNetwork(config),

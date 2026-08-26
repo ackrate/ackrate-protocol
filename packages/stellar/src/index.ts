@@ -1,5 +1,5 @@
 /**
- * @reapp-sdk/stellar — Soroban layer for REAPP.
+ * @ackrate/stellar — Soroban layer for Ackrate.
  *
  * Exports the typed MandateRegistry client (generated from the gatechecked contract
  * ABI), network config, a keypair signer adapter, the registry-client factory,

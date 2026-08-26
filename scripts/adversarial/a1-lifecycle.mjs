@@ -1,6 +1,6 @@
-// Gate A1 — full mandate lifecycle through the published @reapp-sdk/core only.
+// Gate A1 — full mandate lifecycle through the published @ackrate/core only.
 // Reviewer-chair test: no repo code, registry packages only, live testnet.
-import { reapp, Errors, toStroops } from "@reapp-sdk/core";
+import { ackrate, Errors, toStroops } from "@ackrate/core";
 import { Keypair } from "@stellar/stellar-sdk";
 
 const results = [];
@@ -28,22 +28,22 @@ await fund(agent, "agent");
 await fund(merchant, "merchant");
 
 // --- mandate: 2.5 XLM budget, 1h expiry ---
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(),
   agent: agent.publicKey(),
   merchant: merchant.publicKey(),
-  asset: reapp.testnet.nativeSac,
+  asset: ackrate.testnet.nativeSac,
   maxAmount: "2.50",
   expiry: Math.floor(Date.now() / 1000) + 3600,
 });
 console.log(`mandate id ${mandate.id}`);
 
-const regTx = await reapp.registerMandate(mandate, { signer: user });
+const regTx = await ackrate.registerMandate(mandate, { signer: user });
 record("registerMandate settles on-chain", typeof regTx === "string" && regTx.length === 64, `tx=${regTx}`);
-const apprTx = await reapp.approveBudget(mandate, { signer: user });
+const apprTx = await ackrate.approveBudget(mandate, { signer: user });
 record("approveBudget (allowance to CONTRACT) settles", typeof apprTx === "string" && apprTx.length === 64, `tx=${apprTx}`);
 
-const payer = reapp.agent({ mandate, signer: agent });
+const payer = ackrate.agent({ mandate, signer: agent });
 const pay1 = await payer.pay("1.00", lifecycle);
 record("pay #1 (1.00) settles", pay1.length === 64, `tx=${pay1}`);
 const pay2 = await payer.pay("1.00", lifecycle);
@@ -64,7 +64,7 @@ const pay3 = await payer.pay("0.50", lifecycle);
 record("pay #3 exact remaining 0.50 settles", pay3.length === 64, `tx=${pay3}`);
 
 // --- independent state readback via low-level typed client ---
-const { registryClient, keypairSigner, TESTNET } = await import("@reapp-sdk/stellar");
+const { registryClient, keypairSigner, TESTNET } = await import("@ackrate/stellar");
 const reader = registryClient(TESTNET, keypairSigner(agent.secret(), TESTNET.networkPassphrase));
 const got = await reader.get_mandate({ mandate_id: mandate.idBuffer });
 const m = got.result?.unwrap ? got.result.unwrap() : got.result;
@@ -72,7 +72,7 @@ record("on-chain spent == 2.50 (independent readback)", m.spent === toStroops("2
 record("on-chain seq == 3 (one per payment)", m.seq === 3, `seq=${m.seq}`);
 
 // --- negative: revoke, then pay ---
-const revTx = await reapp.revokeMandate(mandate, { signer: user });
+const revTx = await ackrate.revokeMandate(mandate, { signer: user });
 record("revokeMandate settles", revTx.length === 64, `tx=${revTx}`);
 try {
   await payer.pay("0.01", lifecycle);
@@ -83,20 +83,20 @@ try {
 }
 
 // --- negative: expiry mid-flow (fresh short mandate) ---
-const shortMandate = reapp.createIntentMandate({
+const shortMandate = ackrate.createIntentMandate({
   user: user.publicKey(),
   agent: agent.publicKey(),
   merchant: merchant.publicKey(),
-  asset: reapp.testnet.nativeSac,
+  asset: ackrate.testnet.nativeSac,
   maxAmount: "1.00",
   expiry: Math.floor(Date.now() / 1000) + 45,
 });
-await reapp.registerMandate(shortMandate, { signer: user });
-await reapp.approveBudget(shortMandate, { signer: user });
+await ackrate.registerMandate(shortMandate, { signer: user });
+await ackrate.approveBudget(shortMandate, { signer: user });
 console.log("waiting 75s for the short mandate to expire on-ledger…");
 await new Promise(r => setTimeout(r, 75_000));
 try {
-  await reapp.agent({ mandate: shortMandate, signer: agent }).pay("0.10", lifecycle);
+  await ackrate.agent({ mandate: shortMandate, signer: agent }).pay("0.10", lifecycle);
   record("contract rejects expired mandate (MandateExpired)", false, "payment unexpectedly settled");
 } catch (err) {
   const msg = String(err?.message ?? err);

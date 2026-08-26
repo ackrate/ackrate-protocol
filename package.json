@@ -1,18 +1,27 @@
 {
-  "name": "reapp-protocol",
+  "name": "ackrate-protocol",
   "version": "0.0.0",
   "private": true,
   "description": "Agent-driven payments: AP2 mandates enforced on-chain by Soroban via x402.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ackrate/ackrate-protocol.git"
+  },
+  "homepage": "https://github.com/ackrate/ackrate-protocol#readme",
+  "bugs": {
+    "url": "https://github.com/ackrate/ackrate-protocol/issues"
+  },
   "workspaces": [
     "packages/*",
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @reapp-sdk/wallet-chat",
-    "build": "npm run build -w @reapp-sdk/stellar && npm run build -w @reapp-sdk/core && npm run build --workspaces --if-present",
-    "cli:bundle": "esbuild packages/cli/src/index.ts --bundle --platform=node --format=esm --target=node20 --external:@stellar/stellar-sdk --banner:js=\"import{createRequire as __cr}from'module';const require=__cr(import.meta.url);\" --outfile=packages/cli/dist/reapp-cli.bundle.mjs",
+    "dev": "npm run dev -w @ackrate/wallet-chat",
+    "build": "npm run build -w @ackrate/stellar && npm run build -w @ackrate/core && npm run build --workspaces --if-present",
+    "cli:bundle": "esbuild packages/cli/src/index.ts --bundle --platform=node --format=esm --target=node20 --external:@stellar/stellar-sdk --banner:js=\"import{createRequire as __cr}from'module';const require=__cr(import.meta.url);\" --outfile=packages/cli/dist/ackrate-cli.bundle.mjs",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "tsc",
+    "check:branding": "node scripts/check-branding.mjs",
     "verify": "node scripts/verify.mjs",
     "demo": "node scripts/e2e-testnet.mjs",
     "keys:derive-freighter": "node scripts/derive-freighter.mjs",
@@ -37,7 +46,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@reapp-sdk/core": "^0.3.1"
+    "@ackrate/core": "^0.3.3"
   },
   "overrides": {
     "axios": "1.19.0",

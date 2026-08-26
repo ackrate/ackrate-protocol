@@ -1,6 +1,6 @@
-# REAPP wallet and consumer chat
+# Ackrate wallet and consumer chat
 
-Next.js application for the complete user-facing REAPP flow:
+Next.js application for the complete user-facing Ackrate flow:
 
 1. authenticate a Stellar G-account with a non-broadcast LOBSTR-signed
    transaction;
@@ -90,9 +90,9 @@ secrets, database credentials, or x402 settlement proofs.
 ## Verification
 
 ```bash
-npm run typecheck -w @reapp-sdk/wallet-chat
-npm test -w @reapp-sdk/wallet-chat
-npm run build -w @reapp-sdk/wallet-chat
+npm run typecheck -w @ackrate/wallet-chat
+npm test -w @ackrate/wallet-chat
+npm run build -w @ackrate/wallet-chat
 npm run verify
 ```
 

@@ -1,19 +1,19 @@
 import { createHash } from "node:crypto";
 import { Buffer } from "buffer";
 import { Address, StrKey } from "@stellar/stellar-sdk";
-import { X_PAYMENT_HEADER, decodePaymentProof, toStroops } from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { X_PAYMENT_HEADER, decodePaymentProof, toStroops } from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { createStellarPaymentVerifier } from "./verification.js";
 import type {
   PaymentRequirement,
-  ReappPaymentMiddlewareOptions,
+  AckratePaymentMiddlewareOptions,
   RequestValue,
   VerifiedPayment,
   X402Challenge,
 } from "./types.js";
 
-export const REAPP_PAYMENT_LOCALS_KEY = "reappPayment" as const;
+export const ACKRATE_PAYMENT_LOCALS_KEY = "ackratePayment" as const;
 const DEFAULT_MAX_HEADER_BYTES = 8_192;
 const DEFAULT_MAX_PROOF_AGE_LEDGERS = 120;
 
@@ -92,7 +92,7 @@ export function buildChallenge(requirement: PaymentRequirement): X402Challenge {
 }
 
 export function getVerifiedPayment(response: Response): VerifiedPayment | undefined {
-  return response.locals[REAPP_PAYMENT_LOCALS_KEY] as VerifiedPayment | undefined;
+  return response.locals[ACKRATE_PAYMENT_LOCALS_KEY] as VerifiedPayment | undefined;
 }
 
 export function createRedemptionKey(
@@ -104,11 +104,11 @@ export function createRedemptionKey(
   return `${networkId}:${registryId.toLowerCase()}:${txHash.toLowerCase()}`;
 }
 
-export function createReappPaymentMiddleware(
-  options: ReappPaymentMiddlewareOptions,
+export function createAckratePaymentMiddleware(
+  options: AckratePaymentMiddlewareOptions,
 ): RequestHandler {
   if (!options || typeof options !== "object") {
-    throw new Error("REAPP payment middleware options are required.");
+    throw new Error("Ackrate payment middleware options are required.");
   }
   if (!options.redemptionStore || typeof options.redemptionStore.consumeOnce !== "function") {
     throw new Error("redemptionStore with an atomic consumeOnce(record) operation is required.");
@@ -124,7 +124,7 @@ export function createReappPaymentMiddleware(
   if (!StrKey.isValidContract(asset)) {
     throw new Error("asset must be a valid Stellar contract address.");
   }
-  const scheme = exactText("scheme", options.scheme ?? "reapp-soroban");
+  const scheme = exactText("scheme", options.scheme ?? "ackrate-soroban");
   const network = exactText("network", options.network ?? "stellar-testnet");
   const decimals = options.decimals ?? 7;
   const maxHeaderBytes = options.maxHeaderBytes ?? DEFAULT_MAX_HEADER_BYTES;
@@ -274,7 +274,7 @@ export function createReappPaymentMiddleware(
       return;
     }
 
-    response.locals[REAPP_PAYMENT_LOCALS_KEY] = verdict.payment;
+    response.locals[ACKRATE_PAYMENT_LOCALS_KEY] = verdict.payment;
     setPrivateResponseHeaders(response);
     next();
   };

@@ -1,6 +1,6 @@
 # Adversarial suite — attack the SDK, watch the contract hold
 
-These scripts try to make REAPP misbehave. They act as a hostile or buggy SDK
+These scripts try to make Ackrate misbehave. They act as a hostile or buggy SDK
 and attempt to move money outside a mandate: overspend, replay, pay the wrong
 merchant, pay after revocation, pay after expiry, forge an AP2 credential, and
 call the token directly. Every attempt is rejected by the deployed
@@ -25,11 +25,11 @@ Or one at a time:
 node scripts/adversarial/a3-bypass-attempts.mjs
 ```
 
-The scripts import the workspace packages (`@reapp-sdk/core`,
-`@reapp-sdk/stellar`, `@reapp-sdk/ap2`, `@reapp-sdk/express-middleware`), so they
+The scripts import the workspace packages (`@ackrate/core`,
+`@ackrate/stellar`, `@ackrate/ap2`, `@ackrate/express-middleware`), so they
 exercise the code in this repository. To attack the **published** packages
 instead, copy a script into an empty directory and
-`npm install @reapp-sdk/core@0.3.1 @reapp-sdk/stellar@0.2.2 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2 @stellar/stellar-sdk@14.5.0 express@5.2.1`.
+`npm install @ackrate/core@0.3.3 @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4 @stellar/stellar-sdk@14.5.0 express@5.2.1`.
 
 ## What each script proves
 

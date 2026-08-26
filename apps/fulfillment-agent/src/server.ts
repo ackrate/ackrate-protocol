@@ -1,10 +1,10 @@
 /**
- * Reference fulfillment agent: an Express API protected by REAPP settlement.
+ * Reference fulfillment agent: an Express API protected by Ackrate settlement.
  *
  * Safe pattern:
  *   - issue a 402 requirement;
  *   - independently verify the successful MandateRegistry payment and matching
- *     SEP-41 transfer through @reapp-sdk/express-middleware;
+ *     SEP-41 transfer through @ackrate/express-middleware;
  *   - atomically bind the settlement transaction to its first signed proof;
  *   - allow only the exact proof to recover the same idempotent resource.
  *
@@ -16,16 +16,21 @@
  */
 import type { Server } from "node:http";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { Buffer } from "buffer";
 import { once } from "node:events";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import {
   InMemoryBoundRedemptionStore,
-  createBoundReappPaidJsonRoute,
-  resolveBoundReappInterruptedDelivery,
+  createBoundAckratePaidJsonRoute,
+  resolveBoundAckrateInterruptedDelivery,
   type BoundRedemptionStore,
   type PaymentVerifier,
-} from "@reapp-sdk/express-middleware";
+} from "@ackrate/express-middleware";
+import {
+  mainnetNetworkFromDeploymentManifest,
+  type NetworkConfig,
+} from "@ackrate/stellar";
 import { FileBoundRedemptionStore } from "./redemption-store.js";
 
 export const SOURCE_PRICE = "1.00";
@@ -53,6 +58,14 @@ export interface FulfillmentAppOptions {
   redemptionStore?: BoundRedemptionStore;
   /** Deterministic test/alternate infrastructure hook. */
   verifier?: PaymentVerifier;
+  /** Explicit network configuration. Mainnet callers must inject the verified release config. */
+  networkConfig?: NetworkConfig;
+  /** SEP-41 asset contract. Mainnet callers pass the manifest's canonical USDC SAC. */
+  asset?: string;
+  /** x402 network label, for example `stellar-mainnet`. */
+  network?: string;
+  /** Human token amount per source. Defaults to 1.00 for the testnet demo. */
+  amount?: string;
 }
 
 export interface ServerOptions extends FulfillmentAppOptions {
@@ -64,10 +77,13 @@ export function createFulfillmentApp(options: FulfillmentAppOptions): Express {
   const app = express();
   const challengeSecret = options.challengeSecret ?? randomBytes(32);
   const redemptionStore = options.redemptionStore ?? new InMemoryBoundRedemptionStore();
-  const paidSource = createBoundReappPaidJsonRoute({
+  const paidSource = createBoundAckratePaidJsonRoute({
     merchant: options.merchant,
     sourceAccount: options.sourceAccount ?? options.merchant,
-    amount: SOURCE_PRICE,
+    amount: options.amount ?? SOURCE_PRICE,
+    networkConfig: options.networkConfig,
+    asset: options.asset,
+    network: options.network,
     audience: options.audience,
     challengeSecret,
     redemptionStore,
@@ -142,24 +158,54 @@ export async function startServer(
   return { server, port, url };
 }
 
-// Standalone merchant: `REAPP_MERCHANT=G... npm run start -w @reapp-sdk/fulfillment-agent`
+// Standalone merchant: `ACKRATE_MERCHANT=G... npm run start -w @ackrate/fulfillment-agent`
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const merchant = (process.env.REAPP_MERCHANT ?? "").trim();
-  const sourceAccount = (process.env.REAPP_READ_SOURCE ?? merchant).trim();
-  const challengeSecret = (process.env.REAPP_CHALLENGE_SECRET ?? "").trim();
-  const redemptionPath = (process.env.REAPP_REDEMPTION_STORE ?? "").trim();
-  const publicOrigin = (process.env.REAPP_PUBLIC_ORIGIN ?? "").trim() || undefined;
-  if (Buffer.byteLength(challengeSecret, "utf8") < 32) {
-    console.error("REAPP_CHALLENGE_SECRET must contain at least 32 bytes for restart-safe fulfillment");
+  const merchant = (process.env.ACKRATE_MERCHANT ?? "").trim();
+  const sourceAccount = (process.env.ACKRATE_READ_SOURCE ?? merchant).trim();
+  const challengeSecret = (process.env.ACKRATE_CHALLENGE_SECRET ?? "").trim();
+  const redemptionPath = (process.env.ACKRATE_REDEMPTION_STORE ?? "").trim();
+  const publicOrigin = (process.env.ACKRATE_PUBLIC_ORIGIN ?? "").trim() || undefined;
+  const network = (process.env.ACKRATE_NETWORK ?? "testnet").trim();
+  let mainnetOptions: Pick<FulfillmentAppOptions, "networkConfig" | "asset" | "network" | "amount"> = {};
+  let configurationError: string | undefined;
+  try {
+    if (network !== "testnet" && network !== "mainnet") {
+      throw new Error("ACKRATE_NETWORK must be testnet or mainnet");
+    }
+    if (network === "mainnet") {
+      const manifestPath = (process.env.ACKRATE_DEPLOYMENT_MANIFEST ?? "").trim();
+      const amount = (process.env.ACKRATE_SOURCE_PRICE ?? "").trim();
+      if (!manifestPath) throw new Error("ACKRATE_DEPLOYMENT_MANIFEST is required on mainnet");
+      if (!/^(?:0|[1-9]\d*)(?:\.\d{1,7})?$/.test(amount) || Number(amount) <= 0 || Number(amount) > 1) {
+        throw new Error("ACKRATE_SOURCE_PRICE must be an explicit positive mainnet USDC amount no greater than 1");
+      }
+      const networkConfig = mainnetNetworkFromDeploymentManifest(
+        JSON.parse(readFileSync(manifestPath, "utf8")) as unknown,
+      );
+      mainnetOptions = {
+        networkConfig,
+        asset: networkConfig.settlementAsset.contractId,
+        network: "stellar-mainnet",
+        amount,
+      };
+    }
+  } catch (error) {
+    configurationError = error instanceof Error ? error.message : String(error);
+  }
+  if (configurationError) {
+    console.error(configurationError);
+    process.exitCode = 1;
+  } else if (Buffer.byteLength(challengeSecret, "utf8") < 32) {
+    console.error("ACKRATE_CHALLENGE_SECRET must contain at least 32 bytes for restart-safe fulfillment");
     process.exitCode = 1;
   } else if (!redemptionPath) {
-    console.error("REAPP_REDEMPTION_STORE must name a private durable redemption file");
+    console.error("ACKRATE_REDEMPTION_STORE must name a private durable redemption file");
     process.exitCode = 1;
   } else {
     const redemptionStore = new FileBoundRedemptionStore(redemptionPath);
     void (async () => {
       for (const record of await redemptionStore.listExecuting()) {
-        await resolveBoundReappInterruptedDelivery({ redemptionStore, record });
+        await resolveBoundAckrateInterruptedDelivery({ redemptionStore, record });
       }
       return startServer({
         merchant,
@@ -167,6 +213,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         challengeSecret,
         audience: publicOrigin,
         redemptionStore,
+        ...mainnetOptions,
         port: Number(process.env.PORT ?? 8402),
       });
     })().then(({ url }) => {

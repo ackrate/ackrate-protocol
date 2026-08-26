@@ -1,11 +1,11 @@
-// Gate A4 — adversarial validation of the PUBLISHED @reapp-sdk/ap2 validator.
+// Gate A4 — adversarial validation of the PUBLISHED @ackrate/ap2 validator.
 // Every mutation of a validly signed AP2 credential must fail closed.
 import {
   InMemoryAp2ReplayStore,
   createAp2ComplianceValidator,
   signAp2Mandate,
-} from "@reapp-sdk/ap2";
-import { reapp } from "@reapp-sdk/core";
+} from "@ackrate/ap2";
+import { ackrate } from "@ackrate/core";
 import { Keypair } from "@stellar/stellar-sdk";
 
 const results = [];
@@ -33,7 +33,7 @@ function freshCredential(overrides = {}) {
     stellar: {
       user: USER.publicKey(),
       agent: AGENT.publicKey(),
-      asset: reapp.testnet.nativeSac,
+      asset: ackrate.testnet.nativeSac,
       maxAmount: "5.00",
       ...overrides.stellar,
     },
@@ -43,7 +43,7 @@ function freshCredential(overrides = {}) {
 function freshValidator() {
   return createAp2ComplianceValidator({
     replayStore: new InMemoryAp2ReplayStore(),
-    replayNamespace: `stellar-testnet:${reapp.testnet.mandateRegistryId}`,
+    replayNamespace: `stellar-testnet:${ackrate.testnet.mandateRegistryId}`,
   });
 }
 

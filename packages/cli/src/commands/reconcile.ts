@@ -1,5 +1,4 @@
-import { rpc } from "@stellar/stellar-sdk";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { Networks, rpc } from "@stellar/stellar-sdk";
 import { c, log } from "../ui.js";
 import {
   acknowledgeCompletedSettlement,
@@ -10,7 +9,8 @@ import {
 } from "../settlement-store.js";
 
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
-const explorer = (hash: string) => `https://stellar.expert/explorer/testnet/tx/${hash}`;
+const explorer = (network: "testnet" | "mainnet", hash: string) =>
+  `https://stellar.expert/explorer/${network === "mainnet" ? "public" : "testnet"}/tx/${hash}`;
 
 export async function runSettlementReconcile(): Promise<void> {
   const loaded = await loadPendingSettlement();
@@ -27,21 +27,26 @@ export async function runSettlementReconcile(): Promise<void> {
   if (loaded.kind === "completed") {
     const hash = loaded.record.pending.txHash;
     log.chain("prepared payment succeeded and remains durably locked", { tx: short(hash) });
-    console.log(c.dim(`  ${explorer(hash)}`));
-    log.info(`after you durably accept this result, run \`reapp settlement acknowledge ${hash}\``);
+    console.log(c.dim(`  ${explorer(loaded.record.network, hash)}`));
+    log.info(`after you durably accept this result, run \`ackrate settlement acknowledge ${hash}\``);
     return;
   }
 
-  const { pending, source, contractId } = loaded.record;
+  const { pending, source, contractId, network, rpcUrl } = loaded.record;
   log.step("reconciling exact prepared transaction", {
     tx: short(pending.txHash),
     source,
     contract: `${contractId.slice(0, 6)}…${contractId.slice(-4)}`,
   });
 
-  const server = new rpc.Server(TESTNET.rpcUrl);
+  const server = new rpc.Server(rpcUrl);
   let response;
   try {
+    const identity = await server.getNetwork();
+    const expectedPassphrase = network === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
+    if (identity.passphrase !== expectedPassphrase) {
+      throw new Error("RPC network identity does not match the durable settlement journal");
+    }
     response = await server.getTransaction(pending.txHash);
   } catch (error) {
     log.err("RPC reconciliation failed; pending state retained", {
@@ -54,14 +59,14 @@ export async function runSettlementReconcile(): Promise<void> {
   if (response.status === rpc.Api.GetTransactionStatus.SUCCESS) {
     await markSettlementCompleted(pending.txHash);
     log.chain("prepared payment succeeded; durable acknowledgment is required", { tx: short(pending.txHash) });
-    console.log(c.dim(`  ${explorer(pending.txHash)}`));
-    log.info(`after you durably accept this result, run \`reapp settlement acknowledge ${pending.txHash}\``);
+    console.log(c.dim(`  ${explorer(network, pending.txHash)}`));
+    log.info(`after you durably accept this result, run \`ackrate settlement acknowledge ${pending.txHash}\``);
     return;
   }
   if (response.status === rpc.Api.GetTransactionStatus.FAILED) {
     await clearPendingSettlement(pending.txHash);
     log.warn("prepared payment finalized as failed; journal cleared");
-    console.log(c.dim(`  ${explorer(pending.txHash)}`));
+    console.log(c.dim(`  ${explorer(network, pending.txHash)}`));
     return;
   }
 

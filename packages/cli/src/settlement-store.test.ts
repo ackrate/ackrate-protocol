@@ -4,8 +4,8 @@ import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
-import { TESTNET } from "@reapp-sdk/stellar";
-import type { PendingSettlement } from "@reapp-sdk/core";
+import { TESTNET } from "@ackrate/stellar";
+import type { PendingSettlement } from "@ackrate/core";
 import {
   acknowledgeCompletedSettlement,
   assertNoPendingSettlement,
@@ -18,18 +18,18 @@ import {
 } from "./settlement-store.js";
 
 const roots: string[] = [];
-const previousHome = process.env.REAPP_HOME;
+const previousHome = process.env.ACKRATE_HOME;
 
 afterEach(async () => {
-  if (previousHome === undefined) delete process.env.REAPP_HOME;
-  else process.env.REAPP_HOME = previousHome;
+  if (previousHome === undefined) delete process.env.ACKRATE_HOME;
+  else process.env.ACKRATE_HOME = previousHome;
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
 async function home(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), "reapp-cli-settlement-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-cli-settlement-"));
   roots.push(root);
-  process.env.REAPP_HOME = root;
+  process.env.ACKRATE_HOME = root;
   return root;
 }
 
@@ -65,15 +65,15 @@ test("two separate CLI processes cannot both acquire the payment journal", async
   const moduleUrl = new URL("./settlement-store.ts", import.meta.url).href;
   const code = `
     import { claimPendingSettlement } from ${JSON.stringify(moduleUrl)};
-    const pending = JSON.parse(process.env.REAPP_TEST_PENDING);
+    const pending = JSON.parse(process.env.ACKRATE_TEST_PENDING);
     await claimPendingSettlement("pay", ${JSON.stringify(TESTNET.mandateRegistryId)}, pending);
   `;
   const run = (value: PendingSettlement) => new Promise<number | null>((resolve, reject) => {
     const child = spawn(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", code], {
       env: {
         ...process.env,
-        REAPP_HOME: root,
-        REAPP_TEST_PENDING: JSON.stringify(value),
+        ACKRATE_HOME: root,
+        ACKRATE_TEST_PENDING: JSON.stringify(value),
       },
       stdio: "ignore",
     });
@@ -111,6 +111,37 @@ test("successful settlement remains locked across restart until exact acknowledg
   await acknowledgeCompletedSettlement(hash);
   assert.equal((await loadPendingSettlement()).kind, "none");
   await assert.doesNotReject(() => assertNoPendingSettlement());
+});
+
+test("mainnet journal pins the public network and exact credential-free RPC", async () => {
+  await home();
+  await claimPendingSettlement("demo", TESTNET.mandateRegistryId, pending(), {
+    network: "mainnet",
+    rpcUrl: "https://rpc.mainnet.example",
+  });
+  const loaded = await loadPendingSettlement();
+  assert.equal(loaded.kind, "pending");
+  if (loaded.kind !== "pending") assert.fail("expected pending journal");
+  assert.equal(loaded.record.version, 3);
+  assert.equal(loaded.record.network, "mainnet");
+  assert.equal(loaded.record.rpcUrl, "https://rpc.mainnet.example");
+});
+
+test("legacy testnet v2 journal remains recoverable", async () => {
+  await home();
+  await mkdir(settlementDirectory(), { mode: 0o700 });
+  await writeFile(join(settlementDirectory(), "state.json"), `${JSON.stringify({
+    version: 2,
+    state: "pending",
+    source: "pay",
+    network: "testnet",
+    contractId: TESTNET.mandateRegistryId,
+    pending: pending(),
+  })}\n`, { mode: 0o600 });
+  const loaded = await loadPendingSettlement();
+  assert.equal(loaded.kind, "pending");
+  if (loaded.kind !== "pending") assert.fail("expected pending journal");
+  assert.equal(loaded.record.rpcUrl, TESTNET.rpcUrl);
 });
 
 test("completed transition is idempotent for only the exact transaction hash", async () => {

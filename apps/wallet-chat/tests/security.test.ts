@@ -35,7 +35,7 @@ test("authentication accepts only the exact transaction signed by the expected a
   const unsigned = new TransactionBuilder(new Account(expected.publicKey(), "100"), {
     fee: "100",
     networkPassphrase: Networks.TESTNET,
-  }).addOperation(Operation.manageData({ name: "reapp.auth.v1", value: Buffer.alloc(16, 7) }))
+  }).addOperation(Operation.manageData({ name: "ackrate.auth.v1", value: Buffer.alloc(16, 7) }))
     .setTimebounds(1_000, 1_300)
     .build();
   const hash = unsigned.hash().toString("hex");
@@ -45,7 +45,7 @@ test("authentication accepts only the exact transaction signed by the expected a
   const rogueSigned = new TransactionBuilder(new Account(expected.publicKey(), "100"), {
     fee: "100",
     networkPassphrase: Networks.TESTNET,
-  }).addOperation(Operation.manageData({ name: "reapp.auth.v1", value: Buffer.alloc(16, 7) }))
+  }).addOperation(Operation.manageData({ name: "ackrate.auth.v1", value: Buffer.alloc(16, 7) }))
     .setTimebounds(1_000, 1_300)
     .build();
   rogueSigned.sign(rogue);

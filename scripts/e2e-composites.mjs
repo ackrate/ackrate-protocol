@@ -27,7 +27,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { TESTNET } from "@ackrate/stellar";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
@@ -60,13 +60,13 @@ const die = (m) => { console.error(`\n${c.red("✖")} ${c.red(m)}`); exit(1); };
 const CONTRACT = TESTNET.mandateRegistryId;
 const RPC = process.env.SOROBAN_RPC_URL?.trim();
 const PASS = process.env.NETWORK_PASSPHRASE?.trim();
-const ORIGINATOR_SECRET = process.env.REAPP_BURNER_SECRET_KEY?.trim();
-const ORIGINATOR = process.env.REAPP_BURNER_PUBLIC_KEY?.trim();
+const ORIGINATOR_SECRET = process.env.ACKRATE_BURNER_SECRET_KEY?.trim();
+const ORIGINATOR = process.env.ACKRATE_BURNER_PUBLIC_KEY?.trim();
 const NET = ["--rpc-url", RPC, "--network-passphrase", PASS];
 
 if (!CONTRACT) die("MANDATE_REGISTRY_CONTRACT_ID not set (run npm run deploy:testnet first).");
 if (!RPC || !PASS) die("SOROBAN_RPC_URL / NETWORK_PASSPHRASE not set.");
-if (!ORIGINATOR_SECRET?.startsWith("S") || !ORIGINATOR) die("REAPP burner keys not set in .env.");
+if (!ORIGINATOR_SECRET?.startsWith("S") || !ORIGINATOR) die("Ackrate burner keys not set in .env.");
 
 const maskSecret = (s) => `${s.slice(0, 4)}${c.dim("…")}${s.slice(-4)}`;
 const num = (v) => Number(String(v).replace(/[^0-9-]/g, "") || "0");
@@ -155,7 +155,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function main() {
   log("");
   log(RULE(c.magenta));
-  log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("composite mandates e2e")} ${c.dim("— testnet, no mocks")}`);
+  log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("composite mandates e2e")} ${c.dim("— testnet, no mocks")}`);
   log(RULE(c.magenta));
   log(`  ${c.dim("Three independent buyer agents clear ONE deal no single agent could")}`);
   log(`  ${c.dim("trigger alone. The clearing price is a pure on-chain function of the")}`);
@@ -166,8 +166,8 @@ async function main() {
 
   step("Accounts (friendbot-funded)");
   note("A fresh merchant plus three fresh, independent buyers.");
-  const MERCHANT = ensureAccount("reapp-gb-merchant");
-  const BUYERS = ["reapp-gb-buyer1", "reapp-gb-buyer2", "reapp-gb-buyer3"].map((n) => ({
+  const MERCHANT = ensureAccount("ackrate-gb-merchant");
+  const BUYERS = ["ackrate-gb-buyer1", "ackrate-gb-buyer2", "ackrate-gb-buyer3"].map((n) => ({
     name: n,
     addr: ensureAccount(n),
   }));

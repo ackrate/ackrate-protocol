@@ -6,17 +6,17 @@ import express from "express";
 import { Keypair } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
   createBoundPaymentProof,
   encodePaymentProof,
   parse402,
-} from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
+} from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
 import {
   InMemoryBoundRedemptionStore,
-  createBoundReappPaidJsonRoute,
-  resolveBoundReappInterruptedDelivery,
+  createBoundAckratePaidJsonRoute,
+  resolveBoundAckrateInterruptedDelivery,
   type BoundDeliveryRecord,
   type BoundJsonFulfillment,
   type BoundRedemptionStore,
@@ -42,7 +42,7 @@ function payment(): VerifiedPayment {
   return {
     txHash, ledger: 100, mandateId, user, agent: agentKey.publicKey(), amount: "1",
     amountStroops: 10_000_000n, merchant, asset: TESTNET.nativeSac,
-    registryId: TESTNET.mandateRegistryId, scheme: "reapp-soroban-bound", network: "stellar-testnet",
+    registryId: TESTNET.mandateRegistryId, scheme: "ackrate-soroban-bound", network: "stellar-testnet",
   };
 }
 
@@ -60,7 +60,7 @@ async function start(options: {
       return { ok: true, payment: payment() };
     },
   };
-  const route = createBoundReappPaidJsonRoute({
+  const route = createBoundAckratePaidJsonRoute({
     merchant,
     amount: "1.00",
     audience: options.audience ?? (() => runtimeAudience),
@@ -87,7 +87,7 @@ async function start(options: {
   return { url, calls: () => calls };
 }
 
-const capability = { [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY };
+const capability = { [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY };
 
 async function proof(url: string) {
   const quote = await fetch(`${url}/source/market`, { headers: capability });
@@ -170,7 +170,7 @@ test("result-store failure sends no resource, never re-runs work, and supports t
   assert.equal(app.calls(), 1);
 
   assert.ok(claimedRecord);
-  await resolveBoundReappInterruptedDelivery({ redemptionStore: base, record: claimedRecord });
+  await resolveBoundAckrateInterruptedDelivery({ redemptionStore: base, record: claimedRecord });
   const resolved = await fetch(`${app.url}/source/market`, { headers: headers(paymentProof) });
   assert.equal(resolved.status, 200);
   assert.deepEqual(await resolved.json(), {

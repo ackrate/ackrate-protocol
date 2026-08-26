@@ -1,13 +1,13 @@
-# Historical security gate check: REAPP SDK (2026-06-15)
+# Historical security gate check: Ackrate SDK (2026-06-15)
 
-> Point-in-time record for `@reapp-sdk/core@0.1.2` and
-> `@reapp-sdk/stellar@0.1.1`. It is not release evidence for core 0.3.0,
+> Point-in-time record for `@ackrate/core@0.1.2` and
+> `@ackrate/stellar@0.1.1`. It is not release evidence for core 0.3.0,
 > Stellar 0.2.1, or bound-v2 middleware.
 
 - **Date:** 2026-06-15
-- **Target:** `packages/sdk` (`@reapp-sdk/core`, gatechecked at 0.1.2) and `packages/stellar` (`@reapp-sdk/stellar`, gatechecked at 0.1.1), plus the published `dist/` artifacts and `package.json` manifests.
+- **Target:** `packages/sdk` (`@ackrate/core`, gatechecked at 0.1.2) and `packages/stellar` (`@ackrate/stellar`, gatechecked at 0.1.1), plus the published `dist/` artifacts and `package.json` manifests.
 - **Method:** multi-agent adversarial review adversarial sweep. 31 agents across 8 attack surfaces. Every candidate finding was independently re-verified against the actual source by a separate skeptic agent (refute-by-default), then a completeness critic looked for surfaces and edges the sweep missed. Several findings were reproduced empirically against the installed `@stellar/stellar-sdk`.
-- **Recorded result:** 22 candidate findings, **0 confirmed defects in this historical scope**, 0 then-current testnet blockers. Two low-severity input-bound gaps were fixed in `@reapp-sdk/core` 0.1.2 during this pass.
+- **Recorded result:** 22 candidate findings, **0 confirmed defects in this historical scope**, 0 then-current testnet blockers. Two low-severity input-bound gaps were fixed in `@ackrate/core` 0.1.2 during this pass.
 
 ## The bar
 
@@ -25,9 +25,9 @@ Amount parsing and money math · Custody boundary and allowance · SDK-cannot-by
 - **The recipient is not SDK-supplied at pay time.** `execute_payment` takes only `{mandate_id, amount, expected_seq}`. The payee is read from the stored mandate on-chain, so a hostile SDK cannot redirect a payment to an attacker address.
 - **Amount parsing is strict.** `toStroops` is ASCII-anchored and rejects negatives, scientific notation, hex, extra precision, and unicode / full-width / Arabic-Indic digits. Every adversarial input throws rather than producing a wrong integer.
 - **No secret is logged, serialized, or put in an error message** anywhere in the signer or SDK path. Thrown errors carry only the mandate id and the contract's own message.
-- **Package hygiene is clean.** Both packages publish `dist` only (`files: ["dist"]`), run no install or postinstall scripts, ship no secrets (verified with `npm pack --dry-run` and a secret-shaped grep over `dist`), and the `@reapp-sdk` scope is owned. Network constants (contract id, passphrase, native SAC) are correct, internally consistent across source and `dist`, and verified against on-chain reality.
+- **Package hygiene is clean.** Both packages publish `dist` only (`files: ["dist"]`), run no install or postinstall scripts, ship no secrets (verified with `npm pack --dry-run` and a secret-shaped grep over `dist`), and the `@ackrate` scope is owned. Network constants (contract id, passphrase, native SAC) are correct, internally consistent across source and `dist`, and verified against on-chain reality.
 
-## Fixed during this pass (`@reapp-sdk/core` 0.1.2)
+## Fixed during this pass (`@ackrate/core` 0.1.2)
 
 Both were real but not exploitable. Each broke the strictness `toStroops` promises in its own docstring. Since the contract already rejects the dangerous outcomes, neither could move wrong funds against anyone. We fixed them so the SDK fails loudly on its own rather than leaning on the contract to catch a wrapped value.
 

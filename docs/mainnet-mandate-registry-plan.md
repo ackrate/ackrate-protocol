@@ -16,7 +16,7 @@ not authorize deployment by itself.
 
 The outcome is one source-verifiable MandateRegistry on Stellar mainnet that:
 
-- preserves REAPP's contract-authoritative payment invariant;
+- preserves Ackrate's contract-authoritative payment invariant;
 - uses OpenZeppelin Stellar role-based access control;
 - requires two of three independent custodians to authorize every upgrade and
   every change that can expand privileged authority;
@@ -28,7 +28,7 @@ The outcome is one source-verifiable MandateRegistry on Stellar mainnet that:
 - publishes its observed contract identity through one generated release
   manifest consumed by SDK configuration;
 - completes one tightly bounded, short-lived, real-USDC purchase through the
-  full REAPP flow; and
+  full Ackrate flow; and
 - leaves enough public evidence for an independent operator to reproduce the
   build, verify authority and configuration, and trace the canary payment.
 
@@ -372,14 +372,14 @@ secret store. Proposed commands are product design, not currently shipped
 behavior:
 
 ```bash
-reapp-protocol-cli ops prepare --manifest candidate.json --out request.json
-reapp-protocol-cli ops inspect --request request.json
-reapp-protocol-cli ops sign --request request.json --signer external --out A.sig.json
-reapp-protocol-cli ops verify-signature --request request.json --signature A.sig.json
-reapp-protocol-cli ops assemble --request request.json --signature A.sig.json --signature B.sig.json --out envelope.xdr
-reapp-protocol-cli ops verify-envelope --request request.json --envelope envelope.xdr
-reapp-protocol-cli ops submit --request request.json --envelope envelope.xdr
-reapp-protocol-cli ops status --operation-id <operation-id> --network mainnet
+@ackrate/cli ops prepare --manifest candidate.json --out request.json
+@ackrate/cli ops inspect --request request.json
+@ackrate/cli ops sign --request request.json --signer external --out A.sig.json
+@ackrate/cli ops verify-signature --request request.json --signature A.sig.json
+@ackrate/cli ops assemble --request request.json --signature A.sig.json --signature B.sig.json --out envelope.xdr
+@ackrate/cli ops verify-envelope --request request.json --envelope envelope.xdr
+@ackrate/cli ops submit --request request.json --envelope envelope.xdr
+@ackrate/cli ops status --operation-id <operation-id> --network mainnet
 ```
 
 `prepare` writes an immutable request. `inspect`, `verify-signature`, and
@@ -846,7 +846,7 @@ expansion and invokes the incident path.
 - [Stellar CLI asset-contract derivation and deployment](https://developers.stellar.org/docs/tools/cli/cookbook/deploy-stellar-asset-contract)
 - [Circle USDC addresses](https://developers.circle.com/stablecoins/usdc-contract-addresses)
 
-## Related REAPP documents
+## Related Ackrate documents
 
 - [Mainnet delivery roadmap](mainnet-roadmap.md)
 - [Current MandateRegistry testnet evidence](mandate-registry-contract.md)

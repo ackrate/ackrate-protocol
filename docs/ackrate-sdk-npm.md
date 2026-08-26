@@ -1,6 +1,6 @@
-# REAPP npm packages
+# Ackrate npm packages
 
-REAPP publishes typed ESM packages with packed API documentation and examples.
+Ackrate publishes typed ESM packages with packed API documentation and examples.
 The SDK is untrusted infrastructure: it never receives the user allowance and
 cannot replace the contract's `execute_payment` checks.
 
@@ -8,18 +8,18 @@ cannot replace the contract's `execute_payment` checks.
 
 | Package | Version | Purpose |
 |---|---:|---|
-| `@reapp-sdk/core` | 0.3.1 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
-| `@reapp-sdk/stellar` | 0.2.2 | Typed contract bindings, permanent testnet deployment, network config, signing and token helpers. |
-| `@reapp-sdk/ap2` | 0.3.0 | Signed AP2 profile validation and replay admission. |
-| `@reapp-sdk/express-middleware` | 0.2.2 | Bound-v2 Express payment boundary and chain verifier. |
-| `reapp-protocol-cli` | 0.1.7 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo commands. |
+| `@ackrate/core` | 0.3.1 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
+| `@ackrate/stellar` | 0.2.2 | Typed contract bindings, permanent testnet deployment, network config, signing and token helpers. |
+| `@ackrate/ap2` | 0.3.0 | Signed AP2 profile validation and replay admission. |
+| `@ackrate/express-middleware` | 0.2.2 | Bound-v2 Express payment boundary and chain verifier. |
+| `@ackrate/cli` | 0.1.7 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo commands. |
 
-The unrelated npm package `reapp-cli` is owned by another publisher. Use the
+The unrelated npm package `ackrate-cli` is owned by another publisher. Use the
 project's unambiguous public CLI name:
 
 ```bash
-npm install -g reapp-protocol-cli
-reapp demo research-agent
+npm install -g @ackrate/cli
+ackrate demo research-agent
 ```
 
 ## Install
@@ -27,19 +27,19 @@ reapp demo research-agent
 Application client:
 
 ```bash
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @ackrate/core@0.3.3 @stellar/stellar-sdk
 ```
 
 Pinned testnet SDK packages:
 
 ```bash
-npm install @reapp-sdk/stellar@0.2.2 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2
+npm install @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
 ```
 
 ## Bound-v2 client API
 
 ```ts
-const agent = reapp.agent({
+const agent = ackrate.agent({
   mandate,
   signer: agentKey,
   proofPolicy: "bound-v2-only",
@@ -57,7 +57,7 @@ Important exports:
 
 | Export | Purpose |
 |---|---|
-| `reapp.createIntentMandate` | Canonical local mandate construction. |
+| `ackrate.createIntentMandate` | Canonical local mandate construction. |
 | `registerMandate` / `approveBudget` | User-authorized on-chain setup. |
 | `Agent.pay` | Agent-authorized `execute_payment`. |
 | `Agent.fetch` | Bound-v2 capability, challenge validation, payment, signed proof, and delivery. |
@@ -78,12 +78,12 @@ same receipt is reconciled/recovered and explicitly acknowledged.
 
 Direct `Agent.pay` also fails before network unless its required `onPrepared`
 hook durably journals the signed hash and validity window. The CLI demonstrates
-that contract with `reapp settlement reconcile` plus explicit exact-hash
-`reapp settlement acknowledge <TX_HASH>` for a successful result.
+that contract with `ackrate settlement reconcile` plus explicit exact-hash
+`ackrate settlement acknowledge <TX_HASH>` for a successful result.
 
 ## Express API
 
-Use `createBoundReappPaidJsonRoute`, a stable private challenge secret, an exact
+Use `createBoundAckratePaidJsonRoute`, a stable private challenge secret, an exact
 configured public HTTP(S) origin, and a required `BoundRedemptionStore`. GET is
 the only paid method. The route verifies the exact challenge, chain-derived
 agent signature, MandateRegistry event, current identities, and matching SEP-41
@@ -96,7 +96,7 @@ executing claim or infrastructure outage returns `503`. In-memory state is
 demo-only; multi-worker production requires a shared durable linearizable
 claim/result store and a transactional outbox for external side effects. Only a
 trusted operator/outbox, after proving the execution owner is dead, may call
-`resolveBoundReappInterruptedDelivery` to commit one terminal result.
+`resolveBoundAckrateInterruptedDelivery` to commit one terminal result.
 
 ## AP2 API
 
@@ -128,11 +128,11 @@ The gate check:
 Registry proof is a separate external check:
 
 ```bash
-npm view @reapp-sdk/core@0.3.1 version dist.integrity
-npm view @reapp-sdk/stellar@0.2.2 version dist.integrity
-npm view @reapp-sdk/ap2@0.3.0 version dist.integrity
-npm view @reapp-sdk/express-middleware@0.2.2 version dist.integrity
-npm view reapp-protocol-cli@0.1.7 version dist.integrity
+npm view @ackrate/core@0.3.3 version dist.integrity
+npm view @ackrate/stellar@0.2.4 version dist.integrity
+npm view @ackrate/ap2@0.3.2 version dist.integrity
+npm view @ackrate/express-middleware@0.2.4 version dist.integrity
+npm view @ackrate/cli@0.1.9 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,

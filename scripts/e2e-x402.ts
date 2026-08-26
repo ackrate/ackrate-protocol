@@ -21,14 +21,14 @@ import { join } from "node:path";
 import { Keypair } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
   createBoundPaymentProof,
   encodePaymentProof,
   parse402,
-  reapp,
-} from "@reapp-sdk/core";
-import { TESTNET, token } from "@reapp-sdk/stellar";
+  ackrate,
+} from "@ackrate/core";
+import { TESTNET, token } from "@ackrate/stellar";
 import { startServer } from "../apps/fulfillment-agent/src/server.ts";
 import { FileBoundRedemptionStore } from "../apps/fulfillment-agent/src/redemption-store.ts";
 import { buyResearch } from "../apps/consumer-agent/src/research-agent.ts";
@@ -72,7 +72,7 @@ async function main() {
 
   log("");
   log(RULE(c.magenta));
-  log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("x402 round-trip e2e")} ${c.dim("— live testnet, no mocks")}`);
+  log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("x402 round-trip e2e")} ${c.dim("— live testnet, no mocks")}`);
   log(RULE(c.magenta));
   field("contract", c.yellow(TESTNET.mandateRegistryId));
   field("user", c.yellow(user.publicKey()));
@@ -85,17 +85,17 @@ async function main() {
   log(`     ${c.green("✓")} funded`);
 
   log(`\n${c.cyan("▸")} ${c.bold("User signs a 3 XLM mandate (register + approve)")}`);
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
     asset, maxAmount: BUDGET, expiry: Math.floor(Date.now() / 1000) + 3600,
   });
-  const reg = await reapp.registerMandate(mandate, { signer: user.secret() });
-  const appr = await reapp.approveBudget(mandate, { signer: user.secret() });
+  const reg = await ackrate.registerMandate(mandate, { signer: user.secret() });
+  const appr = await ackrate.approveBudget(mandate, { signer: user.secret() });
   field("mandate", c.dim(mandate.id));
   field("register", tx(reg));
   field("approve", tx(appr));
 
-  const receiptRoot = await mkdtemp(join(tmpdir(), "reapp-e2e-receipts-"));
+  const receiptRoot = await mkdtemp(join(tmpdir(), "ackrate-e2e-receipts-"));
   const receiptStore = new FileSettlementReceiptStore(join(receiptRoot, "pending.json"));
   const outcomeStore = new FilePurchaseOutcomeStore(join(receiptRoot, "outcomes.json"));
   const redemptionStore = new FileBoundRedemptionStore(join(receiptRoot, "redemptions.json"));
@@ -129,7 +129,7 @@ async function main() {
 
   log(`\n${c.cyan("▸")} ${c.bold("Adversarial replay: re-sign the first tx for a fresh resource")}`);
   const replayQuote = await fetch(`${url}/source/expert`, {
-    headers: { [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY },
+    headers: { [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY },
   });
   const replayRequirement = await parse402(replayQuote);
   if (!replayRequirement.challenge || !results[0]?.receipt) {
@@ -143,7 +143,7 @@ async function main() {
   });
   const replayAttack = await fetch(`${url}/source/expert`, {
     headers: {
-      [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY,
+      [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY,
       [X_PAYMENT_HEADER]: encodePaymentProof(conflictingProof),
     },
   });

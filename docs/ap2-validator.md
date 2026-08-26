@@ -1,6 +1,6 @@
 # AP2 compliance validator
 
-`@reapp-sdk/ap2` verifies the Stellar Ed25519 signature, separately trusted user,
+`@ackrate/ap2` verifies the Stellar Ed25519 signature, separately trusted user,
 single-merchant scope, amount, expiry, binding hash, strict schema, and atomic
 admission replay state. AP2 and x402 adapters are isolated from the MandateRegistry,
 so their profile/wire logic can evolve without touching the contract.
@@ -10,14 +10,14 @@ so their profile/wire logic can evolve without touching the contract.
 Nothing to clone; validation runs in-process (no chain, no testnet).
 
 ```bash
-npm install @reapp-sdk/ap2@0.3.0 @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @ackrate/ap2@0.3.2 @ackrate/core@0.3.3 @stellar/stellar-sdk
 ```
 
 ```js
 // validate.mjs — sign an AP2 IntentMandate, then check it accepts and fails closed.
 import { Keypair } from "@stellar/stellar-sdk";
-import { reapp } from "@reapp-sdk/core";
-import { signAp2Mandate, createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@reapp-sdk/ap2";
+import { ackrate } from "@ackrate/core";
+import { signAp2Mandate, createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
 
 const user = Keypair.random(), agent = Keypair.random(), merchant = Keypair.random();
 
@@ -31,7 +31,7 @@ const credential = signAp2Mandate({
   stellar: {
     user: user.publicKey(),
     agent: agent.publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "5.00",
   },
 }, user);
@@ -60,6 +60,6 @@ Tamper any signed field — amount, merchant, expiry, the signature itself — a
 
 ## Test suite
 
-From a clone of the monorepo, the full suite runs with `npm test -w @reapp-sdk/ap2`:
+From a clone of the monorepo, the full suite runs with `npm test -w @ackrate/ap2`:
 59 passing tests including valid mandates, altered signatures, wrong merchants,
 overspend, expiry, replay, schema mutation, and store failure.

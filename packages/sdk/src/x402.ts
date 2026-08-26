@@ -1,5 +1,5 @@
 /**
- * Isolated x402 wire adapter for REAPP.
+ * Isolated x402 wire adapter for Ackrate.
  *
  * Legacy v1 remains decodable for one compatibility window. New public
  * fulfillment uses the bound-v2 scheme: the merchant authenticates a challenge
@@ -11,9 +11,9 @@ import { Buffer } from "buffer";
 import { Keypair, hash } from "@stellar/stellar-sdk";
 
 export const X_PAYMENT_HEADER = "x-payment";
-export const REAPP_PAYMENT_CAPABILITIES_HEADER = "reapp-payment-capabilities";
-export const BOUND_PAYMENT_CAPABILITY = "reapp-bound-v2";
-export const BOUND_PAYMENT_SCHEME = "reapp-soroban-bound";
+export const ACKRATE_PAYMENT_CAPABILITIES_HEADER = "ackrate-payment-capabilities";
+export const BOUND_PAYMENT_CAPABILITY = "ackrate-bound-v2";
+export const BOUND_PAYMENT_SCHEME = "ackrate-soroban-bound";
 
 export interface BoundPaymentChallengeV2 {
   proofVersion: 2;
@@ -75,8 +75,8 @@ export interface BoundPaymentProofV2 {
 
 export type PaymentProof = LegacyPaymentProof | BoundPaymentProofV2;
 
-const CHALLENGE_DOMAIN = Buffer.from("REAPP\0X402\0CHALLENGE\0V2\0", "utf8");
-const PROOF_DOMAIN = Buffer.from("REAPP\0X402\0BOUND-PROOF\0V2\0", "utf8");
+const CHALLENGE_DOMAIN = Buffer.from("ACKRATE\0X402\0CHALLENGE\0V2\0", "utf8");
+const PROOF_DOMAIN = Buffer.from("ACKRATE\0X402\0BOUND-PROOF\0V2\0", "utf8");
 const HEX_32 = /^[0-9a-f]{64}$/;
 
 function exactKeys(value: Record<string, unknown>, expected: readonly string[], label: string): void {
@@ -285,6 +285,41 @@ export function createBoundPaymentProof(input: {
   });
 }
 
+/** Create a bound proof through an injected signer without exposing a secret. */
+export async function createBoundPaymentProofWithSigner(input: {
+  challenge: BoundPaymentChallengeV2;
+  txHash: string;
+  mandateId: string;
+  signer: {
+    publicKey: string;
+    signPayload: (payload: Uint8Array) => Promise<Uint8Array>;
+  };
+}): Promise<BoundPaymentProofV2> {
+  const challenge = parseBoundPaymentChallenge(input.challenge);
+  Object.freeze(challenge.authorization);
+  Object.freeze(challenge);
+  const txHash = input.txHash.toLowerCase();
+  const mandateId = input.mandateId.toLowerCase();
+  const digest = boundProofDigest({ challenge, txHash, mandateId });
+  const signed = Buffer.from(await input.signer.signPayload(digest));
+  if (signed.length !== 64 || !Keypair.fromPublicKey(input.signer.publicKey).verify(digest, signed)) {
+    throw new Error("x402: external signer returned an invalid bound-proof signature");
+  }
+  const authorization = Object.freeze({
+    algorithm: "stellar-ed25519-sha256" as const,
+    signature: signed.toString("base64"),
+  });
+  return Object.freeze({
+    proofVersion: 2,
+    scheme: challenge.scheme,
+    network: challenge.network,
+    txHash,
+    mandateId,
+    challenge,
+    authorization,
+  });
+}
+
 export function verifyBoundPaymentProofSignature(proof: BoundPaymentProofV2, agent: string): boolean {
   try {
     if (proof.authorization.algorithm !== "stellar-ed25519-sha256") return false;
@@ -315,13 +350,13 @@ export async function parse402(response: Response): Promise<PaymentRequired> {
   if (!amount) throw new Error("x402: the payment requirement is missing an amount");
   if (!payTo) throw new Error("x402: the payment requirement is missing `payTo` (the merchant)");
   const extra = object(accepted.extra ?? {}, "payment requirement extra");
-  if ("reappProofVersion" in extra && extra.reappProofVersion !== 2) {
-    throw new Error("x402: unsupported REAPP payment proof version");
+  if ("ackrateProofVersion" in extra && extra.ackrateProofVersion !== 2) {
+    throw new Error("x402: unsupported Ackrate payment proof version");
   }
-  const proofVersion = extra.reappProofVersion === 2 ? 2 : 1;
+  const proofVersion = extra.ackrateProofVersion === 2 ? 2 : 1;
   const challenge = proofVersion === 2 ? parseBoundPaymentChallenge(extra.challenge) : undefined;
   return {
-    scheme: String(accepted.scheme ?? "reapp-soroban"),
+    scheme: String(accepted.scheme ?? "ackrate-soroban"),
     network: String(accepted.network ?? "stellar-testnet"),
     amount,
     asset: String(accepted.asset ?? ""),

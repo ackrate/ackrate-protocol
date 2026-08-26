@@ -2,9 +2,9 @@ import { createHash } from "node:crypto";
 import { Buffer } from "buffer";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import {
-  createBoundReappPaymentMiddleware,
+  createBoundAckratePaymentMiddleware,
   getBoundDeliveryContext,
-  type BoundReappPaymentMiddlewareOptions,
+  type BoundAckratePaymentMiddlewareOptions,
 } from "./bound.js";
 import type {
   BoundDeliveryRecord,
@@ -28,7 +28,7 @@ export type BoundJsonFulfillment = (
   context: BoundJsonFulfillmentContext,
 ) => BoundJsonResult | Promise<BoundJsonResult>;
 
-export interface BoundReappPaidJsonRouteOptions extends BoundReappPaymentMiddlewareOptions {
+export interface BoundAckratePaidJsonRouteOptions extends BoundAckratePaymentMiddlewareOptions {
   /** Maximum stored UTF-8 JSON response size. Defaults to 1 MiB. */
   maxResponseBytes?: number;
 }
@@ -66,7 +66,7 @@ function terminalFailure(maxBytes: number): StoredBoundJsonResponse {
  * original execution owner is dead. The exact terminal bytes become immutable
  * and subsequent receipt recovery replays them.
  */
-export async function resolveBoundReappInterruptedDelivery(options: {
+export async function resolveBoundAckrateInterruptedDelivery(options: {
   redemptionStore: BoundRedemptionStore;
   record: Readonly<BoundDeliveryRecord>;
   maxResponseBytes?: number;
@@ -141,8 +141,8 @@ function unavailable(response: Response, message: string): void {
  * exact bytes are stored before they are sent. Recovery replays those bytes and
  * never invokes the fulfillment callback again.
  */
-export function createBoundReappPaidJsonRoute(
-  options: BoundReappPaidJsonRouteOptions,
+export function createBoundAckratePaidJsonRoute(
+  options: BoundAckratePaidJsonRouteOptions,
   fulfill: BoundJsonFulfillment,
 ): RequestHandler {
   if (typeof fulfill !== "function") throw new Error("paid JSON fulfillment callback is required");
@@ -150,7 +150,7 @@ export function createBoundReappPaidJsonRoute(
   if (!Number.isInteger(maxBytes) || maxBytes < 1 || maxBytes > 16_777_216) {
     throw new Error("maxResponseBytes must be an integer from 1 through 16777216");
   }
-  const authorize = createBoundReappPaymentMiddleware(options);
+  const authorize = createBoundAckratePaymentMiddleware(options);
 
   return (request: Request, response: Response, next: NextFunction): void => {
     authorize(request, response, (authorizationError?: unknown) => {

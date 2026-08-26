@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       networkPassphrase: config.network.networkPassphrase,
     })
       .addOperation(Operation.manageData({
-        name: "reapp.auth.v1",
+        name: "ackrate.auth.v1",
         value: Buffer.from(crypto.randomUUID().replaceAll("-", ""), "hex"),
       }))
       .setTimebounds(now - 30, now + CHALLENGE_TTL_SECONDS)

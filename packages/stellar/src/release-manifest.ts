@@ -134,7 +134,7 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
   }
 
   const source = objectAt(manifest, "source");
-  if (textAt(source, "repository") !== "https://github.com/reapp-protocol/reapp-protocol-contracts") {
+  if (textAt(source, "repository") !== "https://github.com/ackrate/ackrate-protocol-contracts") {
     throw new Error("release manifest source repository is not the canonical contracts repository");
   }
   const sourceCommit = textAt(source, "commit").toLowerCase();

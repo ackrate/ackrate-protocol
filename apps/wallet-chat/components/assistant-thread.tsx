@@ -40,7 +40,7 @@ export function AssistantThread({ mandateId, asset, explorerNetwork }: { mandate
           <div className="composer-wrap">
             <ComposerPrimitive.Root className="composer-root">
               <ComposerPrimitive.Input
-                aria-label="Message the REAPP agent"
+                aria-label="Message the Ackrate agent"
                 className="composer-input"
                 placeholder="Ask the agent to purchase a source…"
               />

@@ -1,21 +1,21 @@
 /**
- * @reapp-sdk/ap2 — signed AP2 v0.1 REAPP profile validation and binding.
+ * @ackrate/ap2 — signed AP2 v0.1 Ackrate profile validation and binding.
  *
  * This package signs and validates the supported human-not-present AP2
- * IntentMandate profile, then translates it into the existing REAPP core
+ * IntentMandate profile, then translates it into the existing Ackrate core
  * mandate. It does not claim universal AP2 VC/JWS support and has no dependency
  * on the x402 wire format. Contract enforcement remains authoritative for
  * every payment.
  */
 import { Buffer } from "buffer";
 import { Address, Keypair, StrKey, hash } from "@stellar/stellar-sdk";
-import { reapp, type IntentMandate } from "@reapp-sdk/core";
+import { ackrate, type IntentMandate } from "@ackrate/core";
 import { createSignedAp2Credential, type SignedAp2Mandate } from "./credential.js";
 
 export {
-  REAPP_AP2_CREDENTIAL_VERSION,
-  REAPP_AP2_SIGNATURE_ALGORITHM,
-  type ReappAp2CredentialPayload,
+  ACKRATE_AP2_CREDENTIAL_VERSION,
+  ACKRATE_AP2_SIGNATURE_ALGORITHM,
+  type AckrateAp2CredentialPayload,
   type SignedAp2Mandate,
 } from "./credential.js";
 export * from "./replay-store.js";
@@ -23,7 +23,7 @@ export * from "./validator.js";
 
 export const AP2_SPEC_VERSION = "0.1.0" as const;
 export const AP2_INTENT_DATA_KEY = "ap2.mandates.IntentMandate" as const;
-export const REAPP_AP2_BINDING_VERSION = "reapp-ap2/1" as const;
+export const ACKRATE_AP2_BINDING_VERSION = "ackrate-ap2/1" as const;
 
 /** AP2 v0.1.0 sample IntentMandate data shape (wire names preserved). */
 export interface Ap2IntentMandate {
@@ -35,7 +35,7 @@ export interface Ap2IntentMandate {
   intent_expiry: string;
 }
 
-/** The exact, fail-closed AP2 subset that REAPP can enforce today. */
+/** The exact, fail-closed AP2 subset that Ackrate can enforce today. */
 export interface NormalizedAp2IntentMandate {
   user_cart_confirmation_required: false;
   natural_language_description: string;
@@ -66,14 +66,14 @@ export interface BindIntentMandateInput {
 export interface Ap2MandateBinding {
   ap2SpecVersion: typeof AP2_SPEC_VERSION;
   ap2DataKey: typeof AP2_INTENT_DATA_KEY;
-  bindingVersion: typeof REAPP_AP2_BINDING_VERSION;
+  bindingVersion: typeof ACKRATE_AP2_BINDING_VERSION;
   normalizedIntent: NormalizedAp2IntentMandate;
   canonicalIntent: string;
   /** SHA-256 of canonicalIntent, as lowercase hex. */
   intentHash: string;
   /** Random by default; supply one only for reproducible vectors. */
   bindingNonce: string;
-  /** REAPP's contract-facing mandate; mandate.id is the on-chain vc_hash. */
+  /** Ackrate's contract-facing mandate; mandate.id is the on-chain vc_hash. */
   mandate: IntentMandate;
 }
 
@@ -230,7 +230,7 @@ function normalizeExpiry(value: unknown): { iso: string; unixSeconds: number } {
 }
 
 /**
- * Normalize and validate the AP2 subset REAPP can enforce without inventing
+ * Normalize and validate the AP2 subset Ackrate can enforce without inventing
  * application-only policy. Unsupported constraints fail closed.
  */
 export function normalizeAp2Intent(intent: Ap2IntentMandate): {
@@ -247,7 +247,7 @@ export function normalizeAp2Intent(intent: Ap2IntentMandate): {
   ]);
   if (intent.user_cart_confirmation_required !== false) {
     throw new Error(
-      "REAPP's AP2 bridge requires user_cart_confirmation_required=false; cart-confirmation state is not enforced by MandateRegistry.",
+      "Ackrate's AP2 bridge requires user_cart_confirmation_required=false; cart-confirmation state is not enforced by MandateRegistry.",
     );
   }
   const description = requireExactText(
@@ -297,7 +297,7 @@ function secureNonce(): string {
 }
 
 /**
- * Bind a supported AP2 IntentMandate to REAPP's existing core mandate.
+ * Bind a supported AP2 IntentMandate to Ackrate's existing core mandate.
  *
  * The AP2 hash is embedded in core's existing nonce field. Core's canonical
  * field order is unchanged, so existing non-AP2 mandate ids remain stable.
@@ -331,8 +331,8 @@ export function bindIntentMandate(input: BindIntentMandateInput): Ap2MandateBind
     throw new Error("stellar.decimals must be an integer from 0 through 38.");
   }
   const maxAmount = requireExactText("stellar.maxAmount", input.stellar.maxAmount);
-  const coreNonce = `${REAPP_AP2_BINDING_VERSION}:${intentHash}:${bindingNonce}`;
-  const mandate = reapp.createIntentMandate({
+  const coreNonce = `${ACKRATE_AP2_BINDING_VERSION}:${intentHash}:${bindingNonce}`;
+  const mandate = ackrate.createIntentMandate({
     user,
     agent,
     merchant: normalized.intent.merchants[0],
@@ -346,7 +346,7 @@ export function bindIntentMandate(input: BindIntentMandateInput): Ap2MandateBind
   return {
     ap2SpecVersion: AP2_SPEC_VERSION,
     ap2DataKey: AP2_INTENT_DATA_KEY,
-    bindingVersion: REAPP_AP2_BINDING_VERSION,
+    bindingVersion: ACKRATE_AP2_BINDING_VERSION,
     normalizedIntent: normalized.intent,
     canonicalIntent,
     intentHash,

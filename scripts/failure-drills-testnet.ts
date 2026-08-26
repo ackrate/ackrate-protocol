@@ -14,15 +14,15 @@ import {
   BOUND_PAYMENT_SCHEME,
   DeliveryPendingError,
   SettlementUncertainError,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   boundChallengeAuthorizationBytes,
   parse402,
-  reapp,
+  ackrate,
   type UnsignedBoundPaymentChallengeV2,
   type IntentMandate,
   type Agent,
-} from "@reapp-sdk/core";
-import { TESTNET, keypairSigner, registryClient, token } from "@reapp-sdk/stellar";
+} from "@ackrate/core";
+import { TESTNET, keypairSigner, registryClient, token } from "@ackrate/stellar";
 import { SOURCE_PRICE, startServer } from "../apps/fulfillment-agent/src/server.ts";
 import { FileBoundRedemptionStore } from "../apps/fulfillment-agent/src/redemption-store.ts";
 import { FileSettlementReceiptStore } from "../apps/consumer-agent/src/receipt-store.ts";
@@ -108,7 +108,7 @@ async function register(
   maxAmount: string,
   expiry: number,
 ): Promise<IntentMandate> {
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: user.publicKey(),
     agent: agent.publicKey(),
     merchant: merchant.publicKey(),
@@ -116,8 +116,8 @@ async function register(
     maxAmount,
     expiry,
   });
-  await reapp.registerMandate(mandate, { signer: user });
-  await reapp.approveBudget(mandate, { signer: user });
+  await ackrate.registerMandate(mandate, { signer: user });
+  await ackrate.approveBudget(mandate, { signer: user });
   return mandate;
 }
 
@@ -161,7 +161,7 @@ function challenge(resource: string, merchant: string, secret: string, audience:
       resource,
       extra: {
         contract: TESTNET.mandateRegistryId,
-        reappProofVersion: 2,
+        ackrateProofVersion: 2,
         challenge: bound,
       },
     }],
@@ -177,7 +177,7 @@ async function startChallengeThenStop(merchant: string, secret: string): Promise
   let resolveClosed!: () => void;
   const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
   const server = createServer((request, response) => {
-    if (request.headers[REAPP_PAYMENT_CAPABILITIES_HEADER] !== BOUND_PAYMENT_CAPABILITY) {
+    if (request.headers[ACKRATE_PAYMENT_CAPABILITIES_HEADER] !== BOUND_PAYMENT_CAPABILITY) {
       response.writeHead(426, { "content-type": "application/json" });
       response.end(JSON.stringify({ requiredCapability: BOUND_PAYMENT_CAPABILITY }));
       return;
@@ -220,11 +220,11 @@ async function readMandate(mandate: IntentMandate, reader: Keypair) {
 }
 
 async function main(): Promise<void> {
-  const drillRoot = await mkdtemp(join(tmpdir(), "reapp-failure-drills-"));
+  const drillRoot = await mkdtemp(join(tmpdir(), "ackrate-failure-drills-"));
   const user = Keypair.random();
   const agentKey = Keypair.random();
   const merchant = Keypair.random();
-  log("REAPP live failure drills — Stellar testnet");
+  log("Ackrate live failure drills — Stellar testnet");
   log("contract", TESTNET.mandateRegistryId);
   await Promise.all([fund(user.publicKey()), fund(agentKey.publicKey()), fund(merchant.publicKey())]);
   await sleep(3_000);
@@ -237,7 +237,7 @@ async function main(): Promise<void> {
     "2.00",
     Math.floor(Date.now() / 1_000) + 3_600,
   );
-  const rogueAgent = reapp.agent({ mandate: rogueMandate, signer: agentKey });
+  const rogueAgent = ackrate.agent({ mandate: rogueMandate, signer: agentKey });
   const rogueBefore = await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey());
   const rogueJournal = join(drillRoot, "rogue-payment.json");
   const rogueTx = await journaledPay(rogueAgent, "1.00", rogueJournal);
@@ -246,7 +246,7 @@ async function main(): Promise<void> {
   assert.equal(rogueAfter - rogueBefore, 10_000_000n);
   assert.equal(rogueState.spent, 10_000_000n);
   assert.equal(rogueState.seq, 1);
-  await reapp.revokeMandate(rogueMandate, { signer: user });
+  await ackrate.revokeMandate(rogueMandate, { signer: user });
   await assert.rejects(() => journaledPay(rogueAgent, "0.50", rogueJournal), /#5|MandateRevoked/);
   assert.equal(await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey()), rogueAfter);
   log("PASS: within-scope spend settled; revoke blocked the next request", txUrl(rogueTx));
@@ -259,7 +259,7 @@ async function main(): Promise<void> {
     "1.00",
     Math.floor(Date.now() / 1_000) + 3_600,
   );
-  const downtimeAgent = reapp.agent({
+  const downtimeAgent = ackrate.agent({
     mandate: downtimeMandate,
     signer: agentKey,
     proofPolicy: "bound-v2-only",
@@ -311,12 +311,12 @@ async function main(): Promise<void> {
   const closeTime = await latestTestnetCloseTime();
   const expiry = closeTime + 45;
   const expiryMandate = await register(user, agentKey, merchant, "1.00", expiry);
-  const expiryAgent = reapp.agent({ mandate: expiryMandate, signer: agentKey, proofPolicy: "bound-v2-only" });
+  const expiryAgent = ackrate.agent({ mandate: expiryMandate, signer: agentKey, proofPolicy: "bound-v2-only" });
   const expiryServer = await startServer({ merchant: merchant.publicKey(), port: 0 });
   const expiryBefore = await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey());
   try {
     const quoted = await fetch(`${expiryServer.url}/source/market`, {
-      headers: { [REAPP_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY },
+      headers: { [ACKRATE_PAYMENT_CAPABILITIES_HEADER]: BOUND_PAYMENT_CAPABILITY },
     });
     assert.equal(quoted.status, 402);
     const requirement = await parse402(quoted);

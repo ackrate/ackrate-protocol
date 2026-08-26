@@ -1,10 +1,10 @@
-# REAPP Mainnet Delivery Roadmap
+# Ackrate Mainnet Delivery Roadmap
 
 Status: planning baseline. Nothing in this document claims that a mainnet
 contract, production wallet, or mainnet package release already exists.
 
 This roadmap turns the current testnet toolkit into a production-oriented
-mainnet release while preserving REAPP's core invariant:
+mainnet release while preserving Ackrate's core invariant:
 
 > The MandateRegistry is the enforcement layer. SDK, CLI, agent, merchant,
 > model, wallet UI, cache, and database state are untrusted inputs. Funds move
@@ -13,11 +13,11 @@ mainnet release while preserving REAPP's core invariant:
 
 The work is split across:
 
-- `reapp-protocol-contracts`: contract authorization, token policy, storage,
+- `ackrate-protocol-contracts`: contract authorization, token policy, storage,
   negative tests, reproducible artifacts, and deployment evidence;
-- `reapp-protocol`: SDKs, CLI, reference agents, protocol adapters, release
+- `ackrate-protocol`: SDKs, CLI, reference agents, protocol adapters, release
   configuration, operations tooling, and the canonical evidence index;
-- `reapp-protocol-demo`: wallet authorization, hosted chat experience, live
+- `ackrate-protocol-demo`: wallet authorization, hosted chat experience, live
   transaction presentation, and end-to-end consumer flow.
 
 No mainnet activation occurs until every blocking gate in this document has
@@ -35,7 +35,7 @@ the bounded real-USDC canary.
 |---|---|
 | MandateRegistry runs on Stellar mainnet | Published contract ID, network passphrase, verified USDC Stellar Asset Contract, WASM SHA-256, source commit, release tag, constructor arguments, live interface, and successful state reads all agree. |
 | Privileged changes require 2-of-3 approval and delay | Three independent custodians, two distinct signatures required, timelock enforced on-chain, no single-key bypass, rotation and recovery rehearsed, and unauthorized cases continuously rejected. |
-| A real USDC payment completes through REAPP | Mainnet transaction proves mandate registration, allowance, atomic `execute_payment`, exact asset and merchant binding, budget consumption, and independently verified delivery. |
+| A real USDC payment completes through Ackrate | Mainnet transaction proves mandate registration, allowance, atomic `execute_payment`, exact asset and merchant binding, budget consumption, and independently verified delivery. |
 | SDK, CLI, and agents operate on mainnet | Clean installs, typed imports, explicit mainnet selection, external signing, pinned release map, real low-value USDC canary, crash recovery, and reference-agent evidence. |
 | The web app completes the consumer flow | User-controlled wallet signs the IntentMandate and Soroban authorization; the hosted chat agent purchases through the enforced path and displays mandate, receipt, remaining budget, and transaction evidence. |
 | Independent verification is practical | Updated threat model and data-flow diagrams, complete negative-test matrix, reproducible build instructions, dependency and code scan reports, remediated findings, and a linear verification guide. |
@@ -438,7 +438,7 @@ Exit evidence:
 ### Gate 1 — Contract hardening
 
 Implement the chosen OpenZeppelin Stellar access-control and timelock design in
-`reapp-protocol-contracts`.
+`ackrate-protocol-contracts`.
 
 Required contract work:
 
@@ -487,7 +487,7 @@ Exit evidence:
 
 ### Gate 2 — Custody and signature coordination
 
-Build signature-coordination tooling in `reapp-protocol` around official Stellar
+Build signature-coordination tooling in `ackrate-protocol` around official Stellar
 transaction and Soroban authorization primitives.
 
 The tool produces an immutable signing request containing:
@@ -531,7 +531,7 @@ Exit evidence:
 
 ### Gate 3 — SDK, CLI, and network configuration
 
-Add mainnet support in `reapp-protocol` without changing the enforcement
+Add mainnet support in `ackrate-protocol` without changing the enforcement
 boundary.
 
 SDK requirements:
@@ -568,7 +568,7 @@ CLI requirements:
 Canonical verification command after release:
 
 ```bash
-npx --yes reapp-protocol-cli@<pinned-version> \
+npx --yes @ackrate/cli@<pinned-version> \
   demo research-agent \
   --network mainnet \
   --asset usdc
@@ -606,7 +606,7 @@ Exit evidence:
 
 ### Gate 4 — Reference agents and failure drills
 
-Upgrade both reference agents in `reapp-protocol` as exemplary production
+Upgrade both reference agents in `ackrate-protocol` as exemplary production
 patterns.
 
 Consumer agent:
@@ -688,7 +688,7 @@ Exit evidence:
 
 ### Gate 6 — Wallet and chat application
 
-Build the hosted consumer experience in `reapp-protocol-demo`.
+Build the hosted consumer experience in `ackrate-protocol-demo`.
 
 Wallet boundary:
 
@@ -788,7 +788,7 @@ Exit evidence:
 - Run clean-install and typed-import checks against the public registry.
 - Run the canonical CLI command with real low-value USDC.
 - Run the hosted wallet/chat flow against the same contract and package map.
-- Verify `reapp.live`, package READMEs, CLI output, demo diagnostics, and
+- Verify `ackrate.live`, package READMEs, CLI output, demo diagnostics, and
   contract documentation all show the same generated release facts.
 - Enable alerts for pause state, role changes, signer changes, scheduled and
   executed upgrades, rejected-payment spikes, RPC divergence, store errors,
@@ -903,7 +903,7 @@ exists.
 
 ## Repository work map
 
-### `reapp-protocol-contracts`
+### `ackrate-protocol-contracts`
 
 - OpenZeppelin access-control and selected timelock integration;
 - 2-of-3 authority compatibility and authorization-entry tests;
@@ -912,7 +912,7 @@ exists.
 - reproducible optimized WASM, SBOM, scan outputs, and release metadata;
 - deterministic deployment and live read-only verification scripts.
 
-### `reapp-protocol`
+### `ackrate-protocol`
 
 - canonical release/deployment manifest and generators;
 - mainnet-aware Stellar binding, SDK, middleware, AP2 adapter, and CLI;
@@ -923,7 +923,7 @@ exists.
 - package publication, clean-install, and end-to-end gate checks;
 - mainnet threat model, data flows, evidence index, and verification guide.
 
-### `reapp-protocol-demo`
+### `ackrate-protocol-demo`
 
 - Stellar wallet adapter and network guard;
 - IntentMandate review, signing, registration, revocation, and status UI;

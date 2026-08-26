@@ -1,6 +1,6 @@
 /**
  * Terminal output: dependency-free ANSI colors + a tagged logger. Ported from
- * reapp-protocol-demo/lib/log.ts so the CLI and the hosted demo speak the same
+ * ackrate-protocol-demo/lib/log.ts so the CLI and the hosted demo speak the same
  * visual language. Keep this dependency-free — it ships in the published bin.
  */
 
@@ -66,20 +66,27 @@ export const log = {
 };
 
 /**
- * REAPP banner: figlet "ANSI Shadow", each letter painted its own neon brand
- * shade. Ported verbatim from reapp-protocol-demo/lib/banner.ts so the CLI and
+ * Ackrate banner: figlet "ANSI Shadow", each letter painted its own neon brand
+ * shade. Ported verbatim from ackrate-protocol-demo/lib/banner.ts so the CLI and
  * the hosted demo share one wordmark.
  */
 type Seg = [string, keyof typeof c];
-const ART: Seg[][] = [[["██████╗ ","cyan"],["███████╗","mint"],[" █████╗ ","emerald"],["██████╗ ","teal"],["██████╗ ","green"]],[["██╔══██╗","cyan"],["██╔════╝","mint"],["██╔══██╗","emerald"],["██╔══██╗","teal"],["██╔══██╗","green"]],[["██████╔╝","cyan"],["█████╗  ","mint"],["███████║","emerald"],["██████╔╝","teal"],["██████╔╝","green"]],[["██╔══██╗","cyan"],["██╔══╝  ","mint"],["██╔══██║","emerald"],["██╔═══╝ ","teal"],["██╔═══╝ ","green"]],[["██║  ██║","cyan"],["███████╗","mint"],["██║  ██║","emerald"],["██║     ","teal"],["██║     ","green"]],[["╚═╝  ╚═╝","cyan"],["╚══════╝","mint"],["╚═╝  ╚═╝","emerald"],["╚═╝     ","teal"],["╚═╝     ","green"]]];
+const ART: Seg[][] = [
+  [[" █████╗ ", "cyan"], [" ██████╗", "mint"], ["██╗  ██╗", "emerald"], ["██████╗ ", "teal"], [" █████╗ ", "green"], ["████████╗", "cyan"], ["███████╗", "mint"]],
+  [["██╔══██╗", "cyan"], ["██╔════╝", "mint"], ["██║ ██╔╝", "emerald"], ["██╔══██╗", "teal"], ["██╔══██╗", "green"], ["╚══██╔══╝", "cyan"], ["██╔════╝", "mint"]],
+  [["███████║", "cyan"], ["██║     ", "mint"], ["█████╔╝ ", "emerald"], ["██████╔╝", "teal"], ["███████║", "green"], ["   ██║   ", "cyan"], ["█████╗  ", "mint"]],
+  [["██╔══██║", "cyan"], ["██║     ", "mint"], ["██╔═██╗ ", "emerald"], ["██╔══██╗", "teal"], ["██╔══██║", "green"], ["   ██║   ", "cyan"], ["██╔══╝  ", "mint"]],
+  [["██║  ██║", "cyan"], ["╚██████╗", "mint"], ["██║  ██╗", "emerald"], ["██║  ██║", "teal"], ["██║  ██║", "green"], ["   ██║   ", "cyan"], ["███████╗", "mint"]],
+  [["╚═╝  ╚═╝", "cyan"], [" ╚═════╝", "mint"], ["╚═╝  ╚═╝", "emerald"], ["╚═╝  ╚═╝", "teal"], ["╚═╝  ╚═╝", "green"], ["   ╚═╝   ", "cyan"], ["╚══════╝", "mint"]],
+];
 
-export function banner(): string {
+export function banner(environment = "stellar testnet"): string {
   const paint = (col: keyof typeof c, t: string) => (c[col] as (s: string) => string)(t);
   const art = ART.map((row) => "  " + row.map(([t, col]) => paint(col, t)).join("")).join("\n");
   const tag =
     "  " +
     c.dim("agent payments") + c.emerald(" · ") +
     c.dim("enforced on-chain") + c.emerald(" · ") +
-    c.dim("stellar testnet");
+    c.dim(environment);
   return art + "\n" + tag;
 }

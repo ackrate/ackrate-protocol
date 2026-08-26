@@ -4,9 +4,9 @@ import { Keypair } from "@stellar/stellar-sdk";
 import {
   createSettlementReceiptId,
   DeliveryPendingError,
-  reapp,
+  ackrate,
   type SettlementReceipt,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 import {
   acknowledgePendingDelivery,
   blockReason,
@@ -61,7 +61,7 @@ test("blockReason maps terminal contract rejections without calling them retryab
 
 test("consumer surfaces settled-but-undelivered payment and never retries blindly", async () => {
   const key = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: key.publicKey(),
     agent: key.publicKey(),
     merchant: key.publicKey(),
@@ -80,21 +80,21 @@ test("consumer surfaces settled-but-undelivered payment and never retries blindl
     submittedAt: 1_700_000_000,
     validUntil: 1_700_000_060,
     proof: {
-      scheme: "reapp-soroban",
+      scheme: "ackrate-soroban",
       network: "stellar-testnet",
       txHash: "a".repeat(64),
       mandateId: mandate.id,
       amount: "1.00",
     },
   };
-  const originalAgent = reapp.agent;
+  const originalAgent = ackrate.agent;
   let fetchCalls = 0;
-  reapp.agent = (() => ({
+  ackrate.agent = (() => ({
     fetch: async () => {
       fetchCalls += 1;
       throw new DeliveryPendingError(receipt, new TypeError("connection refused"));
     },
-  })) as unknown as typeof reapp.agent;
+  })) as unknown as typeof ackrate.agent;
   try {
     const result = await buyResearch({
       serverUrl: "http://merchant.test",
@@ -111,13 +111,13 @@ test("consumer surfaces settled-but-undelivered payment and never retries blindl
     assert.deepEqual(result[0]?.receipt, receipt);
     assert.match(result[0]?.blockedReason ?? "", /do not pay again/);
   } finally {
-    reapp.agent = originalAgent;
+    ackrate.agent = originalAgent;
   }
 });
 
 test("durable application outcome survives an acknowledgment crash and restart never fetches again", async () => {
   const key = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: key.publicKey(),
     agent: key.publicKey(),
     merchant: key.publicKey(),
@@ -127,7 +127,7 @@ test("durable application outcome survives an acknowledgment crash and restart n
     nonce: "application-outcome-crash-test",
   });
   const proof = {
-    scheme: "reapp-soroban",
+    scheme: "ackrate-soroban",
     network: "stellar-testnet",
     txHash: "a".repeat(64),
     mandateId: mandate.id,
@@ -155,7 +155,7 @@ test("durable application outcome survives an acknowledgment crash and restart n
     async listPending() { return [...pending.values()]; },
   };
   const outcomeStore = memoryOutcomeStore();
-  const originalAgent = reapp.agent;
+  const originalAgent = ackrate.agent;
   const originalFetch = globalThis.fetch;
   const actualAgent = originalAgent({ mandate, signer: key.secret(), receiptStore });
   let fetchCalls = 0;
@@ -166,7 +166,7 @@ test("durable application outcome survives an acknowledgment crash and restart n
     data: "accepted",
     settledTx: receipt.txHash,
   }), { status: 200, headers: { "content-type": "application/json" } });
-  reapp.agent = (() => ({
+  ackrate.agent = (() => ({
     fetch: async () => {
       fetchCalls += 1;
       return actualAgent.retryDelivery(receipt);
@@ -178,7 +178,7 @@ test("durable application outcome survives an acknowledgment crash and restart n
       }
       await actualAgent.acknowledgeDelivery(candidate);
     },
-  })) as unknown as typeof reapp.agent;
+  })) as unknown as typeof ackrate.agent;
   try {
     const first = await buyResearch({
       serverUrl: "http://merchant.test",
@@ -205,14 +205,14 @@ test("durable application outcome survives an acknowledgment crash and restart n
     assert.equal(fetchCalls, 1);
     assert.equal(pending.size, 0);
   } finally {
-    reapp.agent = originalAgent;
+    ackrate.agent = originalAgent;
     globalThis.fetch = originalFetch;
   }
 });
 
 test("resume and explicit acknowledgment reuse the exact receipt and have no payment path", async () => {
   const key = Keypair.random();
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: key.publicKey(),
     agent: key.publicKey(),
     merchant: key.publicKey(),
@@ -221,7 +221,7 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     expiry: Math.floor(Date.now() / 1000) + 3600,
   });
   const proof = {
-    scheme: "reapp-soroban",
+    scheme: "ackrate-soroban",
     network: "stellar-testnet",
     txHash: "a".repeat(64),
     mandateId: mandate.id,
@@ -239,10 +239,10 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     validUntil: 1_700_000_060,
     proof,
   };
-  const originalAgent = reapp.agent;
+  const originalAgent = ackrate.agent;
   let retried: Readonly<SettlementReceipt> | undefined;
   let acknowledged: Readonly<SettlementReceipt> | undefined;
-  reapp.agent = (() => ({
+  ackrate.agent = (() => ({
     retryDelivery: async (candidate: Readonly<SettlementReceipt>) => {
       retried = candidate;
       return new Response("recovered", { status: 200 });
@@ -250,7 +250,7 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     acknowledgeDelivery: async (candidate: Readonly<SettlementReceipt>) => {
       acknowledged = candidate;
     },
-  })) as unknown as typeof reapp.agent;
+  })) as unknown as typeof ackrate.agent;
   try {
     const response = await resumePendingDelivery({
       mandate,
@@ -268,6 +268,6 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     });
     assert.deepEqual(acknowledged, receipt);
   } finally {
-    reapp.agent = originalAgent;
+    ackrate.agent = originalAgent;
   }
 });

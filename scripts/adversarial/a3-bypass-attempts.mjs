@@ -1,12 +1,12 @@
 // Gate A3 — "the SDK is untrusted": act as a MALICIOUS SDK using the published
-// low-level typed client (@reapp-sdk/stellar) and try to get money out of a
+// low-level typed client (@ackrate/stellar) and try to get money out of a
 // mandate in every way the wire permits. The contract must reject each attempt.
 //
 // Also proves the custody boundary: the SEP-41 allowance belongs to the
 // CONTRACT, so neither the agent key nor any SDK code can transfer_from the
 // user directly.
-import { reapp, toStroops } from "@reapp-sdk/core";
-import { registryClient, keypairSigner, TESTNET } from "@reapp-sdk/stellar";
+import { ackrate, toStroops } from "@ackrate/core";
+import { registryClient, keypairSigner, TESTNET } from "@ackrate/stellar";
 import { Keypair, Contract, TransactionBuilder, BASE_FEE, nativeToScVal, Address, rpc } from "@stellar/stellar-sdk";
 
 const results = [];
@@ -33,16 +33,16 @@ await fund(merchant, "merchant");
 await fund(rogue, "rogue");
 
 // Register a real, funded 2.00 XLM mandate through the blessed path.
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(),
   agent: agent.publicKey(),
   merchant: merchant.publicKey(),
-  asset: reapp.testnet.nativeSac,
+  asset: ackrate.testnet.nativeSac,
   maxAmount: "2.00",
   expiry: Math.floor(Date.now() / 1000) + 3600,
 });
-await reapp.registerMandate(mandate, { signer: user });
-await reapp.approveBudget(mandate, { signer: user });
+await ackrate.registerMandate(mandate, { signer: user });
+await ackrate.approveBudget(mandate, { signer: user });
 console.log(`mandate ${mandate.id} live with 2.00 XLM allowance to the contract`);
 
 const asAgent = registryClient(TESTNET, keypairSigner(agent.secret(), TESTNET.networkPassphrase));
@@ -123,13 +123,13 @@ await attempt(
 // 6. custody boundary: agent tries the native SAC transfer_from(user -> rogue)
 //    directly, as spender. The allowance was approved for the CONTRACT, never
 //    the agent, so simulation must fail. Built on raw @stellar/stellar-sdk so no
-//    REAPP code mediates the attempt.
+//    Ackrate code mediates the attempt.
 await attempt(
   "agent cannot transfer_from the user directly — allowance belongs to the contract",
   async () => {
     const server = new rpc.Server(TESTNET.rpcUrl ?? "https://soroban-testnet.stellar.org");
     const src = await server.getAccount(agent.publicKey());
-    const sac = new Contract(reapp.testnet.nativeSac);
+    const sac = new Contract(ackrate.testnet.nativeSac);
     const tx = new TransactionBuilder(src, { fee: BASE_FEE, networkPassphrase: TESTNET.networkPassphrase })
       .addOperation(sac.call(
         "transfer_from",

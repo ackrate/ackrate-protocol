@@ -1,8 +1,8 @@
-# @reapp-sdk/express-middleware 0.2.2
+# @ackrate/express-middleware 0.2.2
 
-Fail-closed Express 4/5 paid JSON routes for REAPP on Stellar.
+Fail-closed Express 4/5 paid JSON routes for Ackrate on Stellar.
 
-The published `@reapp-sdk/express-middleware` package exposes the typed ESM API.
+The published `@ackrate/express-middleware` package exposes the typed ESM API.
 
 The package authenticates an exact-origin GET challenge, verifies the on-chain
 settlement independently, atomically claims fulfillment, stores the exact JSON
@@ -12,7 +12,7 @@ never re-run arbitrary fulfillment work.
 ## Install
 
 ```bash
-npm install @reapp-sdk/express-middleware@0.2.2 express@5.2.1
+npm install @ackrate/express-middleware@0.2.4 express@5.2.1
 ```
 
 ## Safe paid route
@@ -21,16 +21,16 @@ npm install @reapp-sdk/express-middleware@0.2.2 express@5.2.1
 import express from "express";
 import {
   InMemoryBoundRedemptionStore,
-  createBoundReappPaidJsonRoute,
-} from "@reapp-sdk/express-middleware";
+  createBoundAckratePaidJsonRoute,
+} from "@ackrate/express-middleware";
 
 const app = express();
 
-const paidResearch = createBoundReappPaidJsonRoute({
-  merchant: process.env.REAPP_MERCHANT_ADDRESS!,
-  sourceAccount: process.env.REAPP_READ_SOURCE_ADDRESS!,
+const paidResearch = createBoundAckratePaidJsonRoute({
+  merchant: process.env.ACKRATE_MERCHANT_ADDRESS!,
+  sourceAccount: process.env.ACKRATE_READ_SOURCE_ADDRESS!,
   audience: "https://api.example", // exact public origin; never Host-derived
-  challengeSecret: process.env.REAPP_CHALLENGE_SECRET!, // at least 32 bytes
+  challengeSecret: process.env.ACKRATE_CHALLENGE_SECRET!, // at least 32 bytes
   amount: "1.00",
   resource: (request) => request.originalUrl,
   // One-process demo only. Production needs a shared linearizable store.
@@ -56,7 +56,7 @@ before any bytes are written to the client.
 
 Before fulfillment is claimed, the package requires:
 
-1. `REAPP-PAYMENT-CAPABILITIES: reapp-bound-v2`; older clients receive `426`
+1. `ACKRATE-PAYMENT-CAPABILITIES: ackrate-bound-v2`; older clients receive `426`
    before payment.
 2. An HMAC-authenticated challenge binding the exact public origin, GET method,
    path and query, network identity, registry, merchant, asset, amount, decimals,
@@ -92,7 +92,7 @@ missing -> executing -> completed(exact JSON bytes)
 - Completion-store failure: no result bytes are sent and the claim remains
   executing; recovery cannot re-run it automatically. After confirming the
   execution owner is dead, trusted operator/outbox code calls
-  `resolveBoundReappInterruptedDelivery` to store one terminal result.
+  `resolveBoundAckrateInterruptedDelivery` to store one terminal result.
 
 The first-redemption deadline does not prevent later replay of an already
 completed exact result. That replay is delivery recovery, not fresh payment
@@ -128,7 +128,7 @@ sensitive and must not be logged or exposed.
 
 ## Primary API
 
-### `createBoundReappPaidJsonRoute(options, fulfill)`
+### `createBoundAckratePaidJsonRoute(options, fulfill)`
 
 Required options:
 
@@ -144,8 +144,8 @@ Optional controls include `resource`, `asset`, `networkConfig`, `network`,
 `decimals`, `sourceAccount`, verifier/polling/freshness/header limits,
 `challengeTtlSeconds`, development-only HTTP RPC, and `maxResponseBytes`.
 
-Runtime exports include `createBoundReappPaidJsonRoute`,
-`resolveBoundReappInterruptedDelivery`, `InMemoryBoundRedemptionStore`,
+Runtime exports include `createBoundAckratePaidJsonRoute`,
+`resolveBoundAckrateInterruptedDelivery`, `InMemoryBoundRedemptionStore`,
 `createStellarPaymentVerifier`, strict event
 selection helpers, and all TypeScript store/evidence/result types.
 
@@ -162,6 +162,6 @@ change without changing contract storage or weakening `execute_payment`.
 
 - Testnet contract: [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
 - WASM SHA-256: `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`
-- Release: [`simple-v0.2.3`](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
+- Release: [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
 
 Apache-2.0.

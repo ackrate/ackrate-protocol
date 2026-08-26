@@ -107,7 +107,7 @@ export function createPurchaseIdentity(input: {
     throw new Error("purchase identity URL must be an exact absolute HTTP(S) URL");
   }
   const identity = {
-    key: hashParts(["reapp-consumer-request-v1", input.mandateId, "GET", input.url, input.sourceId]),
+    key: hashParts(["ackrate-consumer-request-v1", input.mandateId, "GET", input.url, input.sourceId]),
     mandateId: input.mandateId,
     method: "GET" as const,
     url: input.url,
@@ -143,7 +143,7 @@ function outcomeDigest(outcome: OutcomeWithoutId): string {
       ? [outcome.receiptId, outcome.txHash, outcome.reason]
       : [outcome.reason];
   return hashParts([
-    "reapp-consumer-outcome-v1",
+    "ackrate-consumer-outcome-v1",
     outcome.version,
     outcome.identity.key,
     outcome.completedAt,

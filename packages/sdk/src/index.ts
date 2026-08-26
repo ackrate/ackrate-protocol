@@ -1,34 +1,33 @@
 /**
- * @reapp-sdk/core — create an agent, connect to the testnet MandateRegistry, and
+ * @ackrate/core — create an agent, connect to the testnet MandateRegistry, and
  * execute a crash-safe mandate-validated payment through a small typed surface.
  *
  * The SDK is UNTRUSTED infrastructure: it never holds the allowance (only the
  * contract does), and every spend is validated + consumed on-chain by
  * `execute_payment`. A buggy or malicious SDK cannot exceed the mandate.
  *
- *   const m = reapp.createIntentMandate({ user, agent, merchant, asset, maxAmount: "5.00", expiry });
- *   await reapp.registerMandate(m, { signer: userKey });
- *   await reapp.approveBudget(m,   { signer: userKey });
- *   const agent = reapp.agent({ mandate: m, signer: agentKey });
+ *   const m = ackrate.createIntentMandate({ user, agent, merchant, asset, maxAmount: "5.00", expiry });
+ *   await ackrate.registerMandate(m, { signer: userKey });
+ *   await ackrate.approveBudget(m,   { signer: userKey });
+ *   const agent = ackrate.agent({ mandate: m, signer: agentKey });
  *   await agent.pay("1.00", { onPrepared: (pending) => paymentJournal.save(pending) });
  */
 import { Buffer } from "buffer";
 import { Keypair, hash, rpc } from "@stellar/stellar-sdk";
 import {
   TESTNET,
-  keypairSigner,
   registryClient,
   stellarSigner,
   token,
   type NetworkConfig,
   type StellarSigner,
-} from "@reapp-sdk/stellar";
+} from "@ackrate/stellar";
 import {
   BOUND_PAYMENT_CAPABILITY,
   BOUND_PAYMENT_SCHEME,
-  REAPP_PAYMENT_CAPABILITIES_HEADER,
+  ACKRATE_PAYMENT_CAPABILITIES_HEADER,
   X_PAYMENT_HEADER,
-  createBoundPaymentProof,
+  createBoundPaymentProofWithSigner,
   parse402,
   encodePaymentProof,
   isBoundPaymentProof,
@@ -37,7 +36,7 @@ import {
 import { resolveExpectedPaymentSequence } from "./payment-sequence.js";
 
 // Re-export the typed contract errors so apps can branch on them (e.g. Errors[6] is BudgetExceeded).
-export { Errors } from "@reapp-sdk/stellar";
+export { Errors } from "@ackrate/stellar";
 // Re-export the x402 wire-format adapter (parse402, proof encode/decode, header, types).
 export * from "./x402.js";
 
@@ -116,7 +115,7 @@ export function createSettlementReceiptId(
   receipt: Omit<Readonly<SettlementReceipt>, "receiptId">,
 ): string {
   return hash(Buffer.from(JSON.stringify([
-    "reapp-settlement-receipt-v2",
+    "ackrate-settlement-receipt-v2",
     receipt.proofVersion,
     receipt.url,
     receipt.method,
@@ -264,9 +263,6 @@ export function toStroops(human: string, decimals = DEFAULT_DECIMALS): bigint {
   return stroops;
 }
 
-const asKeypair = (s: Keypair | string): Keypair =>
-  typeof s === "string" ? Keypair.fromSecret(s) : s;
-
 const mandateUserSigner = (
   mandate: IntentMandate,
   input: SignerInput["signer"],
@@ -283,13 +279,13 @@ const mandateUserSigner = (
  *  payment is enforced on-chain against the mandate. */
 export class Agent {
   private pendingSettlement?: Readonly<PendingSettlement>;
-  private readonly paymentClaimOwner = Symbol("reapp-payment-claim");
+  private readonly paymentClaimOwner = Symbol("ackrate-payment-claim");
   private paymentClaimKey?: string;
 
   constructor(
     private readonly net: NetworkConfig,
     private readonly mandate: IntentMandate,
-    private readonly agentKeypair: Keypair,
+    private readonly agentSigner: StellarSigner,
     private readonly proofPolicy: PaymentProofPolicy = "legacy-compatible",
     private readonly receiptStore?: SettlementReceiptStore,
   ) {}
@@ -380,8 +376,7 @@ export class Agent {
           new Error("a prior prepared payment has not been reconciled or delivered"),
         );
       }
-      const signer = keypairSigner(this.agentKeypair, this.net.networkPassphrase);
-      const client = registryClient(this.net, signer);
+      const client = registryClient(this.net, this.agentSigner);
       const current = (await client.get_mandate({ mandate_id: this.mandate.idBuffer })).result.unwrap();
       const expectedSeq = resolveExpectedPaymentSequence(current.seq, lifecycle.expectedSeq);
       const at = await client.execute_payment(
@@ -602,7 +597,7 @@ export class Agent {
     const headers = new Headers(init?.headers);
     headers.set(X_PAYMENT_HEADER, encodePaymentProof(proof));
     if (receipt.proofVersion === 2) {
-      headers.set(REAPP_PAYMENT_CAPABILITIES_HEADER, BOUND_PAYMENT_CAPABILITY);
+      headers.set(ACKRATE_PAYMENT_CAPABILITIES_HEADER, BOUND_PAYMENT_CAPABILITY);
     }
     let delivered: Response;
     try {
@@ -697,7 +692,7 @@ export class Agent {
       );
     }
     const firstHeaders = new Headers(init?.headers);
-    firstHeaders.set(REAPP_PAYMENT_CAPABILITIES_HEADER, BOUND_PAYMENT_CAPABILITY);
+    firstHeaders.set(ACKRATE_PAYMENT_CAPABILITIES_HEADER, BOUND_PAYMENT_CAPABILITY);
     const first = await fetch(url, {
       ...init,
       // Refuse automatic redirects before payment so a challenge cannot move
@@ -730,6 +725,9 @@ export class Agent {
       throw new Error("x402: bound-v2-only agent refused a legacy payment challenge before paying");
     }
     if (required.challenge) {
+      if (!this.agentSigner.signPayload) {
+        throw new Error("x402: the external agent signer cannot sign a bound payment proof");
+      }
       const method = (init?.method ?? "GET").toUpperCase();
       const target = new URL(url);
       const resource = `${target.pathname}${target.search}`;
@@ -772,19 +770,22 @@ export class Agent {
     }
 
     let receipt: Readonly<SettlementReceipt> | undefined;
-    const makeReceipt = (
+    const makeReceipt = async (
       txHash: string,
       timing: Pick<PendingSettlement, "submittedAt" | "validUntil"> = {
         submittedAt: Math.floor(Date.now() / 1_000),
         validUntil: Math.floor(Date.now() / 1_000) + PAYMENT_TIMEOUT_SECONDS,
       },
-    ): Readonly<SettlementReceipt> => {
+    ): Promise<Readonly<SettlementReceipt>> => {
       const proof: Readonly<PaymentProof> = Object.freeze(required.challenge
-        ? createBoundPaymentProof({
+        ? await createBoundPaymentProofWithSigner({
           challenge: required.challenge,
           txHash,
           mandateId: this.mandate.id,
-          signer: this.agentKeypair,
+          signer: {
+            publicKey: this.agentSigner.publicKey,
+            signPayload: this.agentSigner.signPayload!,
+          },
         })
         : {
           scheme: required.scheme,
@@ -815,7 +816,7 @@ export class Agent {
       txHash = await this.pay(required.amount, {
         holdUntilDelivery: true,
         onPrepared: async (prepared) => {
-          receipt = makeReceipt(prepared.txHash, prepared);
+          receipt = await makeReceipt(prepared.txHash, prepared);
           await receiptStore.savePending(receipt);
           return receipt.receiptId;
         },
@@ -823,7 +824,7 @@ export class Agent {
     } catch (cause) {
       if (cause instanceof SettlementUncertainError) {
         this.pendingSettlement ??= cause.settlement;
-        receipt ??= makeReceipt(cause.settlement.txHash, cause.settlement);
+        receipt ??= await makeReceipt(cause.settlement.txHash, cause.settlement);
         throw new DeliveryPendingError(receipt, cause);
       }
       if (receipt) {
@@ -831,7 +832,7 @@ export class Agent {
       }
       throw cause;
     }
-    receipt ??= makeReceipt(txHash);
+    receipt ??= await makeReceipt(txHash);
     if (!this.pendingSettlement) {
       this.pendingSettlement = Object.freeze({
         txHash,
@@ -852,7 +853,7 @@ export class Agent {
   }
 }
 
-export const reapp = {
+export const ackrate = {
   testnet: TESTNET,
 
   /** Build an AP2-style IntentMandate and its canonical id (no chain calls). */
@@ -950,12 +951,16 @@ export const reapp = {
   agent(
     opts: {
       mandate: IntentMandate;
-      signer: Keypair | string;
+      signer: Keypair | string | StellarSigner;
       proofPolicy?: PaymentProofPolicy;
       receiptStore?: SettlementReceiptStore;
     },
     net: NetworkConfig = TESTNET,
   ): Agent {
-    return new Agent(net, opts.mandate, asKeypair(opts.signer), opts.proofPolicy, opts.receiptStore);
+    const signer = stellarSigner(opts.signer, net.networkPassphrase);
+    if (signer.publicKey !== opts.mandate.agent) {
+      throw new Error("the transaction signer must match the mandate agent");
+    }
+    return new Agent(net, opts.mandate, signer, opts.proofPolicy, opts.receiptStore);
   },
 };

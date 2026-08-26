@@ -1,8 +1,8 @@
 {
-  "name": "@reapp-sdk/fulfillment-agent",
+  "name": "@ackrate/fulfillment-agent",
   "version": "0.0.0",
   "private": true,
-  "description": "Reference merchant: a 402-gated HTTP API that verifies on-chain payment before serving. First-read example of the safe REAPP pattern.",
+  "description": "Reference merchant: a 402-gated HTTP API that verifies on-chain payment before serving. First-read example of the safe Ackrate pattern.",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -10,12 +10,12 @@
     "test": "node --import tsx --test src/server.test.ts src/redemption-store.test.ts"
   },
   "dependencies": {
-    "@reapp-sdk/express-middleware": "*",
+    "@ackrate/express-middleware": "*",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "@reapp-sdk/core": "*",
-    "@reapp-sdk/stellar": "*",
+    "@ackrate/core": "*",
+    "@ackrate/stellar": "*",
     "@stellar/stellar-sdk": "^14.5.0",
     "@types/express": "^5.0.6"
   }

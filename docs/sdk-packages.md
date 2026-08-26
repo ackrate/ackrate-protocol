@@ -1,12 +1,12 @@
 # Installable, typed SDK packages
 
-The packages are typed ESM implementations published under the `@reapp-sdk` scope.
-The `@reapp` scope is unavailable to this project, so the packages map one-to-one:
-`@reapp/stellar` → `@reapp-sdk/stellar`, `@reapp/ap2` → `@reapp-sdk/ap2`, and
-`@reapp/express-middleware` → `@reapp-sdk/express-middleware`.
+The packages are typed ESM implementations published under the `@ackrate` scope.
+The `@ackrate` scope is unavailable to this project, so the packages map one-to-one:
+`@ackrate/stellar` → `@ackrate/stellar`, `@ackrate/ap2` → `@ackrate/ap2`, and
+`@ackrate/express-middleware` → `@ackrate/express-middleware`.
 
 ```bash
-npm install @reapp-sdk/stellar@0.2.2 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2
+npm install @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
 ```
 
 Each package contains TypeScript declarations, API documentation, and a usage example

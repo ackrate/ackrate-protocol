@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Buffer } from "buffer";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
-import { reapp } from "@reapp-sdk/core";
+import { ackrate } from "@ackrate/core";
 import {
   AP2_INTENT_DATA_KEY,
   AP2_SPEC_VERSION,
-  REAPP_AP2_BINDING_VERSION,
+  ACKRATE_AP2_BINDING_VERSION,
   bindIntentMandate,
   canonicalizeJson,
   type Ap2IntentMandate,
@@ -32,7 +32,7 @@ const bind = (intent: Ap2IntentMandate = baseIntent, nonce = "vector-1") =>
     stellar: {
       user,
       agent,
-      asset: reapp.testnet.nativeSac,
+      asset: ackrate.testnet.nativeSac,
       maxAmount: "5.00",
       nonce,
     },
@@ -45,11 +45,11 @@ test("canonical JSON is independent of object key insertion order", () => {
   assert.equal(first, '{"a":1,"z":[3,{"a":"x","b":true}]}');
 });
 
-test("binds the supported AP2 v0.1.0 intent to a 32-byte REAPP vc_hash", () => {
+test("binds the supported AP2 v0.1.0 intent to a 32-byte Ackrate vc_hash", () => {
   const result = bind();
   assert.equal(result.ap2SpecVersion, AP2_SPEC_VERSION);
   assert.equal(result.ap2DataKey, AP2_INTENT_DATA_KEY);
-  assert.equal(result.bindingVersion, REAPP_AP2_BINDING_VERSION);
+  assert.equal(result.bindingVersion, ACKRATE_AP2_BINDING_VERSION);
   assert.equal(result.normalizedIntent.merchants[0], merchant);
   assert.equal(result.mandate.merchant, merchant);
   assert.equal(result.mandate.expiry, 4_070_908_800);
@@ -82,11 +82,11 @@ test("provided nonce makes the full binding reproducible across key order", () =
 test("secure default nonces keep identical intents distinct", () => {
   const first = bindIntentMandate({
     intent: baseIntent,
-    stellar: { user, agent, asset: reapp.testnet.nativeSac, maxAmount: "5.00" },
+    stellar: { user, agent, asset: ackrate.testnet.nativeSac, maxAmount: "5.00" },
   });
   const second = bindIntentMandate({
     intent: baseIntent,
-    stellar: { user, agent, asset: reapp.testnet.nativeSac, maxAmount: "5.00" },
+    stellar: { user, agent, asset: ackrate.testnet.nativeSac, maxAmount: "5.00" },
   });
   assert.equal(first.intentHash, second.intentHash);
   assert.notEqual(first.bindingNonce, second.bindingNonce);
@@ -129,7 +129,7 @@ test("rejects ambiguous expiry and invalid Stellar authorization", () => {
     () =>
       bindIntentMandate({
         intent: baseIntent,
-        stellar: { user: "not-an-address", agent, asset: reapp.testnet.nativeSac, maxAmount: "5.00" },
+        stellar: { user: "not-an-address", agent, asset: ackrate.testnet.nativeSac, maxAmount: "5.00" },
       }),
     /stellar.user must be a Stellar G-address/,
   );
@@ -155,7 +155,7 @@ test("fails closed on unknown intent and Stellar authorization fields", () => {
         stellar: {
           user,
           agent,
-          asset: reapp.testnet.nativeSac,
+          asset: ackrate.testnet.nativeSac,
           maxAmount: "5.00",
           nonce: "vector",
           future_constraint: true,
@@ -196,7 +196,7 @@ test("signer and validator share the same decimal range", () => {
         stellar: {
           user,
           agent,
-          asset: reapp.testnet.nativeSac,
+          asset: ackrate.testnet.nativeSac,
           maxAmount: "0.1",
           decimals: 39,
         },
@@ -214,7 +214,7 @@ test("agent authorization requires an Ed25519 G-address", () => {
         stellar: {
           user,
           agent: contractAgent,
-          asset: reapp.testnet.nativeSac,
+          asset: ackrate.testnet.nativeSac,
           maxAmount: "5.00",
         },
       }),

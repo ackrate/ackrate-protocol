@@ -11,7 +11,7 @@ import type {
   BoundRedemptionStore,
   StoredBoundJsonResponse,
   VerifiedPayment,
-} from "@reapp-sdk/express-middleware";
+} from "@ackrate/express-middleware";
 
 interface SerializedPayment extends Omit<VerifiedPayment, "amountStroops"> {
   amountStroops: string;

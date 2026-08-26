@@ -1,14 +1,14 @@
-# @reapp-sdk/ap2 0.3.0
+# @ackrate/ap2 0.3.0
 
-Signed AP2 v0.1 REAPP profile validation for contract-enforced Stellar payments.
+Signed AP2 v0.1 Ackrate profile validation for contract-enforced Stellar payments.
 
-`@reapp-sdk/ap2` turns the supported AP2 v0.1 `IntentMandate` subset into a
+`@ackrate/ap2` turns the supported AP2 v0.1 `IntentMandate` subset into a
 versioned Stellar Ed25519 credential, validates it at mandate admission, and
-returns the exact REAPP mandate that must be registered on-chain. The validator
+returns the exact Ackrate mandate that must be registered on-chain. The validator
 checks the signature, trusted user, merchant scope, amount, expiry, binding
 hash, and one-time admission replay state.
 
-This is deliberately a narrow **REAPP profile for AP2 v0.1**, not a universal
+This is deliberately a narrow **Ackrate profile for AP2 v0.1**, not a universal
 verifier for every upstream AP2 VC or JWS format. It has no HTTP or x402
 dependency, so later AP2 or x402 wire changes can be handled by adapters without
 redesigning `MandateRegistry`.
@@ -16,7 +16,7 @@ redesigning `MandateRegistry`.
 ## Install
 
 ```bash
-npm install @reapp-sdk/ap2@0.3.0 @reapp-sdk/core@0.3.1 @stellar/stellar-sdk@14.5.0
+npm install @ackrate/ap2@0.3.2 @ackrate/core@0.3.3 @stellar/stellar-sdk@14.5.0
 ```
 
 ## Signed validator quick start
@@ -26,8 +26,8 @@ import {
   InMemoryAp2ReplayStore,
   createAp2ComplianceValidator,
   signAp2Mandate,
-} from "@reapp-sdk/ap2";
-import { reapp } from "@reapp-sdk/core";
+} from "@ackrate/ap2";
+import { ackrate } from "@ackrate/core";
 
 const credential = signAp2Mandate({
   intent: {
@@ -39,14 +39,14 @@ const credential = signAp2Mandate({
   stellar: {
     user: USER_KEY.publicKey(),
     agent: AGENT_KEY.publicKey(),
-    asset: reapp.testnet.nativeSac,
+    asset: ackrate.testnet.nativeSac,
     maxAmount: "5.00",
   },
 }, USER_KEY);
 
 const validator = createAp2ComplianceValidator({
   replayStore: new InMemoryAp2ReplayStore(), // development only
-  replayNamespace: `stellar-testnet:${reapp.testnet.mandateRegistryId}`,
+  replayNamespace: `stellar-testnet:${ackrate.testnet.mandateRegistryId}`,
 });
 
 const accepted = await validator.validateAndConsume({
@@ -56,9 +56,9 @@ const accepted = await validator.validateAndConsume({
   amount: "1.00",                    // semantic amount, not a wire-format claim
 });
 
-await reapp.registerMandate(accepted.binding.mandate, { signer: USER_KEY });
-await reapp.approveBudget(accepted.binding.mandate, { signer: USER_KEY });
-await reapp.agent({ mandate: accepted.binding.mandate, signer: AGENT_KEY }).pay("1.00", {
+await ackrate.registerMandate(accepted.binding.mandate, { signer: USER_KEY });
+await ackrate.approveBudget(accepted.binding.mandate, { signer: USER_KEY });
+await ackrate.agent({ mandate: accepted.binding.mandate, signer: AGENT_KEY }).pay("1.00", {
   onPrepared: (pending) => paymentJournal.save(pending),
 });
 ```
@@ -69,7 +69,7 @@ state. The validator never authorizes a payment from untrusted HTTP fields.
 ## Replay semantics
 
 `validateAndConsume` consumes a mandate hash once at signed-mandate admission or
-registration. It is **not** called before every purchase: a REAPP mandate is
+registration. It is **not** called before every purchase: a Ackrate mandate is
 intentionally multi-use.
 
 After admission, every payment still goes through
@@ -83,7 +83,7 @@ Production must provide a durable, shared, linearizable `consumeOnce(record)`
 implementation. A store error or unsupported result fails closed.
 
 ```ts
-import type { Ap2ReplayStore } from "@reapp-sdk/ap2";
+import type { Ap2ReplayStore } from "@ackrate/ap2";
 
 const replayStore: Ap2ReplayStore = {
   async consumeOnce(record) {
@@ -96,17 +96,17 @@ const replayStore: Ap2ReplayStore = {
 
 ## What is signed
 
-`signAp2Mandate` first runs the same fail-closed AP2-to-REAPP binding used by
+`signAp2Mandate` first runs the same fail-closed AP2-to-Ackrate binding used by
 `bindIntentMandate`. The credential contains:
 
 - exact credential, AP2, data-key, binding, and signature algorithm versions;
 - the normalized one-merchant AP2 intent;
 - the Stellar user, agent, asset, maximum amount, decimals, and binding nonce;
-- the recomputed REAPP mandate hash; and
+- the recomputed Ackrate mandate hash; and
 - a canonical 64-byte Stellar Ed25519 signature.
 
 The signature is over a SHA-256 digest with the fixed
-`REAPP\0AP2\0SIGNED-MANDATE\0V1\0` domain, all version identifiers, the SHA-256
+`ACKRATE\0AP2\0SIGNED-MANDATE\0V1\0` domain, all version identifiers, the SHA-256
 of the full canonical credential payload, and the 32-byte mandate hash. The
 payload hash also binds client interpretation fields such as token decimals,
 even when they are not part of the core mandate id. The user public key is taken
@@ -122,7 +122,7 @@ not understand, it fails closed instead of silently dropping the field.
 The profile is pinned to [AP2 v0.1.0](https://github.com/google-agentic-commerce/AP2/releases/tag/v0.1.0)
 and its sample [`IntentMandate` data shape](https://github.com/google-agentic-commerce/AP2/blob/v0.1.0/src/ap2/types/mandate.py).
 
-| AP2 field | REAPP behavior |
+| AP2 field | Ackrate behavior |
 |---|---|
 | `user_cart_confirmation_required` | Must be explicitly `false`; cart-confirmation state is not enforced by the contract. |
 | `natural_language_description` | Canonically bound into `intentHash`; evidence, not contract policy. |
@@ -138,8 +138,8 @@ keys, and computes:
 
 ```text
 intent_hash = SHA-256(canonical AP2 JSON)
-core_nonce  = "reapp-ap2/1:" + intent_hash + ":" + binding_nonce
-vc_hash     = existing @reapp-sdk/core mandate hash, including core_nonce
+core_nonce  = "ackrate-ap2/1:" + intent_hash + ":" + binding_nonce
+vc_hash     = existing @ackrate/core mandate hash, including core_nonce
 ```
 
 The default binding nonce comes from Web Crypto. Supply `stellar.nonce` only
@@ -182,8 +182,8 @@ replay-store, intent, binding, and authorization interfaces.
 ## Verification
 
 ```bash
-npm run build -w @reapp-sdk/ap2
-npm run test -w @reapp-sdk/ap2
+npm run build -w @ackrate/ap2
+npm run test -w @ackrate/ap2
 ```
 
 The package has 59 tests: 12 stable binding/vector tests plus 47 validator tests
@@ -198,6 +198,6 @@ The default is the upgradeable simple `MandateRegistry` on Stellar testnet:
 
 - Contract: [`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
 - WASM SHA-256: `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`
-- Reproducible release: [`simple-v0.2.3`](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
+- Reproducible release: [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
 
 Apache-2.0.

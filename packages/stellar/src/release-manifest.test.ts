@@ -21,7 +21,7 @@ function validManifest() {
       rpc_url: "https://rpc.example.test",
     },
     source: {
-      repository: "https://github.com/reapp-protocol/reapp-protocol-contracts",
+      repository: "https://github.com/ackrate/ackrate-protocol-contracts",
       branch: "main",
       commit: "1".repeat(40),
       dirty: false,

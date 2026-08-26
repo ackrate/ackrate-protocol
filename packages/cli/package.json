@@ -1,11 +1,20 @@
 {
-  "name": "reapp-protocol-cli",
-  "version": "0.1.7",
-  "description": "Command-line tool for the REAPP MandateRegistry: scaffold a project, fund testnet accounts, create AP2 mandates, and pay on-chain. The contract is the source of truth.",
+  "name": "@ackrate/cli",
+  "version": "0.1.9",
+  "description": "Command-line tool for the Ackrate MandateRegistry: scaffold a project, fund testnet accounts, create AP2 mandates, and pay on-chain. The contract is the source of truth.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ackrate/ackrate-protocol.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/ackrate/ackrate-protocol/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/ackrate/ackrate-protocol/issues"
+  },
   "keywords": [
     "stellar",
     "soroban",
-    "reapp",
+    "ackrate",
     "agent-payments",
     "x402",
     "ap2",
@@ -14,16 +23,15 @@
   ],
   "type": "module",
   "bin": {
-    "reapp-protocol-cli": "dist/reapp-cli.bundle.mjs",
-    "reapp": "dist/reapp-cli.bundle.mjs"
+    "ackrate": "dist/ackrate-cli.bundle.mjs"
   },
   "files": [
-    "dist/reapp-cli.bundle.mjs",
+    "dist/ackrate-cli.bundle.mjs",
     "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/version.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts",
+    "test": "node --import tsx --test src/version.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts src/mainnet-demo.test.ts",
     "start": "tsx src/index.ts",
     "prepack": "npm --prefix ../.. run cli:bundle"
   },
@@ -31,8 +39,8 @@
     "@stellar/stellar-sdk": "^14.5.0"
   },
   "devDependencies": {
-    "@reapp-sdk/core": "*",
-    "@reapp-sdk/stellar": "*",
+    "@ackrate/core": "*",
+    "@ackrate/stellar": "*",
     "commander": "^12.1.0"
   },
   "license": "Apache-2.0",

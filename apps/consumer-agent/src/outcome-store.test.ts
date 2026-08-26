@@ -17,7 +17,7 @@ afterEach(async () => {
 });
 
 async function fixture() {
-  const root = await mkdtemp(join(tmpdir(), "reapp-consumer-outcome-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-consumer-outcome-"));
   roots.push(root);
   const file = join(root, "private", "outcomes.json");
   const identity = createPurchaseIdentity({

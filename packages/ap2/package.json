@@ -1,12 +1,21 @@
 {
-  "name": "@reapp-sdk/ap2",
-  "version": "0.3.0",
-  "description": "Signed AP2 v0.1 REAPP profile validator and IntentMandate bridge for contract-enforced Stellar payments.",
+  "name": "@ackrate/ap2",
+  "version": "0.3.2",
+  "description": "Signed AP2 v0.1 Ackrate profile validator and IntentMandate bridge for contract-enforced Stellar payments.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ackrate/ackrate-protocol.git",
+    "directory": "packages/ap2"
+  },
+  "homepage": "https://github.com/ackrate/ackrate-protocol/tree/main/packages/ap2#readme",
+  "bugs": {
+    "url": "https://github.com/ackrate/ackrate-protocol/issues"
+  },
   "keywords": [
     "ap2",
     "stellar",
     "soroban",
-    "reapp",
+    "ackrate",
     "intent-mandate",
     "agent-payments",
     "ai-agents"
@@ -26,7 +35,7 @@
     "test": "node --import tsx --test src/index.test.ts src/validator.test.ts"
   },
   "dependencies": {
-    "@reapp-sdk/core": "^0.3.1",
+    "@ackrate/core": "^0.3.3",
     "@stellar/stellar-sdk": "^14.5.0",
     "buffer": "6.0.3"
   },

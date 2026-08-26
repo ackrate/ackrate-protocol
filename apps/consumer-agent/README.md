@@ -5,6 +5,13 @@ tokens directly and never decides whether a spend is allowed. Every purchase
 calls `MandateRegistry.execute_payment`; the contract validates and consumes
 the mandate before money moves.
 
+The same reference accepts an injected `NetworkConfig` plus either the legacy
+testnet `agentSecret` or an external `agentSigner`. For mainnet, inject only the
+completed release manifest's network and canonical USDC SAC; never reuse the
+testnet default or a burner key. Bound-v2 delivery additionally requires the
+external signer to implement `signPayload`; a transaction-only signer fails
+before payment.
+
 ## Run both reference agents
 
 From the repository root:
@@ -36,7 +43,7 @@ mandate + GET URL + source before `fetch`, so concurrent consumers cannot start
 the same purchase twice:
 
 ```ts
-const agent = reapp.agent({
+const agent = ackrate.agent({
   mandate,
   signer: agentSecret,
   proofPolicy: "bound-v2-only",
@@ -112,5 +119,5 @@ application-commit, and explicit-acknowledgment lifecycle.
 
 The default contract is the upgradeable simple MandateRegistry
 [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM),
-from the reproducible [`simple-v0.2.3` release](https://github.com/reapp-protocol/reapp-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0),
+from the reproducible [`simple-v0.2.3` release](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0),
 with WASM SHA-256 `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`.

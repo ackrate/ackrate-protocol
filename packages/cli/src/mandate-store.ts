@@ -1,13 +1,13 @@
 /**
  * Mandate store: the active mandate's inputs + on-chain ids, written to
- * ~/.reapp/mandate.json. NOT secret (no private keys) — it holds the exact
- * CreateIntentMandateInput (incl. nonce + expiry) so `reapp pay` can rebuild
+ * ~/.ackrate/mandate.json. NOT secret (no private keys) — it holds the exact
+ * CreateIntentMandateInput (incl. nonce + expiry) so `ackrate pay` can rebuild
  * the identical mandate id the contract registered.
  */
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import type { CreateIntentMandateInput } from "@reapp-sdk/core";
-import { reappHome } from "./secrets.js";
+import type { CreateIntentMandateInput } from "@ackrate/core";
+import { ackrateHome } from "./secrets.js";
 
 export type StoredMandate = {
   inputs: CreateIntentMandateInput;
@@ -17,7 +17,7 @@ export type StoredMandate = {
 };
 
 export function mandatePath(): string {
-  return join(reappHome(), "mandate.json");
+  return join(ackrateHome(), "mandate.json");
 }
 
 export function mandateExists(): boolean {

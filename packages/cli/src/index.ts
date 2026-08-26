@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * reapp — CLI for the REAPP MandateRegistry. The contract is the source of truth;
- * this tool is a thin, untrusted client over the published @reapp-sdk packages.
+ * ackrate — CLI for the Ackrate MandateRegistry. The contract is the source of truth;
+ * this tool is a thin, untrusted client over the published @ackrate packages.
  */
 import { Command } from "commander";
 import { runInit } from "./commands/init.js";
@@ -20,14 +20,14 @@ import {
 const program = new Command();
 
 program
-  .name("reapp")
-  .description("Agent payments on Stellar, enforced on-chain by the REAPP MandateRegistry.")
+  .name("ackrate")
+  .description("Agent payments on Stellar, enforced on-chain by the Ackrate MandateRegistry.")
   .version(CLI_VERSION);
 
 program
   .command("init")
-  .description("scaffold a project in the current directory (writes reapp.config.json)")
-  .option("-f, --force", "overwrite an existing reapp.config.json")
+  .description("scaffold a project in the current directory (writes ackrate.config.json)")
+  .option("-f, --force", "overwrite an existing ackrate.config.json")
   .action((opts) => runInit(opts));
 
 program
@@ -40,7 +40,7 @@ const mandate = program.command("mandate").description("manage AP2 mandates");
 mandate
   .command("create")
   .description("register an AP2 mandate on-chain and approve the SEP-41 allowance")
-  .option("-b, --budget <xlm>", "mandate cap in XLM (default: from reapp.config.json)")
+  .option("-b, --budget <xlm>", "mandate cap in XLM (default: from ackrate.config.json)")
   .option("-e, --expiry <seconds>", "seconds until the mandate expires", "3600")
   .option("-f, --force", "replace an existing stored mandate")
   .action((opts) => runMandateCreate(opts));
@@ -48,7 +48,7 @@ mandate
 program
   .command("pay")
   .description("make an agent-signed payment against the active mandate (budget enforced on-chain)")
-  .argument("[amount]", "XLM amount to pay (default: unlockPrice from reapp.config.json)")
+  .argument("[amount]", "XLM amount to pay (default: unlockPrice from ackrate.config.json)")
   .action((amount) => runPay(amount));
 
 const settlement = program.command("settlement").description("inspect crash-safe payment state");
@@ -87,9 +87,17 @@ ops
 
 program
   .command("demo")
-  .description("list or run a self-contained on-chain demo (ephemeral accounts, no setup needed)")
+  .description("run the reference research-agent payment flow on testnet or explicitly configured mainnet")
   .argument("[target]", "which demo to run; omit to list available demos")
-  .action((target) => runDemo(target));
+  .option("--network <network>", "testnet or mainnet", "testnet")
+  .option("--manifest <path>", "verified mainnet deployment manifest JSON")
+  .option("--user-signer <identity>", "Stellar CLI identity for the mandate user")
+  .option("--agent-signer <identity>", "Stellar CLI identity for the payment agent")
+  .option("--merchant <address>", "mainnet merchant G-account")
+  .option("--budget <usdc>", "explicit real-USDC mandate budget")
+  .option("--price <usdc>", "explicit real-USDC price per source")
+  .option("--confirm-real-usdc", "acknowledge that mainnet payments are irreversible and spend real USDC")
+  .action((target, options) => runDemo(target, options));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err instanceof Error ? err.message : err);

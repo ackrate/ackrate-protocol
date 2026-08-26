@@ -7,9 +7,9 @@ import { afterEach, test } from "node:test";
 import type {
   BoundRedemptionRecord,
   StoredBoundJsonResponse,
-} from "@reapp-sdk/express-middleware";
-import { resolveBoundReappInterruptedDelivery } from "@reapp-sdk/express-middleware";
-import { TESTNET } from "@reapp-sdk/stellar";
+} from "@ackrate/express-middleware";
+import { resolveBoundAckrateInterruptedDelivery } from "@ackrate/express-middleware";
+import { TESTNET } from "@ackrate/stellar";
 import { FileBoundRedemptionStore } from "./redemption-store.js";
 
 const roots: string[] = [];
@@ -33,7 +33,7 @@ function record(proofDigest = "b".repeat(64)): BoundRedemptionRecord {
       merchant: "GAHGD3Q6ZKKJFM4FM5M6DSDNTT6KGCEZRZ2NLBBGILZFSKNUFT7VTORQ",
       asset: TESTNET.nativeSac,
       registryId: TESTNET.mandateRegistryId,
-      scheme: "reapp-soroban-bound",
+      scheme: "ackrate-soroban-bound",
       network: "stellar-testnet",
     },
   };
@@ -50,7 +50,7 @@ function response(body = { source: "data" }): StoredBoundJsonResponse {
 }
 
 test("file store persists one immutable completed response across reopen", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-redemptions-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-redemptions-"));
   roots.push(root);
   const file = join(root, "private", "redemptions.json");
   const first = new FileBoundRedemptionStore(file);
@@ -88,7 +88,7 @@ test("file store persists one immutable completed response across reopen", async
 });
 
 test("two store instances for one path atomically yield one claim and one conflict", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-redemptions-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-redemptions-"));
   roots.push(root);
   const file = join(root, "redemptions.json");
   const first = new FileBoundRedemptionStore(file);
@@ -102,7 +102,7 @@ test("two store instances for one path atomically yield one claim and one confli
 });
 
 test("an executing claim survives restart, cannot rerun, and resolves to one terminal result", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-redemptions-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-redemptions-"));
   roots.push(root);
   const file = join(root, "redemptions.json");
   const expected = record();
@@ -113,7 +113,7 @@ test("an executing claim survives restart, cannot rerun, and resolves to one ter
   assert.equal((await reopened.claim(expected, "execution-2", 1_700_000_001)).kind, "executing");
   const interrupted = await reopened.listExecuting();
   assert.equal(interrupted.length, 1);
-  await resolveBoundReappInterruptedDelivery({
+  await resolveBoundAckrateInterruptedDelivery({
     redemptionStore: reopened,
     record: interrupted[0]!,
   });
@@ -132,7 +132,7 @@ test("an executing claim survives restart, cannot rerun, and resolves to one ter
 });
 
 test("corrupted file store fails closed", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-redemptions-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-redemptions-"));
   roots.push(root);
   const file = join(root, "redemptions.json");
   await writeFile(file, JSON.stringify({ version: 2, records: { wrong: {

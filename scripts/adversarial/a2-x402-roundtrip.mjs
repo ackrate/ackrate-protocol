@@ -1,14 +1,14 @@
 // Gate A2 — bound-v2 x402 round-trip using ONLY published packages:
-// merchant built from @reapp-sdk/express-middleware, consumer from @reapp-sdk/core.
+// merchant built from @ackrate/express-middleware, consumer from @ackrate/core.
 // Then adversarial: exact-proof replay (recovery, no new fulfillment), proof
 // retargeted at another resource (rejected), legacy client (426 before payment).
 import express from "express";
 import { randomBytes } from "node:crypto";
-import { reapp, getSettlementReceipt } from "@reapp-sdk/core";
+import { ackrate, getSettlementReceipt } from "@ackrate/core";
 import {
   InMemoryBoundRedemptionStore,
-  createBoundReappPaidJsonRoute,
-} from "@reapp-sdk/express-middleware";
+  createBoundAckratePaidJsonRoute,
+} from "@ackrate/express-middleware";
 import { Keypair } from "@stellar/stellar-sdk";
 
 const results = [];
@@ -32,16 +32,16 @@ await fund(user, "user");
 await fund(agentKey, "agent");
 await fund(merchant, "merchant");
 
-const mandate = reapp.createIntentMandate({
+const mandate = ackrate.createIntentMandate({
   user: user.publicKey(),
   agent: agentKey.publicKey(),
   merchant: merchant.publicKey(),
-  asset: reapp.testnet.nativeSac,
+  asset: ackrate.testnet.nativeSac,
   maxAmount: "3.00",
   expiry: Math.floor(Date.now() / 1000) + 3600,
 });
-await reapp.registerMandate(mandate, { signer: user });
-await reapp.approveBudget(mandate, { signer: user });
+await ackrate.registerMandate(mandate, { signer: user });
+await ackrate.approveBudget(mandate, { signer: user });
 console.log(`mandate ${mandate.id} registered + funded (3.00 XLM)`);
 
 // --- merchant: 402-gated Express API from the published middleware ---
@@ -49,7 +49,7 @@ const PORT = 4021;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 let fulfillments = 0;
 const app = express();
-const paid = createBoundReappPaidJsonRoute({
+const paid = createBoundAckratePaidJsonRoute({
   merchant: merchant.publicKey(),
   sourceAccount: merchant.publicKey(),
   audience: ORIGIN,
@@ -73,7 +73,7 @@ const receiptStore = {
   async listPending() { return [...pendings.values()]; },
   async clearPending(receiptId) { pendings.delete(receiptId); },
 };
-const consumer = reapp.agent({ mandate, signer: agentKey, proofPolicy: "bound-v2-only", receiptStore });
+const consumer = ackrate.agent({ mandate, signer: agentKey, proofPolicy: "bound-v2-only", receiptStore });
 
 const txes = [];
 const receipts = [];
@@ -108,7 +108,7 @@ const settledProof = receipts[0];
 async function rawPaidRequest(path, receipt) {
   return fetch(`${ORIGIN}${path}`, {
     headers: {
-      "REAPP-PAYMENT-CAPABILITIES": "reapp-bound-v2",
+      "ACKRATE-PAYMENT-CAPABILITIES": "ackrate-bound-v2",
       "X-PAYMENT": typeof receipt.proof === "string" ? receipt.proof : (receipt.proof?.header ?? JSON.stringify(receipt.proof)),
     },
   });

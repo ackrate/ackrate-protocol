@@ -1,8 +1,8 @@
 {
-  "name": "@reapp-sdk/wallet-chat",
+  "name": "@ackrate/wallet-chat",
   "version": "0.0.0",
   "private": true,
-  "description": "LOBSTR wallet and mandate-aware chat application for contract-enforced REAPP payments.",
+  "description": "LOBSTR wallet and mandate-aware chat application for contract-enforced Ackrate payments.",
   "scripts": {
     "dev": "WATCHPACK_POLLING=true next dev --webpack",
     "build": "next build",
@@ -17,8 +17,8 @@
     "@assistant-ui/react-ai-sdk": "1.4.4",
     "@lobstrco/signer-extension-api": "2.1.0",
     "@neondatabase/serverless": "1.1.0",
-    "@reapp-sdk/core": "*",
-    "@reapp-sdk/stellar": "*",
+    "@ackrate/core": "*",
+    "@ackrate/stellar": "*",
     "@stellar/stellar-sdk": "^14.6.1",
     "ai": "7.0.55",
     "buffer": "6.0.3",

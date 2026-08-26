@@ -1,6 +1,6 @@
 import { Buffer } from "buffer";
 import { rpc, scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
-import { Client, type NetworkConfig } from "@reapp-sdk/stellar";
+import { Client, type NetworkConfig } from "@ackrate/stellar";
 import type {
   PaymentRequirement,
   PaymentVerifier,
@@ -254,7 +254,7 @@ export function createStellarPaymentVerifier(options: StellarVerifierOptions): P
       throw new Error("sourceAccount must be a funded Stellar account address (G...).");
     }
     const refuseSigning = async (): Promise<never> => {
-      throw new Error("REAPP payment verification is read-only and never signs.");
+      throw new Error("Ackrate payment verification is read-only and never signs.");
     };
     const client = new Client({
       contractId: network.mandateRegistryId,

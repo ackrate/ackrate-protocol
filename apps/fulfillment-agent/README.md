@@ -1,7 +1,7 @@
 # Reference fulfillment agent
 
 An Express 5 API protected by the safe paid JSON route from
-`@reapp-sdk/express-middleware`. One verified settlement executes fulfillment
+`@ackrate/express-middleware`. One verified settlement executes fulfillment
 once; recovery replays the exact stored response bytes.
 
 ## Run the live pair
@@ -18,7 +18,7 @@ and rejects an old settlement re-signed for a fresh request.
 ## Route boundary
 
 ```ts
-const paidSource = createBoundReappPaidJsonRoute({
+const paidSource = createBoundAckratePaidJsonRoute({
   merchant,
   sourceAccount: merchant,
   audience: publicOrigin, // exact origin; never Host-derived
@@ -37,6 +37,11 @@ const paidSource = createBoundReappPaidJsonRoute({
 
 app.get("/source/:id", validateKnownSource, paidSource);
 ```
+
+Mainnet callers inject `networkConfig`, `asset`, `network: "stellar-mainnet"`,
+and a deliberately low `amount`. The network config must come from the completed
+deployment manifest and the asset must be its canonical Circle USDC SAC. The
+default remains the isolated testnet/XLM demo.
 
 The route requires bound-v2 capability, an authenticated exact-origin GET
 challenge, an agent signature, the configured Stellar network, one matching
@@ -58,22 +63,22 @@ another chain lookup or callback. A different proof for the same transaction is
 
 Never expire an executing claim back into runnable work. On standalone restart,
 the single-process reference resolves prior executing ids to one immutable
-terminal result through `resolveBoundReappInterruptedDelivery`. External side
+terminal result through `resolveBoundAckrateInterruptedDelivery`. External side
 effects still need a transactional operator/job/outbox; automatic re-execution
 would violate at-most-once fulfillment.
 
 ## Standalone testnet server
 
 ```bash
-REAPP_MERCHANT=G... \
-REAPP_READ_SOURCE=G... \
-REAPP_PUBLIC_ORIGIN='https://api.example' \
-REAPP_CHALLENGE_SECRET='at-least-32-stable-private-bytes' \
-REAPP_REDEMPTION_STORE='./private/redemptions.json' \
-npm run start -w @reapp-sdk/fulfillment-agent
+ACKRATE_MERCHANT=G... \
+ACKRATE_READ_SOURCE=G... \
+ACKRATE_PUBLIC_ORIGIN='https://api.example' \
+ACKRATE_CHALLENGE_SECRET='at-least-32-stable-private-bytes' \
+ACKRATE_REDEMPTION_STORE='./private/redemptions.json' \
+npm run start -w @ackrate/fulfillment-agent
 ```
 
-For localhost, `REAPP_PUBLIC_ORIGIN` may be omitted and the server uses its
+For localhost, `ACKRATE_PUBLIC_ORIGIN` may be omitted and the server uses its
 actual loopback origin. Public deployment must configure the exact HTTPS origin.
 Keep the challenge secret stable and private.
 

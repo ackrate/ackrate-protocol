@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import type { NetworkConfig } from "@reapp-sdk/stellar";
+import type { NetworkConfig } from "@ackrate/stellar";
 
 /** A request-specific price and the immutable deployment it must settle through. */
 export interface PaymentRequirement {
@@ -62,7 +62,7 @@ export interface RedemptionStore {
   ): "consumed" | "duplicate" | Promise<"consumed" | "duplicate">;
 }
 
-export interface ReappPaymentMiddlewareOptions {
+export interface AckratePaymentMiddlewareOptions {
   /** Merchant address that must receive the contract-authorized transfer. */
   merchant: string;
   /** Price as a human decimal string, or a request-specific resolver. */
@@ -71,11 +71,11 @@ export interface ReappPaymentMiddlewareOptions {
   resource?: RequestValue;
   /** SEP-41 asset contract. Defaults to networkConfig.nativeSac. */
   asset?: string;
-  /** Contract/RPC configuration. Defaults to REAPP testnet. */
+  /** Contract/RPC configuration. Defaults to Ackrate testnet. */
   networkConfig?: NetworkConfig;
   /** x402 network label. Defaults to stellar-testnet. */
   network?: string;
-  /** Settlement scheme. Defaults to reapp-soroban. */
+  /** Settlement scheme. Defaults to ackrate-soroban. */
   scheme?: string;
   /** Asset decimals. Defaults to 7. */
   decimals?: number;

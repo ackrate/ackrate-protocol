@@ -7,7 +7,7 @@ import {
   createSettlementReceiptId,
   type SettlementReceipt,
   type SettlementReceiptStore,
-} from "@reapp-sdk/core";
+} from "@ackrate/core";
 
 interface ReceiptFile {
   version: 2;

@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { Buffer } from "buffer";
 import { Keypair } from "@stellar/stellar-sdk";
-import { encodePaymentProof } from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { encodePaymentProof } from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import {
-  createReappPaymentMiddleware,
+  createAckratePaymentMiddleware,
   createRedemptionKey,
   getVerifiedPayment,
 } from "./middleware.js";
@@ -15,7 +15,7 @@ import type {
   PaymentRequirement,
   PaymentVerifier,
   RedemptionStore,
-  ReappPaymentMiddlewareOptions,
+  AckratePaymentMiddlewareOptions,
   VerifiedPayment,
 } from "./types.js";
 
@@ -35,13 +35,13 @@ const verifiedPayment = (overrides: Partial<VerifiedPayment> = {}): VerifiedPaym
   merchant,
   asset: TESTNET.nativeSac,
   registryId: TESTNET.mandateRegistryId,
-  scheme: "reapp-soroban",
+  scheme: "ackrate-soroban",
   network: "stellar-testnet",
   ...overrides,
 });
 
 const goodHeader = (overrides: Record<string, string> = {}): string => encodePaymentProof({
-  scheme: "reapp-soroban",
+  scheme: "ackrate-soroban",
   network: "stellar-testnet",
   txHash,
   mandateId: "b".repeat(64),
@@ -129,7 +129,7 @@ function successfulVerifier(onVerify?: (tx: string, requirement: PaymentRequirem
   };
 }
 
-function options(overrides: Partial<ReappPaymentMiddlewareOptions> = {}): ReappPaymentMiddlewareOptions {
+function options(overrides: Partial<AckratePaymentMiddlewareOptions> = {}): AckratePaymentMiddlewareOptions {
   return {
     merchant,
     amount: "1.00",
@@ -143,7 +143,7 @@ function options(overrides: Partial<ReappPaymentMiddlewareOptions> = {}): ReappP
 test("missing proof returns a private 402 challenge without touching verifier or store", async () => {
   let verifies = 0;
   let consumes = 0;
-  const result = await invoke(createReappPaymentMiddleware(options({
+  const result = await invoke(createAckratePaymentMiddleware(options({
     verifier: successfulVerifier(() => { verifies += 1; }),
     redemptionStore: { consumeOnce: () => { consumes += 1; return "consumed"; } },
   })));
@@ -158,7 +158,7 @@ test("missing proof returns a private 402 challenge without touching verifier or
 test("only normalized txHash crosses the verifier boundary; header mandate and amount never authorize", async () => {
   let receivedTx = "";
   let receivedRequirement: PaymentRequirement | undefined;
-  const middleware = createReappPaymentMiddleware(options({
+  const middleware = createAckratePaymentMiddleware(options({
     verifier: successfulVerifier((tx, requirement) => {
       receivedTx = tx;
       receivedRequirement = requirement;
@@ -176,7 +176,7 @@ test("only normalized txHash crosses the verifier boundary; header mandate and a
 
 test("malformed, duplicate, comma-joined, noncanonical, and oversized headers fail before RPC", async () => {
   let verifies = 0;
-  const middleware = createReappPaymentMiddleware(options({
+  const middleware = createAckratePaymentMiddleware(options({
     verifier: successfulVerifier(() => { verifies += 1; }),
     maxHeaderBytes: 256,
   }));
@@ -197,7 +197,7 @@ test("malformed, duplicate, comma-joined, noncanonical, and oversized headers fa
 
 test("wrong scheme, network, and transaction hash fail before RPC", async () => {
   let verifies = 0;
-  const middleware = createReappPaymentMiddleware(options({
+  const middleware = createAckratePaymentMiddleware(options({
     verifier: successfulVerifier(() => { verifies += 1; }),
   }));
   for (const proof of [
@@ -212,34 +212,34 @@ test("wrong scheme, network, and transaction hash fail before RPC", async () => 
 });
 
 test("invalid proof is 402, unavailable proof is 503 without a replacement challenge", async () => {
-  const invalid = await invoke(createReappPaymentMiddleware(options({
+  const invalid = await invoke(createAckratePaymentMiddleware(options({
     verifier: { verify: async () => ({ ok: false, kind: "invalid", reason: "wrong transfer" }) },
   })), ["X-PAYMENT", goodHeader()]);
   assert.equal(invalid.response.statusCode, 402);
   assert.ok("accepts" in (invalid.response.bodyValue as object));
 
-  const unavailable = await invoke(createReappPaymentMiddleware(options({
+  const unavailable = await invoke(createAckratePaymentMiddleware(options({
     verifier: { verify: async () => ({ ok: false, kind: "unavailable", reason: "rpc lag" }) },
   })), ["X-PAYMENT", goodHeader()]);
   assert.equal(unavailable.response.statusCode, 503);
   assert.equal(unavailable.response.headerValues.get("retry-after"), "1");
   assert.equal("accepts" in (unavailable.response.bodyValue as object), false);
 
-  const thrown = await invoke(createReappPaymentMiddleware(options({
+  const thrown = await invoke(createAckratePaymentMiddleware(options({
     verifier: { verify: async () => { throw new Error("offline"); } },
   })), ["X-PAYMENT", goodHeader()]);
   assert.equal(thrown.response.statusCode, 503);
 });
 
 test("store failure fails closed and duplicate redemption is 409 without another challenge", async () => {
-  const failed = await invoke(createReappPaymentMiddleware(options({
+  const failed = await invoke(createAckratePaymentMiddleware(options({
     redemptionStore: { consumeOnce: () => { throw new Error("store offline"); } },
   })), ["X-PAYMENT", goodHeader()]);
   assert.equal(failed.response.statusCode, 503);
   assert.equal(failed.nextCalls, 0);
 
   const store = new InMemoryRedemptionStore();
-  const middleware = createReappPaymentMiddleware(options({ redemptionStore: store }));
+  const middleware = createAckratePaymentMiddleware(options({ redemptionStore: store }));
   const first = await invoke(middleware, ["X-PAYMENT", goodHeader()]);
   const second = await invoke(middleware, ["X-PAYMENT", goodHeader()]);
   assert.equal(first.nextCalls, 1);
@@ -250,8 +250,8 @@ test("store failure fails closed and duplicate redemption is 409 without another
 test("100 simultaneous replays across two middleware instances reach exactly one handler", async () => {
   const store = new InMemoryRedemptionStore();
   const verifier = successfulVerifier();
-  const first = createReappPaymentMiddleware(options({ verifier, redemptionStore: store }));
-  const second = createReappPaymentMiddleware(options({ verifier, redemptionStore: store }));
+  const first = createAckratePaymentMiddleware(options({ verifier, redemptionStore: store }));
+  const second = createAckratePaymentMiddleware(options({ verifier, redemptionStore: store }));
   const attempts = await Promise.all(Array.from({ length: 100 }, (_, index) =>
     invoke(index % 2 === 0 ? first : second, ["X-PAYMENT", goodHeader()])));
   assert.equal(attempts.filter((attempt) => attempt.nextCalls === 1).length, 1);
@@ -260,7 +260,7 @@ test("100 simultaneous replays across two middleware instances reach exactly one
 
 test("one settlement cannot unlock a second resource", async () => {
   const store = new InMemoryRedemptionStore();
-  const middleware = createReappPaymentMiddleware(options({
+  const middleware = createAckratePaymentMiddleware(options({
     resource: (request) => request.originalUrl,
     redemptionStore: store,
   }));
@@ -281,12 +281,12 @@ test("redemption keys isolate networks and registries while normalizing transact
 });
 
 test("constructor and request-specific configuration errors fail closed", async () => {
-  assert.throws(() => createReappPaymentMiddleware(options({ redemptionStore: undefined as unknown as RedemptionStore })), /redemptionStore/);
-  assert.throws(() => createReappPaymentMiddleware(options({ amount: "0" })), /greater than zero/);
-  assert.throws(() => createReappPaymentMiddleware(options({ amount: "1e2" })), /Invalid amount/);
-  assert.throws(() => createReappPaymentMiddleware(options({ maxHeaderBytes: 1 })), /maxHeaderBytes/);
+  assert.throws(() => createAckratePaymentMiddleware(options({ redemptionStore: undefined as unknown as RedemptionStore })), /redemptionStore/);
+  assert.throws(() => createAckratePaymentMiddleware(options({ amount: "0" })), /greater than zero/);
+  assert.throws(() => createAckratePaymentMiddleware(options({ amount: "1e2" })), /Invalid amount/);
+  assert.throws(() => createAckratePaymentMiddleware(options({ maxHeaderBytes: 1 })), /maxHeaderBytes/);
 
-  const result = await invoke(createReappPaymentMiddleware(options({
+  const result = await invoke(createAckratePaymentMiddleware(options({
     amount: () => { throw new Error("resolver fault"); },
   })), ["X-PAYMENT", goodHeader()]);
   assert.equal(result.response.statusCode, 500);

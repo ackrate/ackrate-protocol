@@ -1,5 +1,5 @@
 /**
- * `reapp pay [amount]` — agent-signed payment against the active mandate.
+ * `ackrate pay [amount]` — agent-signed payment against the active mandate.
  *
  * Rebuilds the stored mandate (same nonce -> same id), then has the AGENT sign
  * execute_payment. Budget, expiry, and replay are enforced ON-CHAIN: when the
@@ -7,7 +7,7 @@
  * rejection is the whole point, so we surface it clearly rather than as a stack
  * trace. The CLI is an untrusted client; the contract is the source of truth.
  */
-import { SettlementUncertainError, reapp } from "@reapp-sdk/core";
+import { SettlementUncertainError, ackrate } from "@ackrate/core";
 import { log, c } from "../ui.js";
 import { configExists, loadConfig, networkConfig } from "../config.js";
 import { credentialsExist, loadCredentials } from "../secrets.js";
@@ -53,15 +53,15 @@ export async function runPay(amountArg?: string): Promise<void> {
     return;
   }
   if (!configExists()) {
-    log.warn("no reapp.config.json here — run `reapp init` first");
+    log.warn("no ackrate.config.json here — run `ackrate init` first");
     return;
   }
   if (!credentialsExist()) {
-    log.warn("no credentials — run `reapp setup` first");
+    log.warn("no credentials — run `ackrate setup` first");
     return;
   }
   if (!mandateExists()) {
-    log.warn("no mandate — run `reapp mandate create` first");
+    log.warn("no mandate — run `ackrate mandate create` first");
     return;
   }
 
@@ -72,13 +72,13 @@ export async function runPay(amountArg?: string): Promise<void> {
   const txUrl = (hash: string) => `${config.explorer}/tx/${hash}`;
 
   const amount = amountArg ?? config.unlockPrice;
-  const mandate = reapp.createIntentMandate(stored.inputs); // same nonce -> same id
+  const mandate = ackrate.createIntentMandate(stored.inputs); // same nonce -> same id
 
   log.step("execute_payment (agent-signed)", { amount: `${amount} XLM`, mandate: short(mandate.id) });
   let preparedHash: string | undefined;
   let hash: string;
   try {
-    hash = await reapp.agent({ mandate, signer: creds.agentSecret }, net).pay(amount, {
+    hash = await ackrate.agent({ mandate, signer: creds.agentSecret }, net).pay(amount, {
       onPrepared: async (pending) => {
         await claimPendingSettlement("pay", net.mandateRegistryId, pending);
         preparedHash = pending.txHash;
@@ -87,7 +87,7 @@ export async function runPay(amountArg?: string): Promise<void> {
   } catch (err) {
     if (err instanceof SettlementUncertainError) {
       log.err("payment result is uncertain; durable journal retained", { tx: short(err.settlement.txHash) });
-      log.info("run `reapp settlement reconcile`; do not run pay again");
+      log.info("run `ackrate settlement reconcile`; do not run pay again");
       console.log(c.dim(`  ${txUrl(err.settlement.txHash)}`));
       process.exitCode = 1;
       return;
@@ -109,7 +109,7 @@ export async function runPay(amountArg?: string): Promise<void> {
       log.info("budget, expiry, and replay are enforced on-chain — the CLI cannot override them");
     } else if (preparedHash) {
       log.err("payment result is uncertain; durable journal retained", { tx: short(preparedHash) });
-      log.info("run `reapp settlement reconcile`; do not run pay again");
+      log.info("run `ackrate settlement reconcile`; do not run pay again");
     } else {
       log.err("payment failed before a transaction hash was durably prepared", {
         reason: reason.split("\n")[0],
@@ -126,7 +126,7 @@ export async function runPay(amountArg?: string): Promise<void> {
       tx: short(hash),
       reason: error instanceof Error ? error.message : String(error),
     });
-    log.info("run `reapp settlement reconcile`; do not run pay again");
+    log.info("run `ackrate settlement reconcile`; do not run pay again");
     process.exitCode = 1;
     return;
   }
@@ -141,5 +141,5 @@ export async function runPay(amountArg?: string): Promise<void> {
       c.gray("  tx      ") + c.dim(txUrl(hash)) +
       "\n",
   );
-  log.info(`after you durably accept this result, run \`reapp settlement acknowledge ${hash}\``);
+  log.info(`after you durably accept this result, run \`ackrate settlement acknowledge ${hash}\``);
 }

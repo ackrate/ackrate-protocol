@@ -1,4 +1,4 @@
-# REAPP testnet release playbook — contract to SDK
+# Ackrate testnet release playbook — contract to SDK
 
 This is the linear operating procedure for a contract, deployment, typed SDK,
 npm, CLI, reference-agent, and hosted-demo release. Do not skip ahead: every
@@ -12,7 +12,7 @@ stage consumes the verified evidence from the prior stage.
 | Composite contract | `CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW`, 0.3.0, hash `b3368d7f…f0a1` |
 | Core / Stellar | 0.3.1 / 0.2.2 |
 | Express / AP2 | 0.2.2 / 0.3.0 |
-| CLI | `reapp-protocol-cli@0.1.7` |
+| CLI | `@ackrate/cli@0.1.9` |
 
 All commands use Stellar testnet. Never place secrets in command history,
 documentation, commits, screenshots, or logs. Use a configured Stellar identity
@@ -20,7 +20,7 @@ or secure signer. Generated demo keys are disposable testnet keys only.
 
 ## 1. Contract source change
 
-Work in the dedicated `reapp-protocol-contracts` repository.
+Work in the dedicated `ackrate-protocol-contracts` repository.
 
 1. Change one contract surface at a time.
 2. Add positive and negative tests in the same change.
@@ -72,7 +72,7 @@ Upload and deploy the exact artifact:
 ```bash
 stellar contract upload \
   --wasm "$RELEASE_WASM" \
-  --source reapp-agent \
+  --source ackrate-agent \
   --network testnet \
   --no-cache
 ```
@@ -82,7 +82,7 @@ Use the returned hash:
 ```bash
 stellar contract deploy \
   --wasm-hash <64-hex-wasm-hash> \
-  --source reapp-agent \
+  --source ackrate-agent \
   --network testnet \
   --no-cache \
   -- --admin "$ADMIN_ADDRESS"
@@ -101,19 +101,19 @@ stellar contract info interface --id <contract-id> --network testnet --output js
 Read operations can use a configured funded source identity for simulation:
 
 ```bash
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --get_admin
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --is_paused
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --get_upgrade_delay
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --get_admin
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --is_paused
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --get_upgrade_delay
 ```
 
 Exercise pause and unpause with the admin signer, then return to the intended
 operational state:
 
 ```bash
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --pause
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --is_paused
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --unpause
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --is_paused
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --pause
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --is_paused
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --unpause
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --is_paused
 ```
 
 Record explorer links. Never infer success from a command beginning; require the
@@ -125,13 +125,13 @@ Use only a source-verified replacement hash. Uploading installs code but does no
 change the live contract:
 
 ```bash
-stellar contract upload --wasm replacement.wasm --source reapp-agent --network testnet --no-cache
+stellar contract upload --wasm replacement.wasm --source ackrate-agent --network testnet --no-cache
 ```
 
 Schedule the returned hash:
 
 ```bash
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- \
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- \
   schedule_upgrade --new_wasm_hash <64-hex-wasm-hash>
 ```
 
@@ -139,15 +139,15 @@ Confirm pending state and the contract-reported deadline. The current simple
 testnet contract reports `3,600` seconds; the composite reports `86,400`:
 
 ```bash
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --get_pending_upgrade
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --get_upgrade_delay
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --get_pending_upgrade
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --get_upgrade_delay
 ```
 
 After the deadline, pause and execute:
 
 ```bash
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --pause
-stellar contract invoke --id <contract-id> --source reapp-agent --network testnet --no-cache -- --execute_upgrade
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --pause
+stellar contract invoke --id <contract-id> --source ackrate-agent --network testnet --no-cache -- --execute_upgrade
 ```
 
 Then verify the same id, new hash/interface, preserved admin and storage, cleared
@@ -162,7 +162,7 @@ temporary directory, then review the diff before replacing checked-in code:
 ```bash
 stellar contract bindings typescript \
   --wasm release.wasm \
-  --output-dir /tmp/reapp-bindings \
+  --output-dir /tmp/ackrate-bindings \
   --overwrite
 ```
 
@@ -222,21 +222,21 @@ repository.
 
 Publish dependencies before consumers:
 
-1. `@reapp-sdk/stellar`
-2. `@reapp-sdk/core`
-3. `@reapp-sdk/ap2`
-4. `@reapp-sdk/express-middleware`
-5. `reapp-protocol-cli`
+1. `@ackrate/stellar`
+2. `@ackrate/core`
+3. `@ackrate/ap2`
+4. `@ackrate/express-middleware`
+5. `@ackrate/cli`
 
 Already-existing unchanged versions are verified, not republished. After each
 new publish, query the exact version and integrity and install it from the public
 registry in a clean project. Do not call a package released until this succeeds.
 
-The unscoped `reapp-cli` name belongs to another publisher. Public examples use:
+The unscoped `ackrate-cli` name belongs to another publisher. Public examples use:
 
 ```bash
-npm install -g reapp-protocol-cli
-reapp demo research-agent
+npm install -g @ackrate/cli
+ackrate demo research-agent
 ```
 
 ## 10. Source commits and pushes

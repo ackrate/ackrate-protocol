@@ -15,7 +15,7 @@ Historical point-in-time reviews:
 | Record | Exact historical scope |
 |---|---|
 | [`gatecheck-2026-06-10.md`](gatecheck-2026-06-10.md) | Soroban SDK 22 simple contract and its then-current 19-test suite. |
-| [`sdk-gatecheck-2026-06-15.md`](sdk-gatecheck-2026-06-15.md) | `@reapp-sdk/core@0.1.2` and `@reapp-sdk/stellar@0.1.1`. |
+| [`sdk-gatecheck-2026-06-15.md`](sdk-gatecheck-2026-06-15.md) | `@ackrate/core@0.1.2` and `@ackrate/stellar@0.1.1`. |
 | [`x402-gatecheck-2026-06-16.md`](x402-gatecheck-2026-06-16.md) | Legacy proof-v1 middleware before bound-v2. |
 
 Historical reports are retained for traceability but are not evidence for the

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * PRODUCTION e2e through the @reapp-sdk/core surface — NO MOCKS, live testnet.
+ * PRODUCTION e2e through the @ackrate/core surface — NO MOCKS, live testnet.
  *
  *   npm run e2e:sdk
  *
@@ -9,7 +9,7 @@
  *   create → register → approve → pay (1 XLM moves) → overspend REJECTED →
  *   revoke → pay-after-revoke REJECTED.
  *
- * user  = funded burner (REAPP_BURNER_SECRET_KEY)
+ * user  = funded burner (ACKRATE_BURNER_SECRET_KEY)
  * agent = fresh friendbot-funded keypair (the only signer that can pay)
  * merchant = fresh friendbot-funded keypair (receives)
  */
@@ -21,8 +21,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
 import { Keypair } from "@stellar/stellar-sdk";
-import { SettlementUncertainError, reapp } from "@reapp-sdk/core";
-import { TESTNET, token } from "@reapp-sdk/stellar";
+import { SettlementUncertainError, ackrate } from "@ackrate/core";
+import { TESTNET, token } from "@ackrate/stellar";
 
 dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".env"), quiet: true });
 
@@ -73,9 +73,9 @@ async function journaledPay(agent, amount, journalPath) {
 }
 
 async function main() {
-  const journalRoot = await mkdtemp(path.join(tmpdir(), "reapp-sdk-e2e-"));
-  const userSecret = process.env.REAPP_BURNER_SECRET_KEY?.trim();
-  if (!userSecret || !userSecret.startsWith("S")) die("REAPP_BURNER_SECRET_KEY not set in .env");
+  const journalRoot = await mkdtemp(path.join(tmpdir(), "ackrate-sdk-e2e-"));
+  const userSecret = process.env.ACKRATE_BURNER_SECRET_KEY?.trim();
+  if (!userSecret || !userSecret.startsWith("S")) die("ACKRATE_BURNER_SECRET_KEY not set in .env");
 
   const user = Keypair.fromSecret(userSecret);
   const agent = Keypair.random();
@@ -84,7 +84,7 @@ async function main() {
 
   log("");
   log(RULE(c.magenta));
-  log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("@reapp-sdk/core e2e")} ${c.dim("— live testnet, no mocks")}`);
+  log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("@ackrate/core e2e")} ${c.dim("— live testnet, no mocks")}`);
   log(RULE(c.magenta));
   field("contract", c.yellow(TESTNET.mandateRegistryId));
   field("explorer", c.link(`https://stellar.expert/explorer/testnet/contract/${TESTNET.mandateRegistryId}`));
@@ -101,7 +101,7 @@ async function main() {
 
   step("createIntentMandate  (SDK, no chain)");
   note("The user authorizes: agent may spend <= 5 XLM at this merchant until expiry.");
-  const mandate = reapp.createIntentMandate({
+  const mandate = ackrate.createIntentMandate({
     user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
     asset, maxAmount: "5.00", expiry: Math.floor(Date.now() / 1000) + 3600,
   });
@@ -110,17 +110,17 @@ async function main() {
   record("createIntentMandate", Boolean(mandate.id));
 
   step("registerMandate  (SDK, user-signed)");
-  const regHash = await reapp.registerMandate(mandate, { signer: user });
+  const regHash = await ackrate.registerMandate(mandate, { signer: user });
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${regHash}`));
   record("registerMandate", Boolean(regHash));
 
   step("approveBudget  (SDK, user-signed SEP-41)");
   note("User approves the CONTRACT (not the agent) for a 5 XLM allowance.");
-  const apprHash = await reapp.approveBudget(mandate, { signer: user });
+  const apprHash = await ackrate.approveBudget(mandate, { signer: user });
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${apprHash}`));
   record("approveBudget", Boolean(apprHash));
 
-  const a = reapp.agent({ mandate, signer: agent });
+  const a = ackrate.agent({ mandate, signer: agent });
 
   step("agent.pay('1.00')  (SDK, agent-signed — funds move)");
   const before = await token.balance(TESTNET, asset, merchant.publicKey());
@@ -139,7 +139,7 @@ async function main() {
   record("overspend rejected by contract", overspendRejected);
 
   step("revokeMandate  (SDK, user-signed)");
-  const revHash = await reapp.revokeMandate(mandate, { signer: user });
+  const revHash = await ackrate.revokeMandate(mandate, { signer: user });
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${revHash}`));
   record("revokeMandate", Boolean(revHash));
 

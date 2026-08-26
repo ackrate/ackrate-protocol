@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, test } from "node:test";
-import { createSettlementReceiptId, type SettlementReceipt } from "@reapp-sdk/core";
+import { createSettlementReceiptId, type SettlementReceipt } from "@ackrate/core";
 import { FileSettlementReceiptStore } from "./receipt-store.js";
 
 const roots: string[] = [];
@@ -14,7 +14,7 @@ afterEach(async () => {
 
 function receipt(txDigit = "a", resource = "market"): SettlementReceipt {
   const proof = {
-    scheme: "reapp-soroban",
+    scheme: "ackrate-soroban",
     network: "stellar-testnet",
     txHash: txDigit.repeat(64),
     mandateId: "b".repeat(64),
@@ -35,7 +35,7 @@ function receipt(txDigit = "a", resource = "market"): SettlementReceipt {
 }
 
 test("reference receipt store durably saves then removes an exact receipt", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-receipts-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-receipts-"));
   roots.push(root);
   const file = join(root, "private", "receipts.json");
   const store = new FileSettlementReceiptStore(file);
@@ -53,7 +53,7 @@ test("reference receipt store durably saves then removes an exact receipt", asyn
 });
 
 test("reference receipt store fails closed on corrupted or mismatched data", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-receipts-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-receipts-"));
   roots.push(root);
   const file = join(root, "receipts.json");
   const expected = receipt();
@@ -63,7 +63,7 @@ test("reference receipt store fails closed on corrupted or mismatched data", asy
 });
 
 test("reference receipt store rejects a retargeted recovery envelope", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-receipts-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-receipts-"));
   roots.push(root);
   const file = join(root, "receipts.json");
   const expected = receipt();
@@ -77,7 +77,7 @@ test("reference receipt store rejects a retargeted recovery envelope", async () 
 });
 
 test("two store objects targeting one file cannot lose concurrent receipts", async () => {
-  const root = await mkdtemp(join(tmpdir(), "reapp-receipts-"));
+  const root = await mkdtemp(join(tmpdir(), "ackrate-receipts-"));
   roots.push(root);
   const file = join(root, "receipts.json");
   const first = receipt("a", "market");

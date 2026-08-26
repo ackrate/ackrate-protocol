@@ -1,8 +1,8 @@
 import { Address, Keypair, StrKey } from "@stellar/stellar-sdk";
-import { toStroops } from "@reapp-sdk/core";
+import { toStroops } from "@ackrate/core";
 import {
-  REAPP_AP2_CREDENTIAL_VERSION,
-  REAPP_AP2_SIGNATURE_ALGORITHM,
+  ACKRATE_AP2_CREDENTIAL_VERSION,
+  ACKRATE_AP2_SIGNATURE_ALGORITHM,
   ap2CredentialSigningDigest,
   decodeCanonicalSignature,
   parseSignedAp2Mandate,
@@ -111,11 +111,11 @@ export function createAp2ComplianceValidator(
       }
 
       if (
-        credential.credentialVersion !== REAPP_AP2_CREDENTIAL_VERSION ||
+        credential.credentialVersion !== ACKRATE_AP2_CREDENTIAL_VERSION ||
         credential.payload.ap2SpecVersion !== "0.1.0" ||
         credential.payload.ap2DataKey !== "ap2.mandates.IntentMandate" ||
-        credential.payload.bindingVersion !== "reapp-ap2/1" ||
-        credential.signature.algorithm !== REAPP_AP2_SIGNATURE_ALGORITHM
+        credential.payload.bindingVersion !== "ackrate-ap2/1" ||
+        credential.signature.algorithm !== ACKRATE_AP2_SIGNATURE_ALGORITHM
       ) {
         throw new Ap2ValidationError(
           "UNSUPPORTED_VERSION",
@@ -147,7 +147,7 @@ export function createAp2ComplianceValidator(
       try {
         binding = rebuildCredentialBinding(credential.payload);
       } catch (cause) {
-        throw invalidCredential("credential cannot be rebound to a REAPP mandate.", cause);
+        throw invalidCredential("credential cannot be rebound to a Ackrate mandate.", cause);
       }
       if (binding.mandate.id !== credential.mandateHash) {
         throw new Ap2ValidationError(

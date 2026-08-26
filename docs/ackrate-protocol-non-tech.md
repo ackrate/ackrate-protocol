@@ -1,4 +1,4 @@
-# REAPP for non-technical readers
+# Ackrate for non-technical readers
 
 An AI agent does research for you and buys the articles it needs. A smart contract makes sure it can only ever spend what you allowed. Here is the whole story, step by step.
 

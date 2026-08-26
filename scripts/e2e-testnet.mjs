@@ -25,7 +25,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { TESTNET } from "@ackrate/stellar";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
@@ -61,14 +61,14 @@ const die = (m) => { console.error(`\n${c.red("✖")} ${c.red(m)}`); exit(1); };
 const CONTRACT = TESTNET.mandateRegistryId;
 const RPC = process.env.SOROBAN_RPC_URL?.trim();
 const PASS = process.env.NETWORK_PASSPHRASE?.trim();
-const USER_SECRET = process.env.REAPP_BURNER_SECRET_KEY?.trim();
-const USER = process.env.REAPP_BURNER_PUBLIC_KEY?.trim();
+const USER_SECRET = process.env.ACKRATE_BURNER_SECRET_KEY?.trim();
+const USER = process.env.ACKRATE_BURNER_PUBLIC_KEY?.trim();
 const NET = ["--rpc-url", RPC, "--network-passphrase", PASS];
 
 if (!CONTRACT) die("MANDATE_REGISTRY_CONTRACT_ID not set (run npm run deploy:testnet first).");
 if (!RPC || !PASS) die("SOROBAN_RPC_URL / NETWORK_PASSPHRASE not set.");
-if (!USER_SECRET || !USER_SECRET.startsWith("S")) die("REAPP_BURNER_SECRET_KEY not set.");
-if (!USER) die("REAPP_BURNER_PUBLIC_KEY not set.");
+if (!USER_SECRET || !USER_SECRET.startsWith("S")) die("ACKRATE_BURNER_SECRET_KEY not set.");
+if (!USER) die("ACKRATE_BURNER_PUBLIC_KEY not set.");
 
 const maskSecret = (s) => `${s.slice(0, 4)}${c.dim("…")}${s.slice(-4)}`;
 // SAC balance prints a quoted i128 like "100000000000" — strip to a number.
@@ -141,7 +141,7 @@ const record = (label, okExit) => {
 async function main() {
   log("");
   log(RULE(c.magenta));
-  log(`  ${c.bold(c.magenta("REAPP"))}  ${c.dim("·")}  ${c.bold("on-chain e2e")} ${c.dim("— testnet, NO MOCKS")}`);
+  log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("on-chain e2e")} ${c.dim("— testnet, NO MOCKS")}`);
   log(RULE(c.magenta));
   log(`  ${c.dim("The thesis: an autonomous agent cannot be trusted to police its own")}`);
   log(`  ${c.dim("spending — so the limit lives BELOW the agent, in a Soroban contract")}`);
@@ -160,8 +160,8 @@ async function main() {
   step("Accounts (friendbot-funded)");
   note("Creating two brand-new testnet accounts and funding them via Friendbot.");
   note("The agent will SIGN payments; the merchant only RECEIVES. Both are real.");
-  const AGENT = ensureAccount("reapp-agent");
-  const MERCHANT = ensureAccount("reapp-merchant");
+  const AGENT = ensureAccount("ackrate-agent");
+  const MERCHANT = ensureAccount("ackrate-merchant");
   await friendbotFund(AGENT);
   await friendbotFund(MERCHANT);
   field("agent", c.yellow(AGENT));
@@ -220,7 +220,7 @@ async function main() {
   proves("the agent moves the user's funds only within the signed mandate.");
   const before = num(sacInvoke(SAC, USER_SECRET, "balance", ["--id", MERCHANT], USER_SECRET).out);
   field("merchant before", c.dim(`${xlm(before)}`));
-  const ok4 = invoke({ source: "reapp-agent",
+  const ok4 = invoke({ source: "ackrate-agent",
     method: { name: "execute_payment" }, args: ["--mandate_id", VC_HASH, "--amount", SPEND, "--expected_seq", "0"] }).okExit;
   const after = num(sacInvoke(SAC, USER_SECRET, "balance", ["--id", MERCHANT], USER_SECRET).out);
   field("merchant after", c.green(`${xlm(after)}`));
@@ -231,7 +231,7 @@ async function main() {
   note("A hostile agent asks for far more than the mandate allows (correct seq).");
   proves("budget cap is enforced on-chain → BudgetExceeded.");
   {
-    const r = invoke({ source: "reapp-agent", method: { name: "execute_payment" },
+    const r = invoke({ source: "ackrate-agent", method: { name: "execute_payment" },
       args: ["--mandate_id", VC_HASH, "--amount", String(Number(MAX) * 2), "--expected_seq", "1"] });
     record("rogue overspend rejected", !r.okExit);
   }
@@ -240,7 +240,7 @@ async function main() {
   note("The agent replays seq 0 after it was spent. The mandate-layer guard refuses.");
   proves("replay protection on-chain → BadSequence.");
   {
-    const r = invoke({ source: "reapp-agent", method: { name: "execute_payment" },
+    const r = invoke({ source: "ackrate-agent", method: { name: "execute_payment" },
       args: ["--mandate_id", VC_HASH, "--amount", SPEND, "--expected_seq", "0"] });
     record("rogue replay rejected", !r.okExit);
   }
@@ -256,7 +256,7 @@ async function main() {
   note("changes nothing. A passing ✓ here means the rejection happened.");
   proves("enforcement is protocol-level: revoked = no payment, period.");
   {
-    const r = invoke({ source: "reapp-agent", method: { name: "execute_payment" },
+    const r = invoke({ source: "ackrate-agent", method: { name: "execute_payment" },
       args: ["--mandate_id", VC_HASH, "--amount", SPEND, "--expected_seq", "1"] });
     record("revoked blocks payment", !r.okExit);
   }

@@ -6,15 +6,16 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CACHE = "/tmp/reapp-release-npm-cache";
+const CACHE = "/tmp/ackrate-release-npm-cache";
 
 const packages = [
-  ["packages/stellar", "@reapp-sdk/stellar", "0.2.2"],
-  ["packages/sdk", "@reapp-sdk/core", "0.3.1"],
-  ["packages/ap2", "@reapp-sdk/ap2", "0.3.0"],
-  ["packages/express-middleware", "@reapp-sdk/express-middleware", "0.2.2"],
-  ["packages/cli", "reapp-protocol-cli", "0.1.7"],
+  ["packages/stellar", "@ackrate/stellar", "0.2.4"],
+  ["packages/sdk", "@ackrate/core", "0.3.3"],
+  ["packages/ap2", "@ackrate/ap2", "0.3.2"],
+  ["packages/express-middleware", "@ackrate/express-middleware", "0.2.4"],
+  ["packages/cli", "@ackrate/cli", "0.1.9"],
 ];
+const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
 
 function fail(message) {
   throw new Error(message);
@@ -41,13 +42,23 @@ run(process.execPath, ["scripts/verify.mjs"]);
 run("npm", ["run", "cli:bundle"]);
 
 console.log("Release gate check 2/4: public package manifests and tarball contents");
-packRoot = mkdtempSync(path.join(tmpdir(), "reapp-release-pack-"));
+packRoot = mkdtempSync(path.join(tmpdir(), "ackrate-release-pack-"));
 const tarballs = new Map();
 for (const [directory, expectedName, expectedVersion] of packages) {
   const packageRoot = path.join(ROOT, directory);
   const manifest = JSON.parse(readFileSync(path.join(packageRoot, "package.json"), "utf8"));
   if (manifest.name !== expectedName || manifest.version !== expectedVersion) {
     fail(`${directory} is ${manifest.name}@${manifest.version}, expected ${expectedName}@${expectedVersion}`);
+  }
+  const expectedRepository = "git+https://github.com/ackrate/ackrate-protocol.git";
+  if (
+    manifest.repository?.type !== "git"
+    || manifest.repository?.url !== expectedRepository
+    || manifest.repository?.directory !== directory
+    || manifest.bugs?.url !== "https://github.com/ackrate/ackrate-protocol/issues"
+    || manifest.homepage !== `https://github.com/ackrate/ackrate-protocol/tree/main/${directory}#readme`
+  ) {
+    fail(`${expectedName} does not map exactly to the canonical Ackrate repository`);
   }
   for (const scriptName of ["preinstall", "install", "postinstall"]) {
     if (manifest.scripts?.[scriptName]) fail(`${expectedName} contains forbidden ${scriptName} script`);
@@ -61,12 +72,12 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   for (const required of ["package.json", "README.md"]) {
     if (!names.has(required)) fail(`${expectedName} tarball is missing ${required}`);
   }
-  if (expectedName === "reapp-protocol-cli") {
-    if (manifest.bin?.reapp !== "dist/reapp-cli.bundle.mjs") {
-      fail("reapp-protocol-cli bin does not point at dist/reapp-cli.bundle.mjs");
+  if (expectedName === "@ackrate/cli") {
+    if (manifest.bin?.ackrate !== "dist/ackrate-cli.bundle.mjs") {
+      fail("@ackrate/cli bin does not point at dist/ackrate-cli.bundle.mjs");
     }
-    if (!names.has("dist/reapp-cli.bundle.mjs")) {
-      fail("reapp-protocol-cli tarball is missing its executable bundle");
+    if (!names.has("dist/ackrate-cli.bundle.mjs")) {
+      fail("@ackrate/cli tarball is missing its executable bundle");
     }
   } else {
     for (const required of ["dist/index.js", "dist/index.d.ts"]) {
@@ -87,7 +98,16 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     "pack", "--json", "--ignore-scripts", "--pack-destination", packRoot,
   ], packageRoot))[0];
   if (!actual?.filename) fail(`${expectedName} did not produce a real tarball`);
-  tarballs.set(expectedName, path.join(packRoot, actual.filename));
+  const tarballPath = path.join(packRoot, actual.filename);
+  const listing = run("tar", ["-tzf", tarballPath]);
+  const artifactFiles = listing.split("\n").filter((name) => /\.(?:js|mjs|cjs|d\.ts|json|md)$/i.test(name));
+  for (const artifactFile of artifactFiles) {
+    const body = run("tar", ["-xOzf", tarballPath, artifactFile]);
+    if (OBSOLETE_BRAND.test(body)) {
+      fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);
+    }
+  }
+  tarballs.set(expectedName, tarballPath);
   console.log(`  verified ${expectedName}@${expectedVersion} (${entry.entryCount} files)`);
 }
 
@@ -120,17 +140,17 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
     include: ["clean-install.ts"],
   }, null, 2));
   writeFileSync(path.join(installRoot, "clean-install.ts"), `
-import { reapp, DeliveryPendingError } from "@reapp-sdk/core";
-import { TESTNET } from "@reapp-sdk/stellar";
-import { createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@reapp-sdk/ap2";
-import { createBoundReappPaidJsonRoute, InMemoryBoundRedemptionStore } from "@reapp-sdk/express-middleware";
+import { ackrate, DeliveryPendingError } from "@ackrate/core";
+import { TESTNET } from "@ackrate/stellar";
+import { createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
+import { createBoundAckratePaidJsonRoute, InMemoryBoundRedemptionStore } from "@ackrate/express-middleware";
 
-void [reapp, DeliveryPendingError, TESTNET];
+void [ackrate, DeliveryPendingError, TESTNET];
 const validator = createAp2ComplianceValidator({
   replayStore: new InMemoryAp2ReplayStore(),
   replayNamespace: "clean-install",
 });
-const route = createBoundReappPaidJsonRoute({
+const route = createBoundAckratePaidJsonRoute({
   merchant: "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG",
   amount: "1.00",
   audience: "https://merchant.example",
@@ -141,15 +161,15 @@ void [validator, route];
 `);
   writeFileSync(path.join(installRoot, "runtime.mjs"), `
 await Promise.all([
-  import("@reapp-sdk/core"), import("@reapp-sdk/stellar"),
-  import("@reapp-sdk/ap2"), import("@reapp-sdk/express-middleware"),
+  import("@ackrate/core"), import("@ackrate/stellar"),
+  import("@ackrate/ap2"), import("@ackrate/express-middleware"),
 ]);
 console.log("runtime imports passed");
 `);
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);
-  const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "reapp"), ["--version"], installRoot).trim();
-  if (cliVersion !== "0.1.7") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
+  const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "ackrate"), ["--version"], installRoot).trim();
+  if (cliVersion !== "0.1.9") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
 console.log("Release gate check 4/4: public terminology and private-file boundary");
@@ -157,7 +177,7 @@ const tracked = run("git", ["ls-files", "--cached", "--others", "--exclude-stand
   .split("\n")
   .filter(Boolean)
   .filter((file) => existsSync(path.join(ROOT, file)));
-for (const forbidden of ["REAPP_PROGRESS_LOG.md", "CONTRACT_UPGRADE_PLAYBOOK.md"]) {
+for (const forbidden of ["ACKRATE_PROGRESS_LOG.md", "CONTRACT_UPGRADE_PLAYBOOK.md"]) {
   if (tracked.some((file) => path.basename(file) === forbidden)) {
     fail(`private file ${forbidden} is tracked in the public repository`);
   }

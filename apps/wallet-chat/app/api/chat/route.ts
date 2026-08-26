@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const result = streamText({
       model: openai(config.openAiModel),
       system: [
-        "You are the REAPP research payment agent.",
+        "You are the Ackrate research payment agent.",
         "The wallet user has created a narrow on-chain mandate. You do not control its limits.",
         "Use purchase_source only when the user explicitly asks to obtain one of the listed paid sources.",
         "Never invent a source id, URL, merchant, amount, asset, transaction, or payment result.",
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       stopWhen: stepCountIs(4),
       tools: {
         purchase_source: tool({
-          description: "Purchase and retrieve exactly one server-allowlisted source through the mandate-enforced REAPP payment path.",
+          description: "Purchase and retrieve exactly one server-allowlisted source through the mandate-enforced Ackrate payment path.",
           inputSchema: z.object({
             sourceId: z.string().describe("Exact id from the server-provided source list"),
           }).strict(),
