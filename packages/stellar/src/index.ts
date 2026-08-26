@@ -11,4 +11,5 @@ export * from "./config.js";
 export * from "./signer.js";
 export * from "./registry.js";
 export * from "./release-manifest.js";
+export * from "./mainnet.js";
 export * as token from "./token.js";

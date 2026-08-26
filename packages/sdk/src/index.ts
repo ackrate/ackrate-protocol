@@ -15,6 +15,7 @@
 import { Buffer } from "buffer";
 import { Keypair, hash, rpc } from "@stellar/stellar-sdk";
 import {
+  MAINNET,
   TESTNET,
   keypairSigner,
   registryClient,
@@ -853,6 +854,7 @@ export class Agent {
 }
 
 export const reapp = {
+  mainnet: MAINNET,
   testnet: TESTNET,
 
   /** Build an AP2-style IntentMandate and its canonical id (no chain calls). */

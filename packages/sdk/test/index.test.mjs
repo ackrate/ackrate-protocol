@@ -19,6 +19,12 @@ test("toStroops converts valid decimals exactly", () => {
   assert.equal(toStroops("007.5"), 75000000n); // leading zeros are fine
 });
 
+test("mainnet SDK surface is pinned to the verified registry and Circle USDC", () => {
+  assert.equal(reapp.mainnet.mandateRegistryId, "CDBTG5ZKASFA7LOYUPBOTGKAVX5MJIM4U24BYGX7VX23IHYDAHLQPAGS");
+  assert.equal(reapp.mainnet.settlementAsset.code, "USDC");
+  assert.equal(reapp.mainnet.settlementAsset.contractId, "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75");
+});
+
 test("toStroops respects a custom decimals", () => {
   assert.equal(toStroops("1.23", 2), 123n);
   assert.throws(() => toStroops("1.234", 2), /more than 2 decimal places/);

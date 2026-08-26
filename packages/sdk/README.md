@@ -1,4 +1,4 @@
-# @reapp-sdk/core 0.3.1
+# @reapp-sdk/core 0.3.2
 
 Create an agent, connect to the live MandateRegistry contract on Stellar, and run a crash-safe mandate-validated payment through a small typed surface.
 
@@ -9,7 +9,7 @@ The SDK is untrusted by design. It never custodies funds and it never enforces t
 ## Install
 
 ```
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk@14.5.0
+npm install @reapp-sdk/core@0.3.2 @stellar/stellar-sdk@14.5.0
 ```
 
 `@stellar/stellar-sdk` is a direct dependency you also import yourself for `Keypair`. The package ships its own ESM build with TypeScript types.
@@ -41,6 +41,20 @@ const hash = await reapp.agent({ mandate, signer: agent }).pay("1.00", {
 ```
 
 After `pay` returns, one real payment has settled on testnet. `hash` is the transaction hash, which you can open on a Stellar explorer.
+
+For mainnet, use `reapp.mainnet` explicitly. It is pinned to the verified
+MandateRegistry deployment and Circle USDC; there is no testnet fallback:
+
+```ts
+const network = reapp.mainnet;
+const mandate = reapp.createIntentMandate({
+  user, agent, merchant,
+  asset: network.settlementAsset.contractId,
+  maxAmount: "0.03",
+  expiry,
+  decimals: network.settlementAsset.decimals,
+});
+```
 
 ## How it works
 

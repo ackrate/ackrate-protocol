@@ -4,11 +4,11 @@
 
 | Path | Public surface | Ownership |
 |---|---|---|
-| `packages/sdk` | `@reapp-sdk/core@0.3.1` | High-level mandates, contract payments, bound-v2 client, receipts and recovery. |
-| `packages/stellar` | `@reapp-sdk/stellar@0.2.2` | Generated typed bindings, permanent testnet contract config, signer and SEP-41 helpers. |
+| `packages/sdk` | `@reapp-sdk/core@0.3.2` | High-level mandates, contract payments, bound-v2 client, receipts, recovery, and pinned mainnet config. |
+| `packages/stellar` | `@reapp-sdk/stellar@0.2.3` | Generated typed bindings, verified testnet/mainnet contract configs, signer and SEP-41 helpers. |
 | `packages/ap2` | `@reapp-sdk/ap2@0.3.0` | Signed AP2 v0.1 profile validator and replay admission. |
 | `packages/express-middleware` | `@reapp-sdk/express-middleware@0.2.2` | Exact-origin GET proof, Stellar verifier, and atomic claim/immutable-result route. |
-| `packages/cli` | `reapp-protocol-cli@0.1.7` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo flow. |
+| `packages/cli` | `reapp-protocol-cli@0.1.8` | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and testnet/mainnet demo entrypoints. |
 
 ## Reference applications
 

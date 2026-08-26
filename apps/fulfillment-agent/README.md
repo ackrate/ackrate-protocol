@@ -77,6 +77,24 @@ For localhost, `REAPP_PUBLIC_ORIGIN` may be omitted and the server uses its
 actual loopback origin. Public deployment must configure the exact HTTPS origin.
 Keep the challenge secret stable and private.
 
+## Standalone mainnet USDC server
+
+Mainnet is opt-in and uses the pinned verified deployment from
+`@reapp-sdk/stellar`. The default mainnet price is 0.01 USDC:
+
+```bash
+REAPP_NETWORK=mainnet \
+REAPP_MERCHANT=G... \
+REAPP_READ_SOURCE=G... \
+REAPP_PUBLIC_ORIGIN='https://api.example' \
+REAPP_CHALLENGE_SECRET='at-least-32-stable-private-bytes' \
+REAPP_REDEMPTION_STORE='./private/redemptions.json' \
+npm run start -w @reapp-sdk/fulfillment-agent
+```
+
+Production deployments must place the redemption store on durable single-writer
+storage or replace it with a shared linearizable implementation.
+
 ## Unsafe patterns
 
 - Never trust amount, mandate, merchant, or identity from HTTP alone.

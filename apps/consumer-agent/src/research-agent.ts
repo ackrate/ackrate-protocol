@@ -24,6 +24,7 @@ import {
   type SettlementReceipt,
   type SettlementReceiptStore,
 } from "@reapp-sdk/core";
+import type { NetworkConfig } from "@reapp-sdk/stellar";
 import {
   createPurchaseIdentity,
   createStoredPurchaseOutcome,
@@ -100,13 +101,14 @@ export async function resumePendingDelivery(opts: {
   agentSecret: string;
   receipt: Readonly<SettlementReceipt>;
   receiptStore: SettlementReceiptStore;
+  networkConfig?: NetworkConfig;
 }): Promise<Response> {
   const agent = reapp.agent({
     mandate: opts.mandate,
     signer: opts.agentSecret,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig);
   return agent.retryDelivery(opts.receipt);
 }
 
@@ -116,13 +118,14 @@ export async function acknowledgePendingDelivery(opts: {
   agentSecret: string;
   receipt: Readonly<SettlementReceipt>;
   receiptStore: SettlementReceiptStore;
+  networkConfig?: NetworkConfig;
 }): Promise<void> {
   const agent = reapp.agent({
     mandate: opts.mandate,
     signer: opts.agentSecret,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig);
   await agent.acknowledgeDelivery(opts.receipt);
 }
 
@@ -138,6 +141,7 @@ export async function buyResearch(opts: {
   agentSecret: string;
   receiptStore: SettlementReceiptStore;
   outcomeStore: PurchaseOutcomeStore;
+  networkConfig?: NetworkConfig;
   onEvent?: (e: BuyEvent) => void;
 }): Promise<BuyResult[]> {
   const agent = reapp.agent({
@@ -145,7 +149,7 @@ export async function buyResearch(opts: {
     signer: opts.agentSecret,
     proofPolicy: "bound-v2-only",
     receiptStore: opts.receiptStore,
-  });
+  }, opts.networkConfig);
   const results: BuyResult[] = [];
 
   for (const id of opts.sourceIds) {

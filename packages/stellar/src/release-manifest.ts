@@ -6,6 +6,11 @@ export const MAINNET_USDC = Object.freeze({
   issuer: "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
 });
 
+export const MAINNET_CONTRACT_REPOSITORIES = Object.freeze([
+  "https://github.com/ackrate/ackrate-protocol-contracts",
+  "https://github.com/reapp-protocol/reapp-protocol-contracts",
+] as const);
+
 export interface ReleaseNetworkConfig extends NetworkConfig {
   settlementAsset: {
     code: "USDC";
@@ -114,8 +119,9 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
   }
 
   const source = objectAt(manifest, "source");
-  if (textAt(source, "repository") !== "https://github.com/reapp-protocol/reapp-protocol-contracts") {
-    throw new Error("release manifest source repository is not the canonical contracts repository");
+  const sourceRepository = textAt(source, "repository");
+  if (!MAINNET_CONTRACT_REPOSITORIES.includes(sourceRepository as (typeof MAINNET_CONTRACT_REPOSITORIES)[number])) {
+    throw new Error("release manifest source repository is not an approved contracts repository");
   }
   const sourceCommit = textAt(source, "commit").toLowerCase();
   if (!/^[0-9a-f]{40}$/.test(sourceCommit)) throw new Error("release manifest source commit is invalid");

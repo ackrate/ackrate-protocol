@@ -89,7 +89,8 @@ program
   .command("demo")
   .description("list or run a self-contained on-chain demo (ephemeral accounts, no setup needed)")
   .argument("[target]", "which demo to run; omit to list available demos")
-  .action((target) => runDemo(target));
+  .option("--network <network>", "testnet or mainnet", "testnet")
+  .action((target, options) => runDemo(target, options));
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err instanceof Error ? err.message : err);

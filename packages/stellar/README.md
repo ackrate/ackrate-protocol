@@ -1,10 +1,10 @@
-# @reapp-sdk/stellar 0.2.2
+# @reapp-sdk/stellar 0.2.3
 
 The Soroban layer for **REAPP**, agent-driven payments on Stellar, enforced
 on-chain by the **MandateRegistry** contract.
 
 This package is the low-level building block: a **typed MandateRegistry client**
-generated from the contract interface that passed the gate check, network config for testnet, a keypair
+generated from the contract interface that passed the gate check, manifest-bound network configs for testnet and mainnet, a keypair
 signing adapter, and minimal SEP-41 token helpers.
 
 > **Most apps want [`@reapp-sdk/core`](https://www.npmjs.com/package/@reapp-sdk/core), not this.**
@@ -14,7 +14,7 @@ signing adapter, and minimal SEP-41 token helpers.
 ## Install
 
 ```
-npm install @reapp-sdk/stellar@0.2.2 @stellar/stellar-sdk@14.5.0
+npm install @reapp-sdk/stellar@0.2.3 @stellar/stellar-sdk@14.5.0
 ```
 
 ## What it exports
@@ -22,6 +22,7 @@ npm install @reapp-sdk/stellar@0.2.2 @stellar/stellar-sdk@14.5.0
 | Export | What it is |
 |---|---|
 | `TESTNET` | `NetworkConfig` for Stellar testnet: RPC, passphrase, live MandateRegistry id, native asset |
+| `MAINNET` | Verified mainnet registry, Circle USDC settlement asset, deployment evidence, RPC, and passphrase |
 | `registryClient(net, signer)` | Factory for the typed MandateRegistry client |
 | `Client`, `Mandate`, `PendingUpgrade`, `Errors` | Typed contract bindings generated from the exact `simple-v0.2.3` release WASM |
 | `keypairSigner(keypair, passphrase)` | Adapt a Stellar `Keypair` into a transaction signer |

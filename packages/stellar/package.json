@@ -1,6 +1,6 @@
 {
   "name": "@reapp-sdk/stellar",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Soroban client + typed MandateRegistry bindings, network config, and signing helpers for REAPP.",
   "keywords": [
     "stellar",
@@ -26,7 +26,7 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsc",
-    "test": "node --import tsx --test src/deployments.test.ts src/release-manifest.test.ts src/signer.test.ts"
+    "test": "node --import tsx --test src/deployments.test.ts src/release-manifest.test.ts src/mainnet.test.ts src/signer.test.ts"
   },
   "dependencies": {
     "@types/json-schema": "^7.0.15",

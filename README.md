@@ -79,11 +79,11 @@ submission and live demo use this exact set:
 
 | Deliverable | Package release | Protocol/specification target |
 |---|---:|---|
-| Stellar binding | `@reapp-sdk/stellar@0.2.2` | Simple MandateRegistry `0.2.3` |
-| High-level SDK | `@reapp-sdk/core@0.3.1` | REAPP testnet toolkit |
+| Stellar binding | `@reapp-sdk/stellar@0.2.3` | Verified testnet + mainnet deployment configs |
+| High-level SDK | `@reapp-sdk/core@0.3.2` | REAPP testnet + mainnet toolkit |
 | AP2 validator | `@reapp-sdk/ap2@0.3.0` | AP2 `0.1.0` profile |
 | Express middleware | `@reapp-sdk/express-middleware@0.2.2` | bound-v2 proof flow |
-| CLI | `reapp-protocol-cli@0.1.7` | installed commands `reapp` and `reapp-protocol-cli` |
+| CLI | `reapp-protocol-cli@0.1.8` | installed commands `reapp` and `reapp-protocol-cli` |
 
 In particular, `@reapp-sdk/ap2@0.3.0` implements the AP2 `0.1.0` profile;
 the package version is not the AP2 specification version.
@@ -119,7 +119,7 @@ npm run gatecheck:release
 Run the reviewer CLI from any clean directory:
 
 ```bash
-npx --yes reapp-protocol-cli@0.1.7 demo research-agent
+npx --yes reapp-protocol-cli@0.1.8 demo research-agent
 ```
 
 Run both reference agents from this repository with one command:

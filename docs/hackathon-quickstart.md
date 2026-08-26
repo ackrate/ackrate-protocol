@@ -42,7 +42,7 @@ reapp settlement acknowledge <TX_HASH>
 
 ```bash
 npm init -y
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @reapp-sdk/core@0.3.2 @stellar/stellar-sdk
 ```
 
 Use the hosted [`reapp.live/express`](https://reapp.live/express) workbench to

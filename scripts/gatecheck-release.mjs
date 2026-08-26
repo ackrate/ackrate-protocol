@@ -9,11 +9,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = "/tmp/reapp-release-npm-cache";
 
 const packages = [
-  ["packages/stellar", "@reapp-sdk/stellar", "0.2.2"],
-  ["packages/sdk", "@reapp-sdk/core", "0.3.1"],
+  ["packages/stellar", "@reapp-sdk/stellar", "0.2.3"],
+  ["packages/sdk", "@reapp-sdk/core", "0.3.2"],
   ["packages/ap2", "@reapp-sdk/ap2", "0.3.0"],
   ["packages/express-middleware", "@reapp-sdk/express-middleware", "0.2.2"],
-  ["packages/cli", "reapp-protocol-cli", "0.1.7"],
+  ["packages/cli", "reapp-protocol-cli", "0.1.8"],
 ];
 
 function fail(message) {
@@ -149,7 +149,7 @@ console.log("runtime imports passed");
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);
   const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "reapp"), ["--version"], installRoot).trim();
-  if (cliVersion !== "0.1.7") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
+  if (cliVersion !== "0.1.8") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
 console.log("Release gate check 4/4: public terminology and private-file boundary");

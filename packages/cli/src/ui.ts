@@ -73,13 +73,13 @@ export const log = {
 type Seg = [string, keyof typeof c];
 const ART: Seg[][] = [[["██████╗ ","cyan"],["███████╗","mint"],[" █████╗ ","emerald"],["██████╗ ","teal"],["██████╗ ","green"]],[["██╔══██╗","cyan"],["██╔════╝","mint"],["██╔══██╗","emerald"],["██╔══██╗","teal"],["██╔══██╗","green"]],[["██████╔╝","cyan"],["█████╗  ","mint"],["███████║","emerald"],["██████╔╝","teal"],["██████╔╝","green"]],[["██╔══██╗","cyan"],["██╔══╝  ","mint"],["██╔══██║","emerald"],["██╔═══╝ ","teal"],["██╔═══╝ ","green"]],[["██║  ██║","cyan"],["███████╗","mint"],["██║  ██║","emerald"],["██║     ","teal"],["██║     ","green"]],[["╚═╝  ╚═╝","cyan"],["╚══════╝","mint"],["╚═╝  ╚═╝","emerald"],["╚═╝     ","teal"],["╚═╝     ","green"]]];
 
-export function banner(): string {
+export function banner(network = "stellar testnet"): string {
   const paint = (col: keyof typeof c, t: string) => (c[col] as (s: string) => string)(t);
   const art = ART.map((row) => "  " + row.map(([t, col]) => paint(col, t)).join("")).join("\n");
   const tag =
     "  " +
     c.dim("agent payments") + c.emerald(" · ") +
     c.dim("enforced on-chain") + c.emerald(" · ") +
-    c.dim("stellar testnet");
+    c.dim(network);
   return art + "\n" + tag;
 }

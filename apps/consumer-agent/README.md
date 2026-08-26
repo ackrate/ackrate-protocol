@@ -28,6 +28,15 @@ fourth exceeds the contract budget and is rejected. The run also verifies that:
 No local secret, browser wallet, or environment file is required. Generated
 keys exist only for that process and must never be reused outside testnet.
 
+## Mainnet USDC
+
+The same consumer accepts an explicit `networkConfig`, so mainnet never relies
+on a hidden testnet default. The hosted canary at
+[reapp.live/wallet](https://reapp.live/wallet) binds it to the verified mainnet
+MandateRegistry and Circle USDC. The user approves a 0.03 USDC mandate in
+Freighter; each `agent.fetch()` costs 0.01 USDC and the fourth purchase is
+contract-rejected.
+
 ## Safe pattern
 
 [`buyResearch`](src/research-agent.ts) requires both a durable receipt store and

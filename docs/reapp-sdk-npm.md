@@ -8,11 +8,11 @@ cannot replace the contract's `execute_payment` checks.
 
 | Package | Version | Purpose |
 |---|---:|---|
-| `@reapp-sdk/core` | 0.3.1 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
-| `@reapp-sdk/stellar` | 0.2.2 | Typed contract bindings, permanent testnet deployment, network config, signing and token helpers. |
+| `@reapp-sdk/core` | 0.3.2 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery, and the pinned mainnet surface. |
+| `@reapp-sdk/stellar` | 0.2.3 | Typed contract bindings, verified testnet/mainnet deployment configs, signing and token helpers. |
 | `@reapp-sdk/ap2` | 0.3.0 | Signed AP2 profile validation and replay admission. |
 | `@reapp-sdk/express-middleware` | 0.2.2 | Bound-v2 Express payment boundary and chain verifier. |
-| `reapp-protocol-cli` | 0.1.7 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo commands. |
+| `reapp-protocol-cli` | 0.1.8 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and testnet/mainnet demo entrypoints. |
 
 The unrelated npm package `reapp-cli` is owned by another publisher. Use the
 project's unambiguous public CLI name:
@@ -27,13 +27,13 @@ reapp demo research-agent
 Application client:
 
 ```bash
-npm install @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @reapp-sdk/core@0.3.2 @stellar/stellar-sdk
 ```
 
 Pinned testnet SDK packages:
 
 ```bash
-npm install @reapp-sdk/stellar@0.2.2 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2
+npm install @reapp-sdk/stellar@0.2.3 @reapp-sdk/ap2@0.3.0 @reapp-sdk/express-middleware@0.2.2
 ```
 
 ## Bound-v2 client API
@@ -128,11 +128,11 @@ The gate check:
 Registry proof is a separate external check:
 
 ```bash
-npm view @reapp-sdk/core@0.3.1 version dist.integrity
-npm view @reapp-sdk/stellar@0.2.2 version dist.integrity
+npm view @reapp-sdk/core@0.3.2 version dist.integrity
+npm view @reapp-sdk/stellar@0.2.3 version dist.integrity
 npm view @reapp-sdk/ap2@0.3.0 version dist.integrity
 npm view @reapp-sdk/express-middleware@0.2.2 version dist.integrity
-npm view reapp-protocol-cli@0.1.7 version dist.integrity
+npm view reapp-protocol-cli@0.1.8 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,

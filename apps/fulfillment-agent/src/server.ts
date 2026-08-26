@@ -26,9 +26,11 @@ import {
   type BoundRedemptionStore,
   type PaymentVerifier,
 } from "@reapp-sdk/express-middleware";
+import { MAINNET, type NetworkConfig } from "@reapp-sdk/stellar";
 import { FileBoundRedemptionStore } from "./redemption-store.js";
 
 export const SOURCE_PRICE = "1.00";
+export const MAINNET_SOURCE_PRICE = "0.01";
 
 /** Deterministic demo content. A real merchant can protect any API or model call. */
 export const CATALOG: Readonly<Record<string, Readonly<{ name: string; data: string }>>> = Object.freeze({
@@ -53,6 +55,16 @@ export interface FulfillmentAppOptions {
   redemptionStore?: BoundRedemptionStore;
   /** Deterministic test/alternate infrastructure hook. */
   verifier?: PaymentVerifier;
+  /** Explicit contract/RPC mapping. Omit only for the testnet demo default. */
+  networkConfig?: NetworkConfig;
+  /** x402 network label matching networkConfig. */
+  network?: "stellar-testnet" | "stellar-mainnet";
+  /** Exact settlement asset contract. */
+  asset?: string;
+  /** Settlement asset decimals. Stellar USDC uses 7. */
+  decimals?: number;
+  /** Exact price advertised and verified by the protected route. */
+  amount?: string;
 }
 
 export interface ServerOptions extends FulfillmentAppOptions {
@@ -67,12 +79,16 @@ export function createFulfillmentApp(options: FulfillmentAppOptions): Express {
   const paidSource = createBoundReappPaidJsonRoute({
     merchant: options.merchant,
     sourceAccount: options.sourceAccount ?? options.merchant,
-    amount: SOURCE_PRICE,
+    amount: options.amount ?? SOURCE_PRICE,
     audience: options.audience,
     challengeSecret,
     redemptionStore,
     resource: (request) => request.originalUrl,
     verifier: options.verifier,
+    networkConfig: options.networkConfig,
+    network: options.network,
+    asset: options.asset,
+    decimals: options.decimals,
   }, ({ request, payment }) => {
     const id = request.params.id as string;
     const source = CATALOG[id];
@@ -149,7 +165,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const challengeSecret = (process.env.REAPP_CHALLENGE_SECRET ?? "").trim();
   const redemptionPath = (process.env.REAPP_REDEMPTION_STORE ?? "").trim();
   const publicOrigin = (process.env.REAPP_PUBLIC_ORIGIN ?? "").trim() || undefined;
-  if (Buffer.byteLength(challengeSecret, "utf8") < 32) {
+  const networkName = (process.env.REAPP_NETWORK ?? "testnet").trim();
+  if (networkName !== "testnet" && networkName !== "mainnet") {
+    console.error("REAPP_NETWORK must be testnet or mainnet");
+    process.exitCode = 1;
+  }
+  if (process.exitCode) {
+    // Invalid network was already reported.
+  } else if (Buffer.byteLength(challengeSecret, "utf8") < 32) {
     console.error("REAPP_CHALLENGE_SECRET must contain at least 32 bytes for restart-safe fulfillment");
     process.exitCode = 1;
   } else if (!redemptionPath) {
@@ -168,6 +191,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         audience: publicOrigin,
         redemptionStore,
         port: Number(process.env.PORT ?? 8402),
+        ...(networkName === "mainnet" ? {
+          networkConfig: MAINNET,
+          network: "stellar-mainnet" as const,
+          asset: MAINNET.settlementAsset.contractId,
+          decimals: MAINNET.settlementAsset.decimals,
+          amount: (process.env.REAPP_PRICE ?? MAINNET_SOURCE_PRICE).trim(),
+        } : {}),
       });
     })().then(({ url }) => {
       console.log(`fulfillment-agent listening on ${url}  merchant=${merchant}`);

@@ -18,7 +18,7 @@ import {
   type PaymentVerifier,
   type VerifiedPayment,
 } from "@reapp-sdk/express-middleware";
-import { TESTNET } from "@reapp-sdk/stellar";
+import { MAINNET, TESTNET } from "@reapp-sdk/stellar";
 import { createFulfillmentApp } from "./server.js";
 
 const merchant = "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG";
@@ -119,6 +119,33 @@ test("known resources require bound-v2 capability before issuing a 402", async (
   assert.equal(requirement.challenge?.audience, url);
   assert.equal(requirement.challenge?.resource, "/source/market");
   assert.equal(verifies, 0);
+});
+
+test("mainnet route advertises the verified USDC asset at one cent", async () => {
+  let runtimeAudience = "";
+  const server = createFulfillmentApp({
+    merchant,
+    verifier: successfulVerifier(),
+    challengeSecret,
+    audience: () => runtimeAudience,
+    networkConfig: MAINNET,
+    network: "stellar-mainnet",
+    asset: MAINNET.settlementAsset.contractId,
+    decimals: MAINNET.settlementAsset.decimals,
+    amount: "0.01",
+  }).listen(0, "127.0.0.1");
+  servers.push(server);
+  await once(server, "listening");
+  const address = server.address();
+  if (!address || typeof address === "string") throw new Error("test server did not bind TCP");
+  runtimeAudience = `http://127.0.0.1:${address.port}`;
+
+  const response = await fetch(`${runtimeAudience}/source/market`, { headers: capabilityHeaders });
+  assert.equal(response.status, 402);
+  const requirement = await parse402(response);
+  assert.equal(requirement.amount, "0.01");
+  assert.equal(requirement.asset, MAINNET.settlementAsset.contractId);
+  assert.equal(requirement.network, "stellar-mainnet");
 });
 
 test("verified agent-bound settlement serves chain-derived content evidence", async () => {

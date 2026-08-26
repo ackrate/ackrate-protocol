@@ -10,7 +10,7 @@ so their profile/wire logic can evolve without touching the contract.
 Nothing to clone; validation runs in-process (no chain, no testnet).
 
 ```bash
-npm install @reapp-sdk/ap2@0.3.0 @reapp-sdk/core@0.3.1 @stellar/stellar-sdk
+npm install @reapp-sdk/ap2@0.3.0 @reapp-sdk/core@0.3.2 @stellar/stellar-sdk
 ```
 
 ```js

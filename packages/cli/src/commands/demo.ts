@@ -37,6 +37,22 @@ const BUDGET = "3.00"; // three sources fit; the contract blocks the fourth
 const short = (s: string) => (s ? `${s.slice(0, 6)}…${s.slice(-4)}` : "");
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export type DemoNetwork = "testnet" | "mainnet";
+
+export interface DemoOptions {
+  network?: string;
+}
+
+export function demoNetwork(value: string | undefined): DemoNetwork {
+  const network = value?.trim() || "testnet";
+  if (network !== "testnet" && network !== "mainnet") {
+    throw new Error("--network must be testnet or mainnet");
+  }
+  return network;
+}
+
+export const MAINNET_DEMO_URL = "https://reapp.live/wallet";
+
 /** Fund an account and confirm it on the soroban RPC (the same source the
  *  contract calls use). Friendbot can rate-limit or drop a request, so retry the
  *  friendbot hit if the account hasn't appeared, and throw loudly if it never
@@ -140,7 +156,8 @@ function listDemos(): void {
   console.log();
 }
 
-export async function runDemo(target?: string): Promise<void> {
+export async function runDemo(target?: string, options: DemoOptions = {}): Promise<void> {
+  const network = demoNetwork(options.network);
   if (!target) {
     listDemos();
     return;
@@ -149,6 +166,17 @@ export async function runDemo(target?: string): Promise<void> {
     log.warn(`unknown demo "${target}"`);
     listDemos();
     process.exitCode = 1;
+    return;
+  }
+
+  if (network === "mainnet") {
+    console.log("\n" + banner("stellar mainnet · Circle USDC") + "\n");
+    log.info("mainnet research-agent demo uses Freighter for user authorization");
+    log.step("open the hosted reference flow", { url: MAINNET_DEMO_URL });
+    log.step("connect Freighter on Mainnet and approve the 0.03 USDC mandate");
+    log.step("each agent purchase is 0.01 USDC; MandateRegistry blocks purchase four");
+    log.info("wallet secrets remain inside Freighter; the CLI never requests a recovery phrase");
+    console.log("\n" + link(MAINNET_DEMO_URL, MAINNET_DEMO_URL) + "\n");
     return;
   }
 
