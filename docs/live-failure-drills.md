@@ -15,7 +15,7 @@ Because every run creates fresh ephemeral actors, the transaction hashes below
 are unique to the recorded run. Re-running `npm run drills:testnet` produces
 new, equally verifiable evidence rather than reproducing these exact hashes.
 
-## Fresh run — 2026-07-27
+## Latest recorded run — 2026-08-27
 
 Contract: [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
 
@@ -30,7 +30,7 @@ an **overspending** agent is demonstrated separately by the reference-agent
 round-trip (the fourth purchase is rejected on-chain for budget) and by the
 contract's `BudgetExceeded` negative suite.
 
-- Settled transaction: [`8b5cb297…63e03`](https://stellar.expert/explorer/testnet/tx/8b5cb2974baa0eda07b0b8c0f223ec69a93df7a52c2991eed2522f1438663e03)
+- Settled transaction: [`76461c01…d4476`](https://stellar.expert/explorer/testnet/tx/76461c01c8cc264956489b3ff411a959ca17883703b663415055b645d31d4476)
 - User experience: the valid purchase is delivered; the revoked purchase is
   shown as a terminal contract rejection, not retried.
 
@@ -41,7 +41,7 @@ the first paid delivery is then deliberately interrupted. The SDK surfaces
 `DeliveryPendingError`, retries that exact receipt after recovery, and proves
 there is no second payment.
 
-- Settled transaction: [`532c92a3…432d`](https://stellar.expert/explorer/testnet/tx/532c92a342c3c17594c41b67540391683b487882e12ff42ea63f2474d90a432d)
+- Settled transaction: [`779ca469…fdda`](https://stellar.expert/explorer/testnet/tx/779ca46997598ab1062cb408be6c7505582698659643f0be0a24253389acfdda)
 - User experience: “broadcast may have been attempted; settlement or delivery pending,” followed by recovered
   delivery tied to the same transaction.
 
