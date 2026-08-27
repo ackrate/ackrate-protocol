@@ -34,13 +34,14 @@ ackrate demo research-agent --network testnet
 ```
 
 The demo starts cold, creates three ephemeral testnet accounts, registers a real
-mandate, approves the contract allowance, and has an agent buy research sources
-one at a time. Each purchase is a real on-chain `execute_payment`. The mandate
-budget covers three purchases; the fourth is rejected by the contract.
+mandate, starts the reference fulfillment server, and has the reference consumer
+buy protected sources through `agent.fetch()`. Every success follows HTTP 402,
+on-chain `execute_payment`, bound proof verification, then HTTP 200 delivery. The
+mandate covers three purchases; the contract rejects the fourth without payment.
 
-The command exits successfully only after it independently reads sequence 3,
-3 XLM spent, a 3 XLM merchant balance increase, and the fourth contract
-rejection.
+The command exits successfully only when three durable receipts match three
+delivered resources, sequence/spent and merchant balance agree, and purchase four
+is a no-payment contract rejection.
 
 No LLM key is required. The research framing is scripted so the payment path is
 the thing under test.
@@ -60,11 +61,12 @@ ackrate settlement acknowledge <TX_HASH>
 ackrate pay 10.00
 ```
 
-`ackrate init` writes a committable `ackrate.config.json` with the network, contract
-id, explorer, demo price, and budget. `ackrate setup` writes testnet burner secrets
-to `~/.ackrate/credentials.json` using restrictive file permissions. `ackrate
-mandate create` stores the active mandate in `~/.ackrate/mandate.json` so `ackrate
-pay` can rebuild the same mandate id.
+`ackrate init` writes a committable `ackrate.config.json`. Testnet setup writes
+burner secrets to `~/.ackrate/credentials.json` with restrictive permissions.
+Mainnet config instead pins the verified deployment-manifest SHA-256 and public
+named signer identities; Mainnet setup is read-only and never creates a key,
+contacts Friendbot, or writes credentials. `mandate create` stores the exact
+network-bound mandate so `pay` can rebuild the same id.
 
 Before any payment broadcast, the CLI signs the transaction, derives its exact
 hash and validity deadline, and fsyncs a private journal under `ACKRATE_HOME`.
@@ -94,10 +96,10 @@ ACKRATE_HOME=$(mktemp -d) ackrate setup
 
 | Command | What it does |
 |---|---|
-| `ackrate init [-f]` | Writes `ackrate.config.json` in the current directory. |
-| `ackrate setup [-f]` | Generates user, agent, and merchant testnet keys, then funds them through friendbot. |
-| `ackrate mandate create [-b <xlm>] [-e <seconds>] [-f]` | Registers an AP2 mandate on-chain and approves the SEP-41 allowance to the contract. |
-| `ackrate pay [amount]` | Makes an agent-signed payment against the active mandate. |
+| `ackrate init [--network testnet\|mainnet] [-f]` | Writes a versioned network configuration; Mainnet requires and pins the verified manifest. |
+| `ackrate setup [-f]` | Testnet creates burners; Mainnet performs read-only actor, balance, asset, RPC, and Registry checks. |
+| `ackrate mandate create [-b <amount>] [-e <seconds>] [-f] [--confirm-real-usdc]` | Registers a mandate and approves allowance to the contract. |
+| `ackrate pay [amount] [--confirm-real-usdc]` | Makes an agent-signed payment against the network-bound mandate. |
 | `ackrate settlement reconcile` | Resolves the exact durable transaction hash before another payment is allowed. |
 | `ackrate settlement acknowledge <tx-hash>` | Explicitly accepts one exact durably recorded success and reopens the payment path. |
 | `ackrate ops create` | Binds one unsigned authority transaction to an immutable, human-readable signing request. |
@@ -116,11 +118,17 @@ ackrate demo research-agent \
   --manifest ./mainnet-deployment.json \
   --user-signer ackrate-canary-user \
   --agent-signer ackrate-canary-agent \
+  --agent-secret-env ACKRATE_AGENT_SECRET \
   --merchant G... \
   --price 0.01 \
   --budget 0.03 \
   --confirm-real-usdc
 ```
+
+`ACKRATE_AGENT_SECRET` is the name of an environment variable injected by a
+secret manager. The value is never accepted as a CLI argument, written, or
+printed. It is required because the HTTP proof needs detached raw signing and the
+supported Stellar CLI transaction signer does not provide it.
 
 The command rejects an incomplete or noncanonical manifest, a non-mainnet RPC,
 a conflicting USDC issuer/SAC/decimals mapping, a paused registry, missing
@@ -202,7 +210,7 @@ overspending, revoked mandates, invalid amounts, and replayed sequence numbers.
 
 | File | Safe to commit? | Purpose |
 |---|---:|---|
-| `ackrate.config.json` | Yes | Network, contract id, explorer, demo price, and default budget. |
+| `ackrate.config.json` | Yes | Versioned network config; Mainnet includes a manifest path/hash and public signer names only. |
 | `~/.ackrate/credentials.json` | No | Testnet burner secrets for the user, agent, and merchant accounts. |
 | `~/.ackrate/mandate.json` | No | The active mandate inputs and transaction hashes for local reuse. |
 | `~/.ackrate/pending-settlement/state.json` | No | Crash-safe signed hash, sequence, and validity window retained until reconciliation. |
@@ -229,9 +237,22 @@ The current config points at the upgradeable simple MandateRegistry:
 CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM
 ```
 
-Project commands remain testnet-only. Mainnet is available only through the
-explicit manifest-gated demo command above; an arbitrary edited contract ID is
-never treated as a production deployment.
+Project commands support Mainnet only through the verified manifest. Initialize
+a Mainnet project with the public signer names, merchant, and bounded defaults:
+
+```bash
+ackrate init --network mainnet \
+  --manifest ./mainnet-deployment.json \
+  --user-signer ackrate-canary-user \
+  --agent-signer ackrate-canary-agent \
+  --merchant G... --price 0.01 --budget 0.03 \
+  --agent-secret-env ACKRATE_AGENT_SECRET
+ackrate setup
+ackrate mandate create --confirm-real-usdc
+ackrate pay --confirm-real-usdc
+```
+
+An arbitrary edited contract ID is never treated as a production deployment.
 
 ## Relationship to the SDK
 

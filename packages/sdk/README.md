@@ -1,4 +1,4 @@
-# @ackrate/core 0.3.1
+# @ackrate/core 0.3.3
 
 Create an agent, connect to the live MandateRegistry contract on Stellar, and run a crash-safe mandate-validated payment through a small typed surface.
 

@@ -19,6 +19,7 @@ import {
   markSettlementCompleted,
 } from "../settlement-store.js";
 import { isFinalPaymentRejection } from "../payment-failure.js";
+import { mainnetProjectPreflight } from "../mainnet-preflight.js";
 
 const short = (s: string) => (s ? `${s.slice(0, 6)}…${s.slice(-4)}` : "");
 
@@ -42,7 +43,7 @@ function rejectionSummary(reason: string): string {
   }
 }
 
-export async function runPay(amountArg?: string): Promise<void> {
+export async function runPay(amountArg?: string, opts: { confirmRealUsdc?: boolean } = {}): Promise<void> {
   try {
     await assertNoPendingSettlement();
   } catch (error) {
@@ -56,31 +57,57 @@ export async function runPay(amountArg?: string): Promise<void> {
     log.warn("no ackrate.config.json here — run `ackrate init` first");
     return;
   }
-  if (!credentialsExist()) {
-    log.warn("no credentials — run `ackrate setup` first");
-    return;
-  }
   if (!mandateExists()) {
     log.warn("no mandate — run `ackrate mandate create` first");
     return;
   }
 
   const config = loadConfig();
+  if (config.network === "mainnet" && !opts.confirmRealUsdc) {
+    throw new Error("mainnet payment requires --confirm-real-usdc before any signer is opened");
+  }
   const net = networkConfig(config);
-  const creds = loadCredentials();
   const stored = loadMandate();
   const txUrl = (hash: string) => `${config.explorer}/tx/${hash}`;
 
   const amount = amountArg ?? config.unlockPrice;
-  const mandate = ackrate.createIntentMandate(stored.inputs); // same nonce -> same id
+  if (stored.network !== config.network || (stored.contractId && stored.contractId !== net.mandateRegistryId)) {
+    throw new Error("stored mandate is bound to a different network or MandateRegistry");
+  }
+  if (config.network === "testnet" && !credentialsExist()) {
+    log.warn("no credentials — run `ackrate setup` first");
+    return;
+  }
+  const creds = config.network === "testnet" ? loadCredentials() : undefined;
+  const mainnet = config.network === "mainnet" ? await mainnetProjectPreflight(config, amount) : undefined;
+  const signer = mainnet?.agentSigner ?? creds!.agentSecret;
+  const symbol = config.network === "mainnet" ? "USDC" : "XLM";
+  const expectedUser = mainnet?.userSigner.publicKey ?? creds!.userPublic;
+  const expectedAgent = mainnet?.agentSigner.publicKey ?? creds!.agentPublic;
+  const expectedMerchant = mainnet?.merchant ?? creds!.merchantPublic;
+  const expectedAsset = mainnet?.net.settlementAsset.contractId ?? ackrate.testnet.nativeSac;
+  if (
+    stored.inputs.user !== expectedUser
+    || stored.inputs.agent !== expectedAgent
+    || stored.inputs.merchant !== expectedMerchant
+    || stored.inputs.asset !== expectedAsset
+  ) throw new Error("stored mandate identities do not match the current project configuration");
+  const mandate = ackrate.createIntentMandate(stored.inputs, net); // same nonce -> same id
 
-  log.step("execute_payment (agent-signed)", { amount: `${amount} XLM`, mandate: short(mandate.id) });
+  log.step("execute_payment (agent-signed)", { amount: `${amount} ${symbol}`, mandate: short(mandate.id) });
   let preparedHash: string | undefined;
   let hash: string;
   try {
-    hash = await ackrate.agent({ mandate, signer: creds.agentSecret }, net).pay(amount, {
+    hash = await ackrate.agent({ mandate, signer }, net).pay(amount, {
       onPrepared: async (pending) => {
-        await claimPendingSettlement("pay", net.mandateRegistryId, pending);
+        await claimPendingSettlement("pay", net.mandateRegistryId, pending, {
+          network: config.network,
+          rpcUrl: net.rpcUrl,
+          assetId: expectedAsset,
+          user: expectedUser,
+          agent: expectedAgent,
+          merchant: expectedMerchant,
+        });
         preparedHash = pending.txHash;
       },
     });
@@ -136,7 +163,7 @@ export async function runPay(amountArg?: string): Promise<void> {
     "\n" +
       c.bold("Payment") +
       "\n" +
-      c.gray("  amount  ") + c.white(`${amount} XLM`) +
+      c.gray("  amount  ") + c.white(`${amount} ${symbol}`) +
       "\n" +
       c.gray("  tx      ") + c.dim(txUrl(hash)) +
       "\n",

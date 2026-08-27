@@ -16,11 +16,15 @@ import { ackrateHome } from "./secrets.js";
 export type SettlementSource = "pay" | "demo";
 
 interface StoredSettlementBase {
-  version: 3;
+  version: 4;
   source: SettlementSource;
   network: "testnet" | "mainnet";
   rpcUrl: string;
   contractId: string;
+  assetId: string | null;
+  user: string | null;
+  agent: string | null;
+  merchant: string | null;
   pending: Readonly<PendingSettlement>;
 }
 
@@ -91,11 +95,19 @@ function validateRecord(value: unknown): Readonly<StoredSettlement> {
     throw new Error("settlement journal is not an object");
   }
   const raw = value as Record<string, unknown>;
-  const legacy = raw.version === 2 && raw.network === "testnet";
-  const record = (legacy ? { ...raw, version: 3, rpcUrl: TESTNET.rpcUrl } : raw) as unknown as StoredSettlement;
+  const legacy = (raw.version === 2 || raw.version === 3) && raw.network === "testnet";
+  const record = (legacy ? {
+    ...raw,
+    version: 4,
+    rpcUrl: raw.rpcUrl ?? TESTNET.rpcUrl,
+    assetId: null,
+    user: null,
+    agent: null,
+    merchant: null,
+  } : raw) as unknown as StoredSettlement;
   const expectedKeys = record.state === "completed"
-    ? ["version", "state", "source", "network", "rpcUrl", "contractId", "pending", "completedAt"]
-    : ["version", "state", "source", "network", "rpcUrl", "contractId", "pending"];
+    ? ["version", "state", "source", "network", "rpcUrl", "contractId", "assetId", "user", "agent", "merchant", "pending", "completedAt"]
+    : ["version", "state", "source", "network", "rpcUrl", "contractId", "assetId", "user", "agent", "merchant", "pending"];
   let rpc: URL | undefined;
   try {
     rpc = new URL(record.rpcUrl);
@@ -104,7 +116,7 @@ function validateRecord(value: unknown): Readonly<StoredSettlement> {
   }
   if (
     !exactKeys(record, expectedKeys)
-    || record.version !== 3
+    || record.version !== 4
     || (record.state !== "pending" && record.state !== "completed")
     || (record.source !== "pay" && record.source !== "demo")
     || (record.network !== "testnet" && record.network !== "mainnet")
@@ -113,6 +125,11 @@ function validateRecord(value: unknown): Readonly<StoredSettlement> {
     || Boolean(rpc.username || rpc.password)
     || typeof record.contractId !== "string"
     || !/^C[A-Z2-7]{55}$/.test(record.contractId)
+    || (record.assetId !== null && !/^C[A-Z2-7]{55}$/.test(record.assetId))
+    || (record.user !== null && !/^G[A-Z2-7]{55}$/.test(record.user))
+    || (record.agent !== null && !/^G[A-Z2-7]{55}$/.test(record.agent))
+    || (record.merchant !== null && !/^G[A-Z2-7]{55}$/.test(record.merchant))
+    || (record.network === "mainnet" && [record.assetId, record.user, record.agent, record.merchant].some((value) => value === null))
   ) {
     throw new Error("settlement journal schema is invalid");
   }
@@ -178,7 +195,14 @@ export async function claimPendingSettlement(
   source: SettlementSource,
   contractId: string,
   pending: Readonly<PendingSettlement>,
-  context: Readonly<{ network: "testnet" | "mainnet"; rpcUrl: string }> = {
+  context: Readonly<{
+    network: "testnet" | "mainnet";
+    rpcUrl: string;
+    assetId?: string;
+    user?: string;
+    agent?: string;
+    merchant?: string;
+  }> = {
     network: "testnet",
     rpcUrl: TESTNET.rpcUrl,
   },
@@ -198,12 +222,16 @@ export async function claimPendingSettlement(
 
   try {
     const record = validateRecord({
-      version: 3,
+      version: 4,
       state: "pending",
       source,
       network: context.network,
       rpcUrl: context.rpcUrl,
       contractId,
+      assetId: context.assetId ?? null,
+      user: context.user ?? null,
+      agent: context.agent ?? null,
+      merchant: context.merchant ?? null,
       pending,
     });
     await writeState(record);

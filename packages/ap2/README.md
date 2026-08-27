@@ -1,4 +1,4 @@
-# @ackrate/ap2 0.3.0
+# @ackrate/ap2 0.3.2
 
 Signed AP2 v0.1 Ackrate profile validation for contract-enforced Stellar payments.
 

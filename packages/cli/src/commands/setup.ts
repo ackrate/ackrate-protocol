@@ -8,8 +8,9 @@
  */
 import { Keypair, rpc } from "@stellar/stellar-sdk";
 import { log, c } from "../ui.js";
-import { configExists, loadConfig, defaultConfig, networkConfig } from "../config.js";
+import { configExists, loadConfig, networkConfig } from "../config.js";
 import { credentialsExist, credentialsPath, saveCredentials, type Credentials } from "../secrets.js";
+import { mainnetProjectPreflight } from "../mainnet-preflight.js";
 
 export type SetupOptions = { force?: boolean };
 
@@ -37,13 +38,24 @@ export async function runSetup(opts: SetupOptions = {}): Promise<void> {
     log.warn("no ackrate.config.json here — run `ackrate init` first");
     return;
   }
+  const config = loadConfig();
+  if (config.network === "mainnet") {
+    const runtime = await mainnetProjectPreflight(config);
+    log.ok("Mainnet readiness checks passed; no keys, secrets, or funds were created", {
+      contract: short(runtime.net.mandateRegistryId),
+      user: short(runtime.userSigner.publicKey),
+      agent: short(runtime.agentSigner.publicKey),
+      merchant: short(runtime.merchant),
+      asset: "USDC",
+    });
+    return;
+  }
   if (credentialsExist() && !opts.force) {
     log.warn("credentials already exist", { path: credentialsPath() });
     log.info("re-run with --force to regenerate fresh testnet keys");
     return;
   }
 
-  const config = configExists() ? loadConfig() : defaultConfig();
   const net = networkConfig(config);
   const server = new rpc.Server(net.rpcUrl);
   const accountUrl = (pub: string) => `${config.explorer}/account/${pub}`;

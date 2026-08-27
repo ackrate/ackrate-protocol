@@ -4,12 +4,15 @@
  * CreateIntentMandateInput (incl. nonce + expiry) so `ackrate pay` can rebuild
  * the identical mandate id the contract registered.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CreateIntentMandateInput } from "@ackrate/core";
 import { ackrateHome } from "./secrets.js";
 
 export type StoredMandate = {
+  version: 2;
+  network: "testnet" | "mainnet";
+  contractId: string;
   inputs: CreateIntentMandateInput;
   id: string;
   registerTx: string;
@@ -25,10 +28,18 @@ export function mandateExists(): boolean {
 }
 
 export function loadMandate(): StoredMandate {
-  return JSON.parse(readFileSync(mandatePath(), "utf8")) as StoredMandate;
+  const raw = JSON.parse(readFileSync(mandatePath(), "utf8")) as Partial<StoredMandate>;
+  if (raw.version === 2) return raw as StoredMandate;
+  // Existing testnet-only records predate the network binding.
+  if (raw.inputs && raw.id && raw.registerTx && raw.approveTx) {
+    return { ...raw, version: 2, network: "testnet", contractId: "" } as StoredMandate;
+  }
+  throw new Error("stored mandate schema is invalid");
 }
 
 export function saveMandate(m: StoredMandate): string {
+  mkdirSync(ackrateHome(), { recursive: true, mode: 0o700 });
+  chmodSync(ackrateHome(), 0o700);
   const path = mandatePath();
   writeFileSync(path, JSON.stringify(m, null, 2) + "\n", { mode: 0o600 });
   return path;

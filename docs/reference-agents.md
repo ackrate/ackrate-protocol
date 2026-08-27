@@ -23,8 +23,9 @@ The run creates fresh testnet actors and a 3 XLM mandate, serves three paid reso
 proves the fourth contract rejection, retains exact settlement receipts, and rejects a
 settled transaction re-signed for a new request with HTTP `409`.
 
-Mainnet activation is intentionally not claimed before deployment. Friday's
-gate is the same flow with the verified manifest, chain-read USDC decimals,
-external user authorization, a secret-manager or detached-payload-capable agent
-signer, and a bounded real-USDC canary. Transaction, mandate, merchant delta,
-receipt, and fourth-purchase rejection must all agree before completion.
+The CLI now runs these same reference agents on testnet or in explicitly confirmed
+Mainnet mode. Mainnet is derived only from the verified deployment manifest, uses
+chain-read USDC decimals, keeps user authorization in a named Stellar CLI identity,
+and accepts the bound-proof agent key only through a named secret-manager environment
+variable. Transaction receipts, delivered responses, contract state, merchant delta,
+and the fourth no-payment budget rejection must all agree before success is reported.

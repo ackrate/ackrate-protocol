@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "cd ../.. && npm run build -w @ackrate/stellar && npm run build -w @ackrate/core && npm run build -w @ackrate/wallet-chat",
+  "framework": "nextjs"
+}

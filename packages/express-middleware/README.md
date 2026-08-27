@@ -1,4 +1,4 @@
-# @ackrate/express-middleware 0.2.2
+# @ackrate/express-middleware 0.2.4
 
 Fail-closed Express 4/5 paid JSON routes for Ackrate on Stellar.
 

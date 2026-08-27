@@ -9,7 +9,7 @@
  * since CI runs from a fresh checkout where each package's dist is absent).
  */
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
+import { readdirSync, readFileSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,6 +18,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTRACT = path.join(ROOT, "contracts", "mandate-registry");
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
 const ENV = { ...process.env, PATH: `${CARGO_BIN}:/opt/homebrew/bin:${process.env.PATH ?? ""}` };
+
+for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
+  if (!name.endsWith(".yml") && !name.endsWith(".yaml")) continue;
+  const body = readFileSync(path.join(ROOT, ".github", "workflows", name), "utf8");
+  for (const line of body.split("\n")) {
+    const reference = line.match(/^\s*(?:-\s*)?uses:\s+\S+@([^\s#]+)/)?.[1];
+    if (reference && !/^[0-9a-f]{40}$/.test(reference)) {
+      console.error(`GitHub workflow ${name} contains a mutable action reference: @${reference}`);
+      process.exit(1);
+    }
+  }
+}
 
 function run(label, cmd, args, cwd) {
   process.stdout.write(`\n▶ ${label}\n`);

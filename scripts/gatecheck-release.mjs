@@ -9,11 +9,11 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = "/tmp/ackrate-release-npm-cache";
 
 const packages = [
-  ["packages/stellar", "@ackrate/stellar", "0.2.4"],
+  ["packages/stellar", "@ackrate/stellar", "0.2.5"],
   ["packages/sdk", "@ackrate/core", "0.3.3"],
   ["packages/ap2", "@ackrate/ap2", "0.3.2"],
   ["packages/express-middleware", "@ackrate/express-middleware", "0.2.4"],
-  ["packages/cli", "@ackrate/cli", "0.1.9"],
+  ["packages/cli", "@ackrate/cli", "0.1.10"],
 ];
 const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
 
@@ -25,6 +25,11 @@ function run(command, args, cwd = ROOT) {
   const result = spawnSync(command, args, {
     cwd,
     encoding: "utf8",
+    // The self-contained CLI bundle is intentionally larger than Node's
+    // 1 MiB spawnSync default.  Tarball inspection must read the complete
+    // artifact or fail closed; truncating it would make the branding gate
+    // both noisy and incomplete.
+    maxBuffer: 32 * 1024 * 1024,
     stdio: ["ignore", "pipe", "inherit"],
     env: { ...process.env, npm_config_cache: CACHE },
   });
@@ -63,6 +68,11 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   for (const scriptName of ["preinstall", "install", "postinstall"]) {
     if (manifest.scripts?.[scriptName]) fail(`${expectedName} contains forbidden ${scriptName} script`);
   }
+  const readmeBody = readFileSync(path.join(packageRoot, "README.md"), "utf8");
+  if (
+    !readmeBody.includes(`${expectedName} ${expectedVersion}`)
+    && !readmeBody.includes(`${expectedName}@${expectedVersion}`)
+  ) fail(`${expectedName} README does not identify candidate version ${expectedVersion}`);
   const packed = JSON.parse(run("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], packageRoot));
   const entry = packed[0];
   if (!entry || entry.name !== expectedName || entry.version !== expectedVersion) {
@@ -79,6 +89,9 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     if (!names.has("dist/ackrate-cli.bundle.mjs")) {
       fail("@ackrate/cli tarball is missing its executable bundle");
     }
+    if (!names.has("examples/mainnet-authority-manifest.template.json")) {
+      fail("@ackrate/cli tarball is missing its authority manifest template");
+    }
   } else {
     for (const required of ["dist/index.js", "dist/index.d.ts"]) {
       if (!names.has(required)) fail(`${expectedName} tarball is missing ${required}`);
@@ -88,6 +101,7 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     if (
       name.startsWith("src/")
       || name.startsWith("test/")
+      || /(?:^|\/)[^/]+\.test\.(?:js|mjs|cjs|d\.ts|map)$/i.test(name)
       || name.includes(".env")
       || /(?:^|\/)(?:secrets?|credentials)(?:\.|$)/i.test(name)
     ) {
@@ -169,7 +183,7 @@ console.log("runtime imports passed");
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);
   const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "ackrate"), ["--version"], installRoot).trim();
-  if (cliVersion !== "0.1.9") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
+  if (cliVersion !== "0.1.10") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
 console.log("Release gate check 4/4: public terminology and private-file boundary");

@@ -12,8 +12,9 @@ import { log, c } from "../ui.js";
 import { configExists, loadConfig, networkConfig } from "../config.js";
 import { credentialsExist, loadCredentials } from "../secrets.js";
 import { mandateExists, saveMandate, type StoredMandate } from "../mandate-store.js";
+import { mainnetProjectPreflight } from "../mainnet-preflight.js";
 
-export type MandateCreateOptions = { budget?: string; expiry?: string; force?: boolean };
+export type MandateCreateOptions = { budget?: string; expiry?: string; force?: boolean; confirmRealUsdc?: boolean };
 
 const short = (s: string) => (s ? `${s.slice(0, 6)}…${s.slice(-4)}` : "");
 
@@ -22,18 +23,16 @@ export async function runMandateCreate(opts: MandateCreateOptions = {}): Promise
     log.warn("no ackrate.config.json here — run `ackrate init` first");
     return;
   }
-  if (!credentialsExist()) {
-    log.warn("no credentials — run `ackrate setup` first");
-    return;
-  }
   if (mandateExists() && !opts.force) {
     log.warn("a mandate already exists — re-run with --force to replace it");
     return;
   }
 
   const config = loadConfig();
+  if (config.network === "mainnet" && !opts.confirmRealUsdc) {
+    throw new Error("mainnet mandate creation requires --confirm-real-usdc before any signer is opened");
+  }
   const net = networkConfig(config);
-  const creds = loadCredentials();
   const txUrl = (hash: string) => `${config.explorer}/tx/${hash}`;
 
   const budget = opts.budget ?? config.budget;
@@ -42,31 +41,52 @@ export async function runMandateCreate(opts: MandateCreateOptions = {}): Promise
     log.err("--expiry must be a positive number of seconds");
     return;
   }
+  if (config.network === "testnet" && !credentialsExist()) {
+    log.warn("no credentials — run `ackrate setup` first");
+    return;
+  }
+  const testnetCredentials = config.network === "testnet" ? loadCredentials() : undefined;
+  const mainnet = config.network === "mainnet" ? await mainnetProjectPreflight(config, budget) : undefined;
+  const user = mainnet?.userSigner.publicKey ?? testnetCredentials!.userPublic;
+  const agent = mainnet?.agentSigner.publicKey ?? testnetCredentials!.agentPublic;
+  const merchant = mainnet?.merchant ?? testnetCredentials!.merchantPublic;
+  const asset = mainnet?.net.settlementAsset.contractId ?? ackrate.testnet.nativeSac;
+  const symbol = config.network === "mainnet" ? "USDC" : "XLM";
+  const signer = mainnet?.userSigner ?? testnetCredentials!.userSecret;
 
   const inputs: CreateIntentMandateInput = {
-    user: creds.userPublic,
-    agent: creds.agentPublic,
-    merchant: creds.merchantPublic,
-    asset: ackrate.testnet.nativeSac,
+    user,
+    agent,
+    merchant,
+    asset,
     maxAmount: budget,
+    decimals: mainnet?.chainDecimals ?? 7,
     expiry: Math.floor(Date.now() / 1000) + expirySecs,
     nonce: `${Date.now()}:${Math.random().toString(36).slice(2)}`,
   };
 
-  const mandate = ackrate.createIntentMandate(inputs);
+  const mandate = ackrate.createIntentMandate(inputs, net);
   log.step("authorizing mandate", {
-    budget: `${budget} XLM`,
-    merchant: short(creds.merchantPublic),
+    budget: `${budget} ${symbol}`,
+    merchant: short(merchant),
     id: short(mandate.id),
   });
 
-  const registerTx = await ackrate.registerMandate(mandate, { signer: creds.userSecret }, net);
+  const registerTx = await ackrate.registerMandate(mandate, { signer }, net);
   log.chain("register_mandate confirmed", { tx: short(registerTx) });
 
-  const approveTx = await ackrate.approveBudget(mandate, { signer: creds.userSecret }, net);
+  const approveTx = await ackrate.approveBudget(mandate, { signer }, net);
   log.chain("approveBudget confirmed (SEP-41 allowance to contract)", { tx: short(approveTx) });
 
-  const stored: StoredMandate = { inputs, id: mandate.id, registerTx, approveTx };
+  const stored: StoredMandate = {
+    version: 2,
+    network: config.network,
+    contractId: net.mandateRegistryId,
+    inputs,
+    id: mandate.id,
+    registerTx,
+    approveTx,
+  };
   const path = saveMandate(stored);
   log.ok("mandate saved", { path });
 
@@ -76,7 +96,7 @@ export async function runMandateCreate(opts: MandateCreateOptions = {}): Promise
       "\n" +
       c.gray("  id        ") + c.white(mandate.id) +
       "\n" +
-      c.gray("  budget    ") + c.white(`${budget} XLM`) +
+      c.gray("  budget    ") + c.white(`${budget} ${symbol}`) +
       "\n" +
       c.gray("  register  ") + c.dim(txUrl(registerTx)) +
       "\n" +

@@ -8,11 +8,11 @@ cannot replace the contract's `execute_payment` checks.
 
 | Package | Version | Purpose |
 |---|---:|---|
-| `@ackrate/core` | 0.3.1 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
-| `@ackrate/stellar` | 0.2.2 | Typed contract bindings, permanent testnet deployment, network config, signing and token helpers. |
-| `@ackrate/ap2` | 0.3.0 | Signed AP2 profile validation and replay admission. |
-| `@ackrate/express-middleware` | 0.2.2 | Bound-v2 Express payment boundary and chain verifier. |
-| `@ackrate/cli` | 0.1.7 | `init`, `setup`, mandate, crash-safe pay/reconcile/acknowledge, and demo commands. |
+| `@ackrate/core` | 0.3.3 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
+| `@ackrate/stellar` | 0.2.5 | Typed contract bindings, verified-manifest network config, signing and token helpers. |
+| `@ackrate/ap2` | 0.3.2 | Signed AP2 profile validation and replay admission. |
+| `@ackrate/express-middleware` | 0.2.4 | Bound-v2 Express payment boundary and chain verifier. |
+| `@ackrate/cli` | 0.1.10 | Network-aware project commands, crash-safe payment recovery, governed operations, and the reference-agent demo. |
 
 The unrelated npm package `ackrate-cli` is owned by another publisher. Use the
 project's unambiguous public CLI name:
@@ -30,7 +30,7 @@ Application client:
 npm install @ackrate/core@0.3.3 @stellar/stellar-sdk
 ```
 
-Pinned testnet SDK packages:
+Pinned SDK packages:
 
 ```bash
 npm install @ackrate/stellar@0.2.5 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4

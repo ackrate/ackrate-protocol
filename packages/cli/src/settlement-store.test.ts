@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, test } from "node:test";
 import { TESTNET } from "@ackrate/stellar";
 import type { PendingSettlement } from "@ackrate/core";
+import { Keypair } from "@stellar/stellar-sdk";
 import {
   acknowledgeCompletedSettlement,
   assertNoPendingSettlement,
@@ -115,16 +116,38 @@ test("successful settlement remains locked across restart until exact acknowledg
 
 test("mainnet journal pins the public network and exact credential-free RPC", async () => {
   await home();
+  const user = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 1)).publicKey();
+  const agent = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 2)).publicKey();
+  const merchant = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 3)).publicKey();
   await claimPendingSettlement("demo", TESTNET.mandateRegistryId, pending(), {
     network: "mainnet",
     rpcUrl: "https://rpc.mainnet.example",
+    assetId: TESTNET.nativeSac,
+    user,
+    agent,
+    merchant,
   });
   const loaded = await loadPendingSettlement();
   assert.equal(loaded.kind, "pending");
   if (loaded.kind !== "pending") assert.fail("expected pending journal");
-  assert.equal(loaded.record.version, 3);
+  assert.equal(loaded.record.version, 4);
   assert.equal(loaded.record.network, "mainnet");
   assert.equal(loaded.record.rpcUrl, "https://rpc.mainnet.example");
+  assert.deepEqual(
+    [loaded.record.assetId, loaded.record.user, loaded.record.agent, loaded.record.merchant],
+    [TESTNET.nativeSac, user, agent, merchant],
+  );
+});
+
+test("mainnet journal rejects incomplete actor or asset identity", async () => {
+  await home();
+  await assert.rejects(
+    claimPendingSettlement("pay", TESTNET.mandateRegistryId, pending(), {
+      network: "mainnet",
+      rpcUrl: "https://rpc.mainnet.example",
+    }),
+    /schema/,
+  );
 });
 
 test("legacy testnet v2 journal remains recoverable", async () => {

@@ -1,4 +1,4 @@
-# @ackrate/stellar 0.2.2
+# @ackrate/stellar 0.2.5
 
 The Soroban layer for **Ackrate**, agent-driven payments on Stellar, enforced
 on-chain by the **MandateRegistry** contract.

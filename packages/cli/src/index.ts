@@ -27,12 +27,20 @@ program
 program
   .command("init")
   .description("scaffold a project in the current directory (writes ackrate.config.json)")
+  .option("--network <network>", "testnet or mainnet", "testnet")
+  .option("--manifest <path>", "verified Mainnet deployment manifest")
+  .option("--user-signer <identity>", "named Stellar CLI identity for the mandate user")
+  .option("--agent-signer <identity>", "named Stellar CLI identity for direct payments")
+  .option("--merchant <address>", "merchant Stellar G-account")
+  .option("--price <amount>", "default price (Mainnet: USDC)")
+  .option("--budget <amount>", "default mandate limit (Mainnet: USDC)")
+  .option("--agent-secret-env <name>", "environment-variable name supplied by a secret manager for bound-v2 proofs")
   .option("-f, --force", "overwrite an existing ackrate.config.json")
   .action((opts) => runInit(opts));
 
 program
   .command("setup")
-  .description("generate testnet burner keys and fund them via friendbot")
+  .description("prepare actors: testnet creates burners; Mainnet performs read-only readiness checks")
   .option("-f, --force", "regenerate fresh keys, overwriting existing credentials")
   .action((opts) => runSetup(opts));
 
@@ -40,16 +48,18 @@ const mandate = program.command("mandate").description("manage AP2 mandates");
 mandate
   .command("create")
   .description("register an AP2 mandate on-chain and approve the SEP-41 allowance")
-  .option("-b, --budget <xlm>", "mandate cap in XLM (default: from ackrate.config.json)")
+  .option("-b, --budget <amount>", "mandate cap (default: from ackrate.config.json)")
   .option("-e, --expiry <seconds>", "seconds until the mandate expires", "3600")
   .option("-f, --force", "replace an existing stored mandate")
+  .option("--confirm-real-usdc", "acknowledge irreversible Mainnet USDC authorization")
   .action((opts) => runMandateCreate(opts));
 
 program
   .command("pay")
   .description("make an agent-signed payment against the active mandate (budget enforced on-chain)")
-  .argument("[amount]", "XLM amount to pay (default: unlockPrice from ackrate.config.json)")
-  .action((amount) => runPay(amount));
+  .argument("[amount]", "amount to pay (default: unlockPrice from ackrate.config.json)")
+  .option("--confirm-real-usdc", "acknowledge an irreversible Mainnet USDC payment")
+  .action((amount, options) => runPay(amount, options));
 
 const settlement = program.command("settlement").description("inspect crash-safe payment state");
 settlement
@@ -93,6 +103,7 @@ program
   .option("--manifest <path>", "verified mainnet deployment manifest JSON")
   .option("--user-signer <identity>", "Stellar CLI identity for the mandate user")
   .option("--agent-signer <identity>", "Stellar CLI identity for the payment agent")
+  .option("--agent-secret-env <name>", "environment-variable name supplied by a secret manager for bound-v2 proofs")
   .option("--merchant <address>", "mainnet merchant G-account")
   .option("--budget <usdc>", "explicit real-USDC mandate budget")
   .option("--price <usdc>", "explicit real-USDC price per source")

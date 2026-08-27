@@ -8,6 +8,13 @@ governed MandateRegistry. It registered a 0.03 USDC mandate, approved only the
 registry as spender, executed three agent-signed 0.01 USDC payments, and
 observed the contract reject purchase four with `BudgetExceeded`.
 
+Recheck the live 2-of-3 signer math, official Circle USDC trustline, and
+finalized Registry/token events without signing or submitting a transaction:
+
+```bash
+npm run verify:mainnet-evidence
+```
+
 ## Exact actors and policy
 
 | Role | Mainnet address |
