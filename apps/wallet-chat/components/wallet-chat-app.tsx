@@ -139,11 +139,25 @@ export function WalletChatApp() {
     try {
       const address = await connectLobstr();
       setWalletAddress(address);
+      setNotice("LOBSTR connected. No transaction was signed or broadcast.");
+      setPhase("idle");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+      setNotice(null);
+      setPhase("idle");
+    }
+  };
+
+  const authenticate = async () => {
+    if (!config || !walletAddress) return;
+    setError(null);
+    setPhase("authenticating");
+    try {
       const challenge = await api<{ transactionXdr: string }>("/api/auth/challenge", {
         method: "POST",
-        body: JSON.stringify({ address }),
+        body: JSON.stringify({ address: walletAddress }),
       });
-      setNotice("Approve the non-broadcast authentication transaction in LOBSTR.");
+      setNotice("Verify this wallet with a non-broadcast challenge. Nothing will be sent to Mainnet.");
       const signedTransactionXdr = await signLobstrTransaction(challenge.transactionXdr);
       const verified = await api<{ session: SessionView }>("/api/auth/verify", {
         method: "POST",
@@ -237,7 +251,7 @@ export function WalletChatApp() {
     setNotice(null);
   };
 
-  const progress = phase === "active" ? 3 : stored?.registrationTx && stored?.allowanceTx ? 3 : stored?.registrationTx ? 2 : session.authenticated ? 1 : 0;
+  const progress = phase === "active" ? 3 : stored?.registrationTx && stored?.allowanceTx ? 3 : stored?.registrationTx ? 2 : walletAddress ? 1 : 0;
   const remaining = mandate && config ? formatUnits(mandate.remaining, config.asset.decimals) : budget;
   const spent = mandate && config ? formatUnits(mandate.spent, config.asset.decimals) : "0";
   const usedPercent = mandate && BigInt(mandate.maxAmount) > 0n
@@ -254,8 +268,8 @@ export function WalletChatApp() {
         <div className="topbar-center"><span className="pulse-dot" /> Mandate control room</div>
         <div className="topbar-actions">
           <Link href="/diagnostics" className="nav-link">Diagnostics</Link>
-          {session.authenticated ? (
-            <button className="wallet-pill" onClick={disconnect}><span className="wallet-led" /> {short(session.address, 5)} <Power size={13} /></button>
+          {walletAddress ? (
+            <button className="wallet-pill" onClick={disconnect}><span className="wallet-led" /> {short(walletAddress, 5)} <Power size={13} /></button>
           ) : (
             <button className="wallet-pill" onClick={connect} disabled={!config || phase === "authenticating"}><WalletCards size={14} /> Connect LOBSTR</button>
           )}
@@ -266,7 +280,7 @@ export function WalletChatApp() {
         <div>
           <div className="status-chip"><Sparkles size={13} /> CONTRACT-ENFORCED AGENT PAYMENTS</div>
           <h1>Give the agent a budget.<br /><span>Keep the authority.</span></h1>
-          <p>Sign once with LOBSTR. MandateRegistry re-checks the agent, merchant, asset, expiry, and remaining budget every time value moves.</p>
+          <p>Connect without signing. Approve only the mandate actions you choose; MandateRegistry re-checks the agent, merchant, asset, expiry, and remaining budget every time value moves.</p>
         </div>
         <div className="network-card glass">
           <div className="network-card-top">
@@ -281,7 +295,7 @@ export function WalletChatApp() {
 
       <section className="steps shell" aria-label="Activation progress">
         {[
-          [1, "Wallet", "Authenticate with LOBSTR"],
+          [1, "Wallet", "Connect—no transaction"],
           [2, "Mandate", "Register + approve"],
           [3, "Agent", "Chat + settle"],
         ].map(([number, title, caption], index) => (
@@ -296,15 +310,21 @@ export function WalletChatApp() {
       <section className="workspace shell">
         <aside className="control-column">
           <div className="panel glass wallet-panel">
-            <div className="panel-heading"><div><p className="eyebrow">01 · WALLET</p><h2>LOBSTR authority</h2></div><div className={`icon-tile ${session.authenticated ? "live" : ""}`}><WalletCards size={19} /></div></div>
+            <div className="panel-heading"><div><p className="eyebrow">01 · WALLET</p><h2>LOBSTR authority</h2></div><div className={`icon-tile ${walletAddress ? "live" : ""}`}><WalletCards size={19} /></div></div>
             {session.authenticated ? (
               <div className="connected-state">
                 <div className="identity-line"><span className="wallet-led" /><div><small>Authenticated account</small><code>{short(session.address, 9)}</code></div><ShieldCheck size={18} /></div>
                 <p><LockKeyhole size={13} /> Session verified by a signed, non-broadcast Stellar transaction.</p>
               </div>
+            ) : walletAddress ? (
+              <div className="connected-state">
+                <div className="identity-line"><span className="wallet-led" /><div><small>Connected account</small><code>{short(walletAddress, 9)}</code></div><WalletCards size={18} /></div>
+                <p><ShieldCheck size={13} /> Connection is read-only. No Mainnet transaction was signed or broadcast.</p>
+                <button className="primary-button" onClick={authenticate} disabled={phase === "authenticating"}><LockKeyhole size={16} /> {phase === "authenticating" ? "Waiting for LOBSTR…" : "Verify wallet—no broadcast"}</button>
+              </div>
             ) : (
               <>
-                <p className="panel-copy">Connect the LOBSTR Signer Extension. Signing stays inside LOBSTR; this app never receives your secret key.</p>
+                <p className="panel-copy">Connect the LOBSTR Signer Extension to display your public address. Connecting does not create, sign, or broadcast a transaction.</p>
                 <button className="primary-button" onClick={connect} disabled={!config || phase === "authenticating"}><WalletCards size={16} /> {phase === "authenticating" ? "Waiting for LOBSTR…" : "Connect LOBSTR"}</button>
               </>
             )}

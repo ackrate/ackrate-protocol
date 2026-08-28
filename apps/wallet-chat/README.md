@@ -2,12 +2,14 @@
 
 Next.js application for the complete user-facing Ackrate flow:
 
-1. authenticate a Stellar G-account with a non-broadcast LOBSTR-signed
+1. connect a Stellar G-account without creating, signing, or broadcasting a
    transaction;
-2. define and register an IntentMandate on Soroban;
-3. approve a SEP-41 allowance to MandateRegistry;
-4. ask the AI consumer agent to obtain an allowlisted paid source; and
-5. inspect the registry, registration, allowance, payment, and revocation
+2. explicitly verify wallet control with a non-broadcast LOBSTR-signed
+   challenge before enabling protected actions;
+3. define and register an IntentMandate on Soroban;
+4. approve a SEP-41 allowance to MandateRegistry;
+5. ask the AI consumer agent to obtain an allowlisted paid source; and
+6. inspect the registry, registration, allowance, payment, and revocation
    evidence on Stellar Expert.
 
 The interface, model, SDK, caches, and server preflight checks are not payment
@@ -39,8 +41,10 @@ claim LOBSTR authorization-entry signing or contract-account support. LOBSTR
 signs the authentication, mandate registration, allowance, and revocation
 transactions without exposing secret material to the application.
 
-The authentication transaction contains one `manageData` operation, is never
-broadcast, is bound to a short-lived signed challenge, and is accepted once.
+Initial wallet connection reads only the public G-address and creates no
+transaction. Wallet verification is a separate, explicit action. Its challenge
+contains one `manageData` operation, is never broadcast, is bound to a
+short-lived signed challenge, and is accepted once.
 Hosted mainnet operation requires the shared durable store so replay protection
 survives serverless instances.
 
