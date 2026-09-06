@@ -1,0 +1,33 @@
+{
+  "registryCheckedAt": "2026-09-06T21:25:45.049Z",
+  "network": "Stellar Mainnet",
+  "registryContractId": "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR",
+  "sourceCommit": "d0aee2127cc08e43f0c70868de46db75bda71ed7",
+  "sourceWasCleanWhenPacked": true,
+  "sourceCi": "https://github.com/ackrate/ackrate-protocol/actions/runs/34060795268",
+  "sourceCiConclusion": "success",
+  "sourceCiCompletedAt": "2026-09-06T21:26:24Z",
+  "verification": "Every version and latest tag was read from the public registry; SHA-512 was recomputed over downloaded archive bytes and matched the exact local release-gated archive. No workspace overrides were used for the public install.",
+  "packages": [
+    {
+      "name": "@ackrate/stellar", "version": "0.3.0", "latest": "0.3.0",
+      "integrity": "sha512-XX8WFnwiNT/kBKRZ3e69CyM5HG7bL+BOyZOrBhg3mb491hJNBalpk4qBr28jU1DjGin2P4Wym+fDZlpsKB+FzQ=="
+    },
+    {
+      "name": "@ackrate/core", "version": "0.4.0", "latest": "0.4.0",
+      "integrity": "sha512-q+c9+GVfqk7KInXzs41+vQt82/btayXXCqq2oWpS7blGo0+u+TwgffEsneORHrtdzAfOpbnJAvJcnB2E8C7ZdA=="
+    },
+    {
+      "name": "@ackrate/ap2", "version": "0.4.0", "latest": "0.4.0",
+      "integrity": "sha512-NB2KZwacCcTY/wLPF/QagHkr7sW88RDCCrdgNKiA0ajBazbZRog9jgn1K7gqHMzAjiyQuPI1RUBTPDfS9OpTGg=="
+    },
+    {
+      "name": "@ackrate/express-middleware", "version": "0.3.0", "latest": "0.3.0",
+      "integrity": "sha512-mv2y8tAszijsqUtQ7evMPkX8BpnF0CdE34dKBu7u4A3VGQ53xv+rwlCY8pdy4iEl8K+kjNs7rIzSYJ9Vdp4NCw=="
+    },
+    {
+      "name": "@ackrate/cli", "version": "0.2.0", "latest": "0.2.0",
+      "integrity": "sha512-vpJTYAZRC2dWWAqPpv2iR87ti0IjqwtZ1Jo/PbiaYlOF2CCD4kD+GnRGkw/GDz48+fG3wHs8jszB3j6u/gaNHw=="
+    }
+  ]
+}

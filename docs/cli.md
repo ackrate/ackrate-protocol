@@ -13,15 +13,19 @@ acknowledgment, two-signature `ops` coordination, and `demo research-agent`.
 
 ## Release status
 
-At the **2026-09-07 03:33 Bangkok (UTC+7)** registry checkpoint, the public CLI
-was `@ackrate/cli@0.1.9`. Public libraries were Stellar `0.2.5`, Core `0.3.4`,
-AP2 `0.3.2`, and middleware `0.2.4`.
+CLI `0.2.0`, Stellar `0.3.0`, Core `0.4.0`, AP2 `0.4.0`, and middleware
+`0.3.0` are **published and verified**. On **2026-09-07 Bangkok (UTC+7)**,
+the combined public install passed strict TypeScript, ESM imports, default
+Mainnet contract, full V2 interface, packed README, and CLI confirmation-guard
+checks at **04:25:11**, with zero dependency findings. Registry `latest` tags and
+downloaded archive SHA-512 integrity values matched at **04:25:38–04:25:45**.
+See the [dated Step 1 release evidence](t3-step-1-gate-2026-09-07.md).
 
-The new coordinated candidates—CLI `0.2.0`, Stellar `0.3.0`, Core `0.4.0`,
-AP2 `0.4.0`, and middleware `0.3.0`—are **pending publication and public
-clean-install verification**. Their new defaults are not present merely because
-an older package is installed. The CLI embeds library output at bundle time;
-installing a newer standalone library cannot rewrite an older CLI bundle.
+For history, the earlier **03:33 Bangkok** checkpoint had CLI `0.1.9`, Stellar
+`0.2.5`, Core `0.3.4`, AP2 `0.3.2`, and middleware `0.2.4`. Those older packages
+do not acquire the new defaults merely because they remain installed. The CLI
+embeds library output at bundle time; installing a newer standalone library
+cannot rewrite an older CLI bundle.
 
 The package name is `@ackrate/cli`, not the unrelated publisher's `ackrate-cli`.
 Earlier grant wording used a retired unscoped CLI name; record the package-name
@@ -80,8 +84,7 @@ USDC authorization and sending/receiving capacity, and spendable XLM fee
 headroom. These reads do not reserve funds or guarantee future fees. The fully
 configured demo command is a real purchase, not a read-only readiness check.
 
-After publication and clean-install verification, run the same options with
-the pinned npm command:
+Run the published, pinned npm command with the same options:
 
 ```bash
 npx --yes @ackrate/cli@0.2.0 demo research-agent \
@@ -92,8 +95,9 @@ npx --yes @ackrate/cli@0.2.0 demo research-agent \
   --price 0.01 --budget 0.03 --confirm-real-usdc
 ```
 
-This exact npm version remains pending until the release matrix records its
-publication. A successful local build is not public registry or live-payment evidence.
+This npm version passed public installation and configuration checks. That
+release evidence is distinct from a new live-payment run: retain the resulting
+transaction and delivery receipts when exercising the reference-agent workflow.
 
 ## Persistent project and recovery
 

@@ -25,14 +25,22 @@ native 2-of-3 governance profile.
 | [@ackrate/express-middleware 0.3.0](https://www.npmjs.com/package/@ackrate/express-middleware) | Requires Core `^0.4.0` and Stellar `^0.3.0`. The merchant verifier uses the same official registry and canonical Mainnet USDC; examples pass `networkConfig: MAINNET` explicitly. |
 | [@ackrate/cli 0.2.0](https://www.npmjs.com/package/@ackrate/cli) | Bundles the updated implementation and official manifest. Mainnet is the default; `--manifest` is an optional validated override for the same official deployment. Signers and real-USDC confirmation remain required. |
 
-All five versions above are **pending npm publication and public clean-install
-verification**. Consult the dated [npm release matrix](ackrate-sdk-npm.md#release-matrix)
-for publicly available versions. Do not attribute these defaults or new exports
-to older releases.
+All five versions above are **published and verified**. A fresh public install
+passed at **2026-09-07 04:25:11 Bangkok (UTC+7)**; registry `latest` tags and
+downloaded archive SHA-512 identities matched at **04:25:38–04:25:45**. See the
+[Step 1 release evidence](t3-step-1-gate-2026-09-07.md) and
+[npm release matrix](ackrate-sdk-npm.md#release-matrix). Older releases remain
+historical versions, not interchangeable evidence for these defaults or exports.
 
 ## Use the official configuration
 
-With the coordinated source build, or after its release is verified:
+Install the published packages with Node.js 22 or newer:
+
+```bash
+npm install --save-exact @ackrate/stellar@0.3.0 @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
+```
+
+Read the shared configuration:
 
 ```ts
 import { MAINNET, MAINNET_DEPLOYMENT_MANIFEST } from "@ackrate/stellar";

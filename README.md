@@ -72,7 +72,8 @@ alongside the address.
 See the [five-package Mainnet configuration map](docs/mainnet-configuration.md)
 for Stellar **0.3.0**, Core **0.4.0**, AP2 **0.4.0**, Express middleware **0.3.0**,
 and CLI **0.2.0**, including the exact configuration file and clickable contract
-explorer links. These coordinated versions are pending publication; status is below.
+explorer links. All five versions are published and independently verified;
+dated release evidence is below.
 
 ```ts
 import { MAINNET } from "@ackrate/stellar";
@@ -113,24 +114,31 @@ and [signature-coordination commands](packages/cli/README.md#two-signature-coord
 ### Published packages and coordinated release status
 
 Package releases and protocol/specification versions are separate axes.
-Registry verification on **2026-09-07 at 03:33 Bangkok (UTC+7)** found Stellar
-**0.2.5**, Core **0.3.4**, AP2 **0.3.2**, middleware **0.2.4**, and CLI **0.1.9**
-publicly available. All five newer coordinated Mainnet-default versions below
-are pending publication and public clean-install verification. Do not attribute
-their new defaults or APIs to those older npm releases.
+All five coordinated Mainnet-default releases are **published**. Registry checks
+on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched each `latest` tag
+and downloaded archive's SHA-512 to the verified release bytes. A fresh public
+installation passed strict TypeScript, ESM, default-contract/full-V2-interface,
+package-README, and CLI guard checks at **04:25:11**, with zero dependency findings.
+See the [Step 1 release evidence](docs/t3-step-1-gate-2026-09-07.md).
 
-| Package | Public npm version | Coordinated version | Protocol/specification target |
+| Package | Current public version | Earlier 03:33 checkpoint | Protocol/specification target |
 |---|---:|---:|---|
-| `@ackrate/stellar` | `0.2.5` | `0.3.0` — pending | Built-in official `MAINNET`, complete manifest, and contract access |
-| `@ackrate/core` | `0.3.4` | `0.4.0` — pending | Mainnet-default mandates, payments, and delivery recovery |
-| `@ackrate/ap2` | `0.3.2` | `0.4.0` — pending | AP2 `0.1.0` profile bridged into the Mainnet Core flow |
-| `@ackrate/express-middleware` | `0.2.4` | `0.3.0` — pending | Mainnet USDC bound-v2 proof verification and durable delivery |
-| `@ackrate/cli` | `0.1.9` | `0.2.0` — pending | Mainnet-default `ackrate` command with the official manifest bundled |
+| `@ackrate/stellar` | `0.3.0` | `0.2.5` | Built-in official `MAINNET`, complete manifest, and contract access |
+| `@ackrate/core` | `0.4.0` | `0.3.4` | Mainnet-default mandates, payments, and delivery recovery |
+| `@ackrate/ap2` | `0.4.0` | `0.3.2` | AP2 `0.1.0` profile bridged into the Mainnet Core flow |
+| `@ackrate/express-middleware` | `0.3.0` | `0.2.4` | Mainnet USDC bound-v2 proof verification and durable delivery |
+| `@ackrate/cli` | `0.2.0` | `0.1.9` | Mainnet-default `ackrate` command with the official manifest bundled |
 
 The coordinated set requires **Node.js 22 or newer** and uses the exact
-`@stellar/stellar-sdk@16.3.0` dependency. AP2 candidate `0.4.0` still implements
+`@stellar/stellar-sdk@16.3.0` dependency. AP2 `0.4.0` still implements
 the AP2 `0.1.0` profile; the package version is not the specification version.
-See the [package release matrix](docs/ackrate-sdk-npm.md) for installation status.
+The release source is
+[`d0aee212`](https://github.com/ackrate/ackrate-protocol/commit/d0aee2127cc08e43f0c70868de46db75bda71ed7);
+[GitHub CI 34060795268](https://github.com/ackrate/ackrate-protocol/actions/runs/34060795268)
+was confirmed successful at **04:27 Bangkok**. See the
+[package release matrix](docs/ackrate-sdk-npm.md) for installation commands.
+These technical release checks do not claim completion or grant acceptance of
+all T3 steps; Step 1 is under user review and Steps 2–4 remain paused.
 
 The contract is authoritative. SDK-side checks only fail fast; they never replace on-chain validation.
 
@@ -155,7 +163,7 @@ The contract is authoritative. SDK-side checks only fail fast; they never replac
 
 ## 🚀 Run the Flow
 
-Use **Node.js 22+**. Build and verify the current candidate from this checkout:
+Use **Node.js 22+**. Build and verify the release source from this checkout:
 
 ```bash
 npm ci
@@ -179,10 +187,9 @@ The flag `--agent-secret-env` names an environment variable injected by a secret
 manager; never substitute the secret value into the command. The official
 Mainnet manifest is bundled. No manual manifest file is needed for this registry.
 
-After `@ackrate/cli@0.2.0` is published and clean-install verified, use
+For the published CLI, use
 `npx --yes @ackrate/cli@0.2.0` in place of the local bundle command, retaining the
-same signer, merchant, price, budget, and confirmation options. This candidate
-is not yet a verified public npm release.
+same signer, merchant, price, budget, and confirmation options.
 
 The command starts both reference agents and delivers three resources through
 HTTP 402, on-chain payment, independent proof verification, and HTTP 200. The

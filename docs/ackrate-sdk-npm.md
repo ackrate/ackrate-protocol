@@ -6,20 +6,29 @@ cannot replace the contract's `execute_payment` checks.
 
 ## Release matrix
 
-Registry verification on **2026-09-07 at 03:33 Bangkok (UTC+7)** found Stellar
-**0.2.5**, Core **0.3.4**, AP2 **0.3.2**, middleware **0.2.4**, and CLI **0.1.9**
-publicly available. All five newer Mainnet-default versions below are source
-candidates awaiting publication and public clean-install verification. Older
-published packages do not gain these defaults or APIs automatically.
-Use the [source reviewer command](cli.md) for the unreleased CLI.
+All five coordinated Mainnet-default versions are **published and verified**.
+Registry checks on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched
+their `latest` tags and downloaded archive SHA-512 integrity values. A fresh
+combined public install passed strict TypeScript, ESM imports, default-contract,
+full V2 interface, packed README, and CLI confirmation-guard checks at **04:25:11**,
+with zero dependency findings. See the [dated Step 1 release evidence](t3-step-1-gate-2026-09-07.md).
 
-| Package | Public npm version | Coordinated version | Purpose |
+The earlier **03:33 Bangkok** registry checkpoint is retained below as history;
+older packages do not acquire the new defaults or APIs automatically.
+
+| Package | Current public version | Earlier 03:33 checkpoint | Purpose |
 |---|---:|---:|---|
-| `@ackrate/core` | 0.3.4 | 0.4.0 — pending | Mainnet-default mandates, returned V2 storage IDs, bound-v2 `agent.fetch`, receipts, recovery. |
-| `@ackrate/stellar` | 0.2.5 | 0.3.0 — pending | Built-in official `MAINNET` and deployment manifest, signing and token helpers. |
-| `@ackrate/ap2` | 0.3.2 | 0.4.0 — pending | Signed AP2 profile validation and replay admission into the Mainnet Core flow. |
-| `@ackrate/express-middleware` | 0.2.4 | 0.3.0 — pending | Mainnet USDC bound-v2 Express payment boundary and chain verifier. |
-| `@ackrate/cli` | 0.1.9 | 0.2.0 — pending | Mainnet-default commands with bundled official manifest, crash-safe recovery, governed operations, and reference-agent HTTP demo. |
+| `@ackrate/core` | 0.4.0 | 0.3.4 | Mainnet-default mandates, returned V2 storage IDs, bound-v2 `agent.fetch`, receipts, recovery. |
+| `@ackrate/stellar` | 0.3.0 | 0.2.5 | Built-in official `MAINNET` and deployment manifest, signing and token helpers. |
+| `@ackrate/ap2` | 0.4.0 | 0.3.2 | Signed AP2 profile validation and replay admission into the Mainnet Core flow. |
+| `@ackrate/express-middleware` | 0.3.0 | 0.2.4 | Mainnet USDC bound-v2 Express payment boundary and chain verifier. |
+| `@ackrate/cli` | 0.2.0 | 0.1.9 | Mainnet-default commands with bundled official manifest, crash-safe recovery, governed operations, and reference-agent HTTP demo. |
+
+Release source is [`d0aee2127cc08e43f0c70868de46db75bda71ed7`](https://github.com/ackrate/ackrate-protocol/commit/d0aee2127cc08e43f0c70868de46db75bda71ed7).
+[CI run 34060795268](https://github.com/ackrate/ackrate-protocol/actions/runs/34060795268)
+was confirmed successful at **04:27 Bangkok**. These technical release results do
+not claim completion of all T3 deliverables or grant acceptance. Step 1 remains
+under user review; Steps 2–4 are paused.
 
 The coordinated set requires **Node.js 22+** and pins **`@stellar/stellar-sdk@16.3.0`**.
 Core requires Stellar binding `^0.3.0`; AP2 requires core `^0.4.0`; middleware
@@ -42,8 +51,8 @@ manifest is not needed for the official deployment. Configuration alone never
 authorizes a payment: signatures, user-approved limits, and real-USDC CLI
 confirmation remain required.
 
-The unrelated npm package `ackrate-cli` is owned by another publisher. Use the
-project's unambiguous CLI name. After candidate publication and verification:
+The unrelated npm package `ackrate-cli` is owned by another publisher. Install
+the project's published CLI using its unambiguous package name:
 
 ```bash
 npm install -g @ackrate/cli@0.2.0
@@ -56,15 +65,13 @@ same address; compatibility and deployment-evidence checks still apply.
 
 ## Install commands and availability
 
-Use Node.js 22 or newer. These commands name the new coordinated candidates;
-run them only after their publication and verification are recorded above.
-Application client:
+Use Node.js 22 or newer. Install the published application client:
 
 ```bash
 npm install --save-exact @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
 ```
 
-The full pinned SDK set is also pending; this is not a completed clean-install result:
+Add the other published libraries for the full pinned SDK set:
 
 ```bash
 npm install --save-exact @ackrate/stellar@0.3.0 @ackrate/ap2@0.4.0 @ackrate/express-middleware@0.3.0 @stellar/stellar-sdk@16.3.0
@@ -161,8 +168,8 @@ The gate check:
 - verifies private internal documents are not tracked; and
 - checks public terminology.
 
-Registry proof is a separate external check. These candidate-version queries
-must succeed after publication; a missing version is not a completed release:
+Registry proof is a separate external check. Reproduce the version and integrity
+checks for the published release with:
 
 ```bash
 npm view @ackrate/core@0.4.0 version dist.integrity
