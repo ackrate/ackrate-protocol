@@ -59,6 +59,34 @@ flowchart LR
 
 ---
 
+## Mainnet deployment configuration
+
+The current Mainnet V2 registry is
+[`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+Its published SDK identity is `DEPLOYMENTS.mainnet`, exported by
+`@ackrate/stellar@0.2.5` and used through the coordinated package dependencies
+and rebuilt CLI. The source and artifact identity are pinned alongside the address.
+
+```ts
+import { DEPLOYMENTS, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
+
+console.log(DEPLOYMENTS.mainnet.mandateRegistryId);
+const mainnet = publishedMainnetNetworkFromDeploymentManifest(verifiedDeploymentManifest);
+```
+
+Supply the complete verified deployment manifest, not only a contract ID.
+The helper checks the manifest against this published V2 identity; callers still
+verify current chain state before signing. Testnet remains the default and keeps
+its own address. Mainnet uses canonical Circle USDC and explicit real-value
+authorization. It does not reuse testnet keys or silently switch networks.
+
+V2 administration uses native Stellar 2-of-3 account authorization. Upgrades
+require administrator authorization and paused state. This V2 deployment has
+no integrated timelock and does not use the older registry's OpenZeppelin role
+implementation. The separate older contracts remain documented under their own
+addresses and profiles. See the [Stellar package configuration](packages/stellar/README.md)
+and [signature-coordination commands](packages/cli/README.md#mainnet-2-of-3-coordination).
+
 ## 🌐 Current Testnet Surfaces
 
 | Surface | Current source or deployment |

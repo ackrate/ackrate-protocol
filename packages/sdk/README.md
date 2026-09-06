@@ -6,22 +6,26 @@ Create an agent, connect to the live MandateRegistry contract on Stellar, and ru
 
 The SDK is untrusted by design. It never custodies funds and it never enforces the limit. If the SDK has a bug, or the agent key is stolen, the contract still rejects anything outside the mandate: overspending, paying the wrong merchant, replaying a payment, or paying after the user revokes.
 
-## Candidate status and installation
+## Installation
 
-Version **0.3.4 is a source candidate**, not a published release. The public
-registry version verified on **2026-09-07** is **0.3.3**, which does not contain
-the candidate's V2 returned-mandate-ID handling. The candidate requires
+Version **0.3.4** includes V2 returned-mandate-ID handling and requires
 **Node.js 22+**, Stellar binding **0.2.5**, and exact
 `@stellar/stellar-sdk@16.3.0`.
 
-Build from the repository while publication is pending. After the candidate
-packages are published and verified, install with:
+Install the versioned package with:
 
 ```bash
 npm install --save-exact @ackrate/core@0.3.4 @stellar/stellar-sdk@16.3.0
 ```
 
 `@stellar/stellar-sdk` is a direct dependency you also import yourself for `Keypair`. The package ships its own ESM build with TypeScript types.
+
+For Mainnet, use `publishedMainnetNetworkFromDeploymentManifest` from
+`@ackrate/stellar` with the complete verified V2 deployment manifest, then pass
+the resulting network explicitly to SDK calls. `DEPLOYMENTS.mainnet` publishes
+the registry identity; it is not a replacement for a complete network configuration.
+See [Mainnet configuration](https://github.com/ackrate/ackrate-protocol#mainnet-deployment-configuration).
+Testnet defaults are unchanged.
 
 ## Quick start (Stellar testnet)
 
@@ -56,7 +60,7 @@ After `pay` returns, one real payment has settled on testnet. `hash` is the tran
 The flow has three signers and one contract. The user authorizes, the agent spends, and the contract is the gate every payment passes through.
 
 1. `createIntentMandate` builds the mandate object and its canonical credential hash locally. No network call happens here. Legacy registries use that hash as their storage key; V2 derives a separate storage id bound to the network, registry, and mandate policy.
-2. In source candidate **0.3.4**, `registerMandate` writes the mandate to the contract, signed by the user, then updates the supplied mutable mandate's `id` and `idBuffer` to the confirmed returned storage id. The original digest is retained as `credentialHash`. Await registration before creating an agent and persist the updated object for recovery. The contract initializes `spent`, `seq`, and `status`; the caller cannot seed those fields. This V2 id handling is not present in published **0.3.3**; candidate publication and clean-install verification remain pending.
+2. In **0.3.4**, `registerMandate` writes the mandate to the contract, signed by the user, then updates the supplied mutable mandate's `id` and `idBuffer` to the confirmed returned storage id. The original digest is retained as `credentialHash`. Await registration before creating an agent and persist the updated object for recovery. The contract initializes `spent`, `seq`, and `status`; the caller cannot seed those fields. This V2 id handling is not present in **0.3.3**.
 3. `approveBudget` approves a SEP-41 allowance up to the budget. The allowance goes to the **contract**, never to the agent or the SDK. This is the custody boundary: the agent can ask the contract to move money, but only the contract holds the right to pull from the user.
 4. `pay` calls `execute_payment`, signed by the agent. The contract re-checks the agent, the sequence, the merchant scope, the expiry, and the remaining budget, then advances `spent` and `seq` and transfers the funds from user to merchant in one atomic step. If any check fails, the whole call reverts and `pay` throws.
 

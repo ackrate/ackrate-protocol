@@ -9,15 +9,13 @@ settlement independently, atomically claims fulfillment, stores the exact JSON
 result before sending it, and replays those bytes on recovery. A settlement can
 never re-run arbitrary fulfillment work.
 
-## Candidate status and installation
+## Installation
 
-Version **0.2.5 is a source candidate**, not a published release. The public
-registry version verified on **2026-09-07** is **0.2.4**. The candidate requires
+Version **0.2.5** requires
 **Node.js 22+**, core **0.3.4**, Stellar binding **0.2.5**, and exact
 `@stellar/stellar-sdk@16.3.0`.
 
-Build from the repository while publication is pending. After the candidate
-packages are published and verified, install with:
+Install with:
 
 ```bash
 npm install --save-exact @ackrate/express-middleware@0.2.5 @stellar/stellar-sdk@16.3.0 express@5.2.1

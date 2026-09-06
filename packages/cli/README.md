@@ -21,7 +21,7 @@ Package version: `@ackrate/cli@0.1.10`. Installed command: `ackrate`.
 ## Install
 
 ```
-npm install -g @ackrate/cli
+npm install -g @ackrate/cli@0.1.10
 ackrate --help
 ```
 

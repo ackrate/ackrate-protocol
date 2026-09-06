@@ -8,6 +8,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = "/tmp/ackrate-release-npm-cache";
+const MAINNET_REGISTRY = "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR";
+const MAINNET_WASM = "982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01faacff62";
 
 const packages = [
   ["packages/stellar", "@ackrate/stellar", "0.2.5"],
@@ -101,7 +103,7 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   }
   const names = new Set((entry.files ?? []).map((file) => file.path));
   if (expectedName === "@ackrate/stellar") {
-    for (const required of ["dist/xdr-types.d.ts", "dist/STELLAR-SDK-LICENSE"]) {
+    for (const required of ["dist/xdr-types.d.ts", "dist/STELLAR-SDK-LICENSE", "dist/deployments.js", "dist/deployments.d.ts"]) {
       if (!names.has(required)) fail(`${expectedName} tarball is missing ${required}`);
     }
   }
@@ -146,6 +148,12 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     if (OBSOLETE_BRAND.test(body)) {
       fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);
     }
+    if ((expectedName === "@ackrate/stellar" && artifactFile === "package/dist/deployments.js")
+      || (expectedName === "@ackrate/cli" && artifactFile === "package/dist/ackrate-cli.bundle.mjs")) {
+      if (!body.includes(MAINNET_REGISTRY) || !body.includes(MAINNET_WASM)) {
+        fail(`${expectedName} packaged configuration is missing the published Mainnet V2 identity`);
+      }
+    }
   }
   tarballs.set(expectedName, tarballPath);
   console.log(`  verified ${expectedName}@${expectedVersion} (${entry.entryCount} files)`);
@@ -182,11 +190,11 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
   }, null, 2));
   writeFileSync(path.join(installRoot, "clean-install.ts"), `
 import { ackrate, DeliveryPendingError } from "@ackrate/core";
-import { TESTNET } from "@ackrate/stellar";
+import { DEPLOYMENTS, TESTNET, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
 import { createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
 import { createBoundAckratePaidJsonRoute, InMemoryBoundRedemptionStore } from "@ackrate/express-middleware";
 
-void [ackrate, DeliveryPendingError, TESTNET];
+void [ackrate, DeliveryPendingError, TESTNET, DEPLOYMENTS.mainnet.mandateRegistryId, publishedMainnetNetworkFromDeploymentManifest];
 const validator = createAp2ComplianceValidator({
   replayStore: new InMemoryAp2ReplayStore(),
   replayNamespace: "clean-install",
@@ -201,11 +209,20 @@ const route = createBoundAckratePaidJsonRoute({
 void [validator, route];
 `);
   writeFileSync(path.join(installRoot, "runtime.mjs"), `
+import assert from "node:assert/strict";
+import { DEPLOYMENTS, TESTNET, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
 await Promise.all([
   import("@ackrate/core"), import("@ackrate/stellar"),
   import("@ackrate/ap2"), import("@ackrate/express-middleware"),
 ]);
-console.log("runtime imports passed");
+assert.equal(DEPLOYMENTS.mainnet.mandateRegistryId, ${JSON.stringify(MAINNET_REGISTRY)});
+assert.equal(DEPLOYMENTS.mainnet.registryWasmSha256, ${JSON.stringify(MAINNET_WASM)});
+assert.equal(DEPLOYMENTS.mainnet.schemaVersion, 2);
+assert.equal(TESTNET.mandateRegistryId, "CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM");
+assert.equal("rpcUrl" in DEPLOYMENTS.mainnet, false);
+assert.throws(() => publishedMainnetNetworkFromDeploymentManifest({}), /manifest/);
+assert.throws(() => publishedMainnetNetworkFromDeploymentManifest(DEPLOYMENTS.mainnet), /manifest/);
+console.log("runtime imports and fail-closed published deployment configuration passed");
 `);
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);

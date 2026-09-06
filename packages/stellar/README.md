@@ -4,7 +4,7 @@ The Soroban layer for **Ackrate**, agent-driven payments on Stellar, enforced
 on-chain by the **MandateRegistry** contract.
 
 This package is the low-level building block: a **typed MandateRegistry client**
-generated from the contract interface that passed the gate check, network config for testnet, a keypair
+generated from the contract interface that passed the gate check, published deployment identities and validated network config, a keypair
 signing adapter, and minimal SEP-41 token helpers.
 
 > **Most apps want [`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core), not this.**
@@ -14,27 +14,65 @@ signing adapter, and minimal SEP-41 token helpers.
 ## Install
 
 ```
-npm install @ackrate/stellar@0.2.5 @stellar/stellar-sdk@14.5.0
+npm install @ackrate/stellar@0.2.5 @stellar/stellar-sdk@16.3.0
 ```
+
+Requires Node.js 22 or newer.
 
 ## What it exports
 
-The current source candidate accepts verified deployment manifests with schema
+This version accepts verified deployment manifests with schema
 1 (separate timelock) or schema 2 (V2 registry under direct 2-of-3 administration).
 `mainnetNetworkFromDeploymentManifest` checks the supplied profile, canonical
 Circle USDC, registry/artifact identities, constructor arguments, and recorded
 verification. Its `release.schemaVersion` identifies the profile; optional
 timelock fields are absent for schema 2. Parsing a manifest is not live chain
-verification or a claim that V2 has a timelock. There is no Mainnet default.
-Version `0.2.5` is an unpublished source candidate as of 2026-09-06.
+verification or a claim that V2 has a timelock. Testnet remains the default;
+Mainnet requires an explicit validated network configuration.
 
 | Export | What it is |
 |---|---|
 | `TESTNET` | `NetworkConfig` for Stellar testnet: RPC, passphrase, live MandateRegistry id, native asset |
+| `DEPLOYMENTS` | Public Testnet and Mainnet deployment identities; Mainnet metadata is not a spend-ready `NetworkConfig` |
+| `publishedMainnetNetworkFromDeploymentManifest(manifest)` | Validate a complete manifest and require the published Mainnet V2 registry, source, artifact, and deployment receipts |
+| `mainnetNetworkFromDeploymentManifest(manifest)` | Validate a complete schema 1 or schema 2 Mainnet manifest for an explicitly selected deployment |
 | `registryClient(net, signer)` | Factory for the typed MandateRegistry client |
 | `Client`, `Mandate`, `PendingUpgrade`, `Errors` | Typed contract bindings generated from the exact `simple-v0.2.3` release WASM |
 | `keypairSigner(keypair, passphrase)` | Adapt a Stellar `Keypair` into a transaction signer |
-| `token.approve(...)`, `token.balance(...)` | Minimal SEP-41 token helpers |
+| `token.approve(...)`, `token.balance(...)`, `token.authorized(...)` | Minimal SEP-41 token helpers |
+
+## Published Mainnet V2 identity
+
+`DEPLOYMENTS.mainnet.mandateRegistryId` is
+[`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+The profile pins the original deployment manifest: package `mandate-registry`
+`0.4.1`, source commit `02d43f5358aa567447447e44407546b6c7de1683`, schema `2`,
+and WASM SHA-256
+`982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01faacff62`.
+Its settlement asset is canonical Circle USDC on Stellar Mainnet. The profile
+also exports the interface hash, artifact size, deployment ledger, transaction
+hashes, authority account, and links to the
+[deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
+and reproducible release artifact.
+
+```ts
+import {
+  DEPLOYMENTS,
+  publishedMainnetNetworkFromDeploymentManifest,
+} from "@ackrate/stellar";
+
+console.log(DEPLOYMENTS.mainnet.mandateRegistryId); // discovery only
+const network = publishedMainnetNetworkFromDeploymentManifest(manifest);
+// `manifest` must be the complete independently verified deployment record.
+// Re-check current chain state before explicitly authorizing any real-USDC action.
+```
+
+The helper does not fetch chain state, sign, register a mandate, approve an
+allowance, or move funds. An address alone cannot pass validation. The CLI's
+Mainnet workflow still requires a complete manifest, explicit real-USDC
+confirmation, and external signing; default SDK and CLI flows remain Testnet.
+
+## Default Testnet identity
 
 `TESTNET.mandateRegistryId` points at the upgradeable simple contract
 [`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM).

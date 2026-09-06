@@ -13,15 +13,13 @@ verifier for every upstream AP2 VC or JWS format. It has no HTTP or x402
 dependency, so later AP2 or x402 wire changes can be handled by adapters without
 redesigning `MandateRegistry`.
 
-## Candidate status and installation
+## Installation
 
-Version **0.3.3 is a source candidate**, not a published release. The public
-registry version verified on **2026-09-07** is **0.3.2**. The candidate requires
+Version **0.3.3** requires
 **Node.js 22+**, core **0.3.4**, and exact `@stellar/stellar-sdk@16.3.0`.
 The AP2 protocol profile remains v0.1; this package update does not change it.
 
-Build from the repository while publication is pending. After the candidate
-packages are published and verified, install the pinned set with:
+Install the pinned set with:
 
 ```bash
 npm install --save-exact @ackrate/ap2@0.3.3 @ackrate/core@0.3.4 @stellar/stellar-sdk@16.3.0
