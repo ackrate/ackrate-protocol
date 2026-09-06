@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/ap2",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Signed AP2 v0.1 Ackrate profile validator and IntentMandate bridge for contract-enforced Stellar payments.",
   "repository": {
     "type": "git",
@@ -29,18 +29,23 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --import tsx --test src/index.test.ts src/validator.test.ts"
   },
   "dependencies": {
-    "@ackrate/core": "^0.3.3",
-    "@stellar/stellar-sdk": "^14.5.0",
+    "@ackrate/core": "^0.3.4",
+    "@stellar/stellar-sdk": "16.3.0",
     "buffer": "6.0.3"
   },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

@@ -1,12 +1,19 @@
 # Mainnet research-agent USDC evidence
 
-Status: passing  
+Status: historical direct-payment check passed
+
 Executed: 2026-08-26 20:52 UTC
 
 The reference CLI completed its deliberately bounded Mainnet flow against the
 governed MandateRegistry. It registered a 0.03 USDC mandate, approved only the
 registry as spender, executed three agent-signed 0.01 USDC payments, and
 observed the contract reject purchase four with `BudgetExceeded`.
+
+This run used the CLI's direct `agent.pay` path available at that time. The later
+reference-agent demo uses `buyResearch` and the fulfillment server to complete
+HTTP 402 → `execute_payment` → bound proof → HTTP 200. The transactions below
+prove the earlier real-USDC transfers and budget rejection; they are not live
+delivery evidence for the later HTTP flow or the external Agent402 marketplace.
 
 Recheck the live 2-of-3 signer math, official Circle USDC trustline, and
 finalized Registry/token events without signing or submitting a transaction:
@@ -49,21 +56,36 @@ broadcast and did not move value or charge a transaction fee.
 
 ## Reviewer command
 
-Run the published Ackrate CLI directly from npm:
+Build the current source candidate using the steps in [`cli.md`](cli.md).
+Registry check on 2026-09-06 found `@ackrate/cli@0.1.9` published and `0.1.10`
+unpublished; the following command deliberately runs the current local bundle:
 
 ```bash
-npx --yes @ackrate/cli@0.1.10 demo research-agent \
+node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent \
   --network mainnet \
   --manifest ./mainnet-deployment.json \
   --user-signer <funded-user-identity> \
   --agent-signer <funded-agent-identity> \
+  --agent-secret-env ACKRATE_AGENT_SECRET \
   --merchant <merchant-G-address> \
   --price 0.01 \
   --budget 0.03 \
   --confirm-real-usdc
 ```
 
+Use the independently verified deployment manifest for the contract being
+reviewed; there is no implicit Mainnet contract default. A secret manager must
+inject the agent key matching `--agent-signer` into `ACKRATE_AGENT_SECRET`. The
+CLI needs it to sign the bound HTTP request proof; this flag accepts the variable
+name only, never the key. The user's transaction signatures remain with the
+named external Stellar identity.
+
 The command fails closed unless the complete deployment manifest, Public
 Network identity, canonical Circle USDC mapping, funded distinct actors,
 unpaused registry, real-value confirmation, and exact three-price budget are
 all present.
+
+Record the current command's three delivered source receipts, registration and
+allowance hashes, three payment hashes, final sequence/spent, recipient balance
+delta, and fourth-purchase rejection before marking the current reference-agent
+Mainnet acceptance check complete. No newer live run is asserted by this page.

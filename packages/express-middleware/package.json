@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/express-middleware",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Fail-closed Express middleware for Ackrate x402 APIs with independent on-chain settlement verification.",
   "repository": {
     "type": "git",
@@ -30,15 +30,18 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node --import tsx --test src/middleware.test.ts src/bound.test.ts src/bound-route.test.ts src/verification.test.ts"
   },
   "dependencies": {
-    "@ackrate/core": "^0.3.3",
-    "@ackrate/stellar": "^0.2.4",
-    "@stellar/stellar-sdk": "^14.5.0",
+    "@ackrate/core": "^0.3.4",
+    "@ackrate/stellar": "^0.2.5",
+    "@stellar/stellar-sdk": "16.3.0",
+    "@types/express": "^5.0.6",
     "buffer": "6.0.3"
   },
   "peerDependencies": {
@@ -46,13 +49,12 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "@types/express": "^5.0.6",
     "express": "^5.2.1",
     "typescript": "^5.7.2"
   },
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.0.0"
   },
   "publishConfig": {
     "access": "public"

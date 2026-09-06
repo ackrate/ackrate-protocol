@@ -6,34 +6,47 @@ cannot replace the contract's `execute_payment` checks.
 
 ## Release matrix
 
-| Package | Version | Purpose |
-|---|---:|---|
-| `@ackrate/core` | 0.3.3 | Mandates, payments, bound-v2 `agent.fetch`, receipts, recovery. |
-| `@ackrate/stellar` | 0.2.5 | Typed contract bindings, verified-manifest network config, signing and token helpers. |
-| `@ackrate/ap2` | 0.3.2 | Signed AP2 profile validation and replay admission. |
-| `@ackrate/express-middleware` | 0.2.4 | Bound-v2 Express payment boundary and chain verifier. |
-| `@ackrate/cli` | 0.1.10 | Network-aware project commands, crash-safe payment recovery, governed operations, and the reference-agent demo. |
+Registry verification on **2026-09-07** identified the published versions below.
+The newer versions are **source candidates, not published releases**. Current
+V2 manifest support, returned mandate-id handling, and dependency updates are
+awaiting release. Use the [source reviewer command](cli.md) until publication
+and clean-install verification are complete.
+
+| Package | Published | Source candidate | Purpose |
+|---|---:|---:|---|
+| `@ackrate/core` | 0.3.3 | 0.3.4 | Mandates, returned V2 storage IDs, bound-v2 `agent.fetch`, receipts, recovery. |
+| `@ackrate/stellar` | 0.2.4 | 0.2.5 | Typed contract bindings, schema-1/schema-2 manifest config, signing and token helpers. |
+| `@ackrate/ap2` | 0.3.2 | 0.3.3 | Signed AP2 profile validation and replay admission. |
+| `@ackrate/express-middleware` | 0.2.4 | 0.2.5 | Bound-v2 Express payment boundary and chain verifier. |
+| `@ackrate/cli` | 0.1.9 | 0.1.10 | Network-aware project commands, crash-safe payment recovery, governed operations, and the current reference-agent HTTP demo. |
+
+The candidate set requires **Node.js 22+** and pins **`@stellar/stellar-sdk@16.3.0`**.
+Core requires Stellar binding `^0.2.5`; AP2 requires core `^0.3.4`; middleware
+requires core `^0.3.4` and Stellar binding `^0.2.5`. These dependency floors
+prevent a new candidate install from silently retaining the older V2-incompatible
+packages. Existing published versions and historical receipts are unchanged.
 
 The unrelated npm package `ackrate-cli` is owned by another publisher. Use the
-project's unambiguous public CLI name:
+project's unambiguous CLI name. After candidate publication and verification:
 
 ```bash
-npm install -g @ackrate/cli
+npm install -g @ackrate/cli@0.1.10
 ackrate demo research-agent
 ```
 
-## Install
+## Candidate install commands — after publication
 
-Application client:
+These commands name the intended releases; they are not evidence those releases
+are available yet. Use Node.js 22 or newer. Application client:
 
 ```bash
-npm install @ackrate/core@0.3.3 @stellar/stellar-sdk
+npm install --save-exact @ackrate/core@0.3.4 @stellar/stellar-sdk@16.3.0
 ```
 
 Pinned SDK packages:
 
 ```bash
-npm install @ackrate/stellar@0.2.5 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4
+npm install --save-exact @ackrate/stellar@0.2.5 @ackrate/ap2@0.3.3 @ackrate/express-middleware@0.2.5 @stellar/stellar-sdk@16.3.0
 ```
 
 ## Bound-v2 client API
@@ -125,19 +138,24 @@ The gate check:
 - verifies private internal documents are not tracked; and
 - checks public terminology.
 
-Registry proof is a separate external check:
+Registry proof is a separate external check. These candidate-version queries
+must succeed after publication; a missing version is not a completed release:
 
 ```bash
-npm view @ackrate/core@0.3.3 version dist.integrity
+npm view @ackrate/core@0.3.4 version dist.integrity
 npm view @ackrate/stellar@0.2.5 version dist.integrity
-npm view @ackrate/ap2@0.3.2 version dist.integrity
-npm view @ackrate/express-middleware@0.2.4 version dist.integrity
+npm view @ackrate/ap2@0.3.3 version dist.integrity
+npm view @ackrate/express-middleware@0.2.5 version dist.integrity
 npm view @ackrate/cli@0.1.10 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,
 and run a runtime ESM import. Local workspace success is not substituted for
-public registry evidence.
+public registry evidence. Also check minimal consumer installs and their actual
+dependency trees: root application overrides do not propagate into npm library
+consumers. The CLI embeds the workspace implementation at bundle time, so it
+must be rebuilt after the libraries; installing a newer core package does not
+repair an older CLI bundle.
 
 ## Testnet contract
 

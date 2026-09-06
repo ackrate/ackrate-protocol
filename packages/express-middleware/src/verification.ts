@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { rpc, scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
+import { Networks, rpc, scValToNative, StrKey, xdr } from "@stellar/stellar-sdk";
 import { Client, type NetworkConfig } from "@ackrate/stellar";
 import type {
   PaymentRequirement,
@@ -24,10 +24,19 @@ export interface PaymentCheck {
   merchant: string;
   registryId: string;
   priceStroops: bigint;
+  /** Required to accept a V2 payment's explicit asset topic. */
+  asset?: string;
+}
+
+interface SelectedPayment {
+  amount: bigint;
+  mandateId: Buffer;
+  /** V2 records the sequence consumed by this payment, before incrementing it. */
+  consumedSequence?: number;
 }
 
 export type PaymentSelection =
-  | { ok: true; amount: bigint; mandateId: Buffer }
+  | ({ ok: true } & SelectedPayment)
   | { ok: false; reason: string };
 
 export interface LoadedTransaction {
@@ -42,6 +51,18 @@ export interface LoadedMandate {
   agent: string;
   merchant: string;
   asset: string;
+  /** Required for V2 proof verification; older injected legacy loaders may omit these. */
+  seq?: number;
+  spent?: bigint;
+}
+
+const U32_MAX = 0xffff_ffff;
+const I128_MAX = (1n << 127n) - 1n;
+
+/** Soroban Address accepts account and contract principals, without normalization. */
+function isContractPrincipal(address: string): boolean {
+  return typeof address === "string"
+    && (StrKey.isValidEd25519PublicKey(address) || StrKey.isValidContract(address));
 }
 
 export interface StellarVerifierOptions {
@@ -110,18 +131,22 @@ function exactValue(value: DecodedValue | undefined, type: string, expected: unk
   return value?.type === type && value.value === expected;
 }
 
-function paymentPayload(event: DecodedEvent): { mandateId: Buffer; amount: bigint } | undefined {
+function paymentPayload(event: DecodedEvent, v2: boolean): SelectedPayment | undefined {
   if (event.data.type !== "scvVec" || !Array.isArray(event.data.value)) return undefined;
   const values = event.data.value as DecodedValue[];
-  if (values.length !== 2) return undefined;
+  if (values.length !== (v2 ? 3 : 2)) return undefined;
   const idValue = values[0];
   const amountValue = values[1];
   if (idValue?.type !== "scvBytes" || amountValue?.type !== "scvI128") return undefined;
   if (!(Buffer.isBuffer(idValue.value) || idValue.value instanceof Uint8Array)) return undefined;
   if (typeof amountValue.value !== "bigint") return undefined;
   const mandateId = Buffer.from(idValue.value);
-  if (mandateId.length !== 32 || amountValue.value <= 0n) return undefined;
-  return { mandateId, amount: amountValue.value };
+  if (mandateId.length !== 32 || amountValue.value <= 0n || amountValue.value > I128_MAX) return undefined;
+  if (!v2) return { mandateId, amount: amountValue.value };
+  const sequence = values[2];
+  if (sequence?.type !== "scvU32" || typeof sequence.value !== "number"
+    || !Number.isInteger(sequence.value) || sequence.value < 0 || sequence.value >= U32_MAX) return undefined;
+  return { mandateId, amount: amountValue.value, consumedSequence: sequence.value };
 }
 
 /** Pure, fail-closed selection of one unambiguous registry payment event. */
@@ -133,15 +158,24 @@ export function selectPayment(
     return { ok: false, reason: "transaction carried no Soroban contract events" };
   }
 
-  const eligible: Array<{ mandateId: Buffer; amount: bigint }> = [];
+  const eligible: SelectedPayment[] = [];
   let largestUnderpayment: bigint | undefined;
   for (const event of decoded) {
     if (event.type !== "contract" || event.contractId !== check.registryId) continue;
-    if (event.topics.length !== 2) continue;
     if (!exactValue(event.topics[0], "scvSymbol", "payment")) continue;
     if (!exactValue(event.topics[1], "scvAddress", check.merchant)) continue;
-    const payload = paymentPayload(event);
-    if (!payload) continue;
+    const v2 = event.topics.length === 3;
+    if (event.topics.length !== 2 && !v2) {
+      return { ok: false, reason: "registry payment has an unsupported event schema" };
+    }
+    if (v2 && (!check.asset || !exactValue(event.topics[2], "scvAddress", check.asset))) {
+      return { ok: false, reason: "V2 payment asset does not match this API" };
+    }
+    const payload = paymentPayload(event, v2);
+    if (!payload) return { ok: false, reason: "registry payment has malformed typed event fields" };
+    if (v2 && payload.amount !== check.priceStroops) {
+      return { ok: false, reason: "V2 payment amount does not equal the exact service price" };
+    }
     if (payload.amount < check.priceStroops) {
       if (largestUnderpayment === undefined || payload.amount > largestUnderpayment) {
         largestUnderpayment = payload.amount;
@@ -271,6 +305,8 @@ export function createStellarPaymentVerifier(options: StellarVerifierOptions): P
         agent: mandate.agent,
         merchant: mandate.merchant,
         asset: mandate.asset,
+        seq: mandate.seq,
+        spent: mandate.spent,
       };
     };
   }
@@ -285,6 +321,12 @@ export function createStellarPaymentVerifier(options: StellarVerifierOptions): P
       const normalizedTxHash = txHash.toLowerCase();
       if (!/^[0-9a-f]{64}$/.test(normalizedTxHash)) {
         return { ok: false, kind: "invalid", reason: "proof transaction hash is not 64 hex characters" };
+      }
+      const expectedNetwork = network.networkPassphrase === Networks.PUBLIC ? "stellar-mainnet"
+        : network.networkPassphrase === Networks.TESTNET ? "stellar-testnet" : undefined;
+      if (requirement.registryId !== network.mandateRegistryId
+        || (expectedNetwork && requirement.network !== expectedNetwork)) {
+        return { ok: false, kind: "invalid", reason: "payment requirement does not match the configured registry and network" };
       }
 
       try {
@@ -338,6 +380,7 @@ export function createStellarPaymentVerifier(options: StellarVerifierOptions): P
         merchant: requirement.merchant,
         registryId: requirement.registryId,
         priceStroops: requirement.amountStroops,
+        asset: requirement.asset,
       });
       if (selected.ok === false) return { ok: false, kind: "invalid", reason: selected.reason };
 
@@ -356,6 +399,17 @@ export function createStellarPaymentVerifier(options: StellarVerifierOptions): P
       }
       if (mandate.asset !== requirement.asset) {
         return { ok: false, kind: "invalid", reason: "stored mandate asset does not match this API" };
+      }
+      if (selected.consumedSequence !== undefined) {
+        if (!isContractPrincipal(mandate.user) || !isContractPrincipal(mandate.merchant)
+          || !StrKey.isValidEd25519PublicKey(mandate.agent)) {
+          return { ok: false, kind: "invalid", reason: "V2 mandate contains an invalid user or merchant address, or an invalid Ed25519 agent" };
+        }
+        if (typeof mandate.seq !== "number" || !Number.isInteger(mandate.seq)
+          || mandate.seq < 1 || mandate.seq > U32_MAX || mandate.seq <= selected.consumedSequence
+          || typeof mandate.spent !== "bigint" || mandate.spent < selected.amount || mandate.spent > I128_MAX) {
+          return { ok: false, kind: "invalid", reason: "on-chain mandate does not confirm the V2 payment amount and consumed sequence" };
+        }
       }
 
       const transfer = selectTransfer(events, {

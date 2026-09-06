@@ -20,11 +20,16 @@ export interface ReleaseNetworkConfig extends NetworkConfig {
     decimals: number;
   };
   release: {
+    schemaVersion: 1 | 2;
     sourceCommit: string;
     deploymentLedger: number;
     registryWasmSha256: string;
-    timelockContractId: string;
-    timelockWasmSha256: string;
+    timelockContractId?: string;
+    timelockWasmSha256?: string;
+    registryInterfaceSha256?: string;
+    authorityAccount?: string;
+    deploymentTransactionHash?: string;
+    wasmUploadTransactionHash?: string;
   };
 }
 
@@ -120,6 +125,7 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
     throw new Error("release manifest must be an object");
   }
   const manifest = input as JsonObject;
+  if (manifest.schema_version === 2) return mainnetV2Network(manifest);
   if (manifest.schema_version !== 1) throw new Error("unsupported release manifest schema_version");
 
   const network = objectAt(manifest, "network");
@@ -267,11 +273,99 @@ export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNet
       decimals: 7,
     }),
     release: Object.freeze({
+      schemaVersion: 1,
       sourceCommit,
       deploymentLedger,
       registryWasmSha256,
       timelockContractId,
       timelockWasmSha256,
+    }),
+  });
+}
+
+/** V2 uses the deployed registry's direct 2-of-3 administration profile. Its
+ * manifest does not claim a separate timelock, and the SDK must not invent one. */
+function mainnetV2Network(manifest: JsonObject): ReleaseNetworkConfig {
+  const network = objectAt(manifest, "network");
+  if (textAt(network, "name") !== "mainnet") throw new Error("release manifest network must be mainnet");
+  if (textAt(network, "passphrase") !== Networks.PUBLIC) {
+    throw new Error("release manifest has the wrong mainnet passphrase");
+  }
+  const rpcUrl = textAt(network, "rpc_url");
+  const parsedRpc = new URL(rpcUrl);
+  if (parsedRpc.protocol !== "https:" || parsedRpc.username || parsedRpc.password) {
+    throw new Error("release manifest rpc_url must be credential-free HTTPS");
+  }
+  const source = objectAt(manifest, "source");
+  if (textAt(source, "repository") !== "https://github.com/ackrate/ackrate-protocol-contracts"
+    || textAt(source, "directory") !== "contracts/mainnet-v2/mandate-registry"
+    || textAt(source, "package") !== "mandate-registry") {
+    throw new Error("release manifest source must identify the canonical V2 registry");
+  }
+  const sourceCommit = textAt(source, "commit");
+  if (!/^[0-9a-f]{40}$/.test(sourceCommit)) throw new Error("release manifest source commit is invalid");
+  if (!/^\d+\.\d+\.\d+$/.test(textAt(source, "version"))) throw new Error("release manifest source version is invalid");
+  if (source.dirty !== false) throw new Error("release manifest source must be clean");
+  const registryArtifact = objectAt(objectAt(manifest, "artifacts"), "mandate_registry");
+  const registryWasmSha256 = sha256At(registryArtifact, "sha256");
+  const registryInterfaceSha256 = sha256At(registryArtifact, "interface_sha256");
+  integerAt(registryArtifact, "size_bytes");
+
+  const publicConfiguration = objectAt(manifest, "public_configuration");
+  if (textAt(publicConfiguration, "usdc_asset_code") !== MAINNET_USDC.code
+    || textAt(publicConfiguration, "usdc_issuer") !== MAINNET_USDC.issuer
+    || addressAt(publicConfiguration, "usdc_sac", true) !== MAINNET_USDC.contractId) {
+    throw new Error("release manifest must use canonical Circle Mainnet USDC code, issuer, and SAC");
+  }
+  const authorityAccount = accountAt(publicConfiguration, "authority_2_of_3_account");
+  if (accountAt(publicConfiguration, "deployment_source_account") !== authorityAccount) {
+    throw new Error("release manifest authority and deployment source must be the same 2-of-3 account");
+  }
+  textAt(publicConfiguration, "usdc_derivation_evidence");
+  textAt(publicConfiguration, "usdc_independent_verifier");
+  const constructor = objectAt(manifest, "constructor_arguments");
+  if (accountAt(constructor, "admin") !== authorityAccount) {
+    throw new Error("release manifest constructor admin must be the 2-of-3 authority");
+  }
+  if (addressAt(constructor, "initial_asset", true) !== MAINNET_USDC.contractId) {
+    throw new Error("release manifest constructor asset must be canonical Mainnet USDC");
+  }
+  const deployment = objectAt(manifest, "deployment");
+  textAt(deployment, "authorized_by");
+  const deployedAt = exactDateAt(deployment, "deployed_at");
+  const deploymentLedger = integerAt(deployment, "ledger");
+  const deploymentTransactionHash = transactionHashAt(deployment, "registry_transaction_hash");
+  const wasmUploadTransactionHash = transactionHashAt(deployment, "wasm_upload_transaction_hash");
+  const mandateRegistryId = addressAt(deployment, "registry_contract_id", true);
+  if (sha256At(deployment, "registry_observed_wasm_hash") !== registryWasmSha256) {
+    throw new Error("release manifest registry artifact and observed WASM hashes differ");
+  }
+  if (mandateRegistryId === MAINNET_USDC.contractId) throw new Error("release manifest contract identities must be distinct");
+  const verification = objectAt(manifest, "verification");
+  for (const key of [
+    "artifact_hashes_match", "constructor_arguments_match", "registry_admin_is_2_of_3",
+    "registry_pending_admin_is_none", "registry_schema_version_is_2", "registry_initially_unpaused",
+    "registry_usdc_asset_allowed", "authority_has_three_weight_one_signers", "authority_thresholds_are_2_of_3",
+  ]) trueAt(verification, key);
+  textAt(verification, "independent_read_only_verifier");
+  if (Date.parse(exactDateAt(verification, "verified_at")) < Date.parse(deployedAt)) {
+    throw new Error("release manifest verification predates deployment");
+  }
+  return Object.freeze({
+    rpcUrl,
+    networkPassphrase: Networks.PUBLIC,
+    mandateRegistryId,
+    nativeSac: Asset.native().contractId(Networks.PUBLIC),
+    settlementAsset: Object.freeze({ ...MAINNET_USDC, decimals: 7 }),
+    release: Object.freeze({
+      schemaVersion: 2,
+      sourceCommit,
+      deploymentLedger,
+      registryWasmSha256,
+      registryInterfaceSha256,
+      authorityAccount,
+      deploymentTransactionHash,
+      wasmUploadTransactionHash,
     }),
   });
 }

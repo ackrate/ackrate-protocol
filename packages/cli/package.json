@@ -32,12 +32,12 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/version.test.ts src/config.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts src/mainnet-demo.test.ts",
+    "test": "node --import tsx --test src/version.test.ts src/config.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts src/mainnet-demo.test.ts src/registered-mandate.test.ts src/mainnet-preflight-authorization.test.ts src/mainnet-funding.test.ts",
     "start": "tsx src/index.ts",
     "prepack": "npm --prefix ../.. run cli:bundle"
   },
   "dependencies": {
-    "@stellar/stellar-sdk": "^14.5.0"
+    "@stellar/stellar-sdk": "16.3.0"
   },
   "devDependencies": {
     "@ackrate/core": "*",
@@ -47,5 +47,8 @@
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

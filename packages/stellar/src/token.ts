@@ -1,4 +1,4 @@
-/** Minimal SEP-41 helpers (approve + balance) for approving the contract for its
+/** Minimal SEP-41/SAC helpers for approving the contract for its
  *  allowance and reading balances — built directly on @stellar/stellar-sdk so
  *  the SDK has no CLI dependency. */
 import {
@@ -89,6 +89,29 @@ export async function balance(net: NetworkConfig, tokenId: string, who: string):
   const sim = await server.simulateTransaction(tx);
   if (rpc.Api.isSimulationError(sim)) throw new Error(`balance sim failed: ${sim.error}`);
   return scValToNative(sim.result!.retval) as bigint;
+}
+
+/** Read SAC authorization without signing or submitting a transaction.
+ * A balance alone does not establish that an account may send or receive the asset.
+ */
+export async function authorized(net: NetworkConfig, tokenId: string, who: string): Promise<boolean> {
+  const server = new rpc.Server(net.rpcUrl, { allowHttp: net.rpcUrl.startsWith("http://") });
+  const source = await server.getAccount(who);
+  const tx = new TransactionBuilder(source, {
+    fee: INCLUSION_FEE,
+    networkPassphrase: net.networkPassphrase,
+  })
+    .addOperation(new Contract(tokenId).call("authorized", new Address(who).toScVal()))
+    .setTimeout(60)
+    .build();
+  const sim = await server.simulateTransaction(tx);
+  if (rpc.Api.isSimulationError(sim)) throw new Error(`authorization sim failed: ${sim.error}`);
+  if (!rpc.Api.isSimulationSuccess(sim) || !sim.result || sim.result.retval.switch().name !== "scvBool") {
+    throw new Error("token authorization response is invalid");
+  }
+  const value: unknown = scValToNative(sim.result.retval);
+  if (typeof value !== "boolean") throw new Error("token authorization response is invalid");
+  return value;
 }
 
 /** Read the token's SEP-41 decimals from chain. */

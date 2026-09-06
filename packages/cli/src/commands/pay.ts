@@ -1,7 +1,7 @@
 /**
  * `ackrate pay [amount]` — agent-signed payment against the active mandate.
  *
- * Rebuilds the stored mandate (same nonce -> same id), then has the AGENT sign
+ * Restores the registered id after matching its stored credential on-chain, then has the AGENT sign
  * execute_payment. Budget, expiry, and replay are enforced ON-CHAIN: when the
  * agent tries to spend past the mandate cap the contract rejects it — that
  * rejection is the whole point, so we surface it clearly rather than as a stack
@@ -20,6 +20,7 @@ import {
 } from "../settlement-store.js";
 import { isFinalPaymentRejection } from "../payment-failure.js";
 import { mainnetProjectPreflight } from "../mainnet-preflight.js";
+import { restoreRegisteredMandate } from "../registered-mandate.js";
 
 const short = (s: string) => (s ? `${s.slice(0, 6)}…${s.slice(-4)}` : "");
 
@@ -92,7 +93,7 @@ export async function runPay(amountArg?: string, opts: { confirmRealUsdc?: boole
     || stored.inputs.merchant !== expectedMerchant
     || stored.inputs.asset !== expectedAsset
   ) throw new Error("stored mandate identities do not match the current project configuration");
-  const mandate = ackrate.createIntentMandate(stored.inputs, net); // same nonce -> same id
+  const mandate = await restoreRegisteredMandate(stored, net, signer);
 
   log.step("execute_payment (agent-signed)", { amount: `${amount} ${symbol}`, mandate: short(mandate.id) });
   let preparedHash: string | undefined;

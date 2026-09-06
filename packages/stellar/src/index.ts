@@ -1,3 +1,4 @@
+/// <reference path="./xdr-types.d.ts" preserve="true" />
 /**
  * @ackrate/stellar — Soroban layer for Ackrate.
  *

@@ -14,7 +14,7 @@ import {
   type StellarSigner,
 } from "@ackrate/stellar";
 import { resolveBoundAckrateInterruptedDelivery } from "@ackrate/express-middleware";
-import { Keypair, Networks, StrKey, rpc } from "@stellar/stellar-sdk";
+import { Asset, Keypair, Networks, StrKey, rpc } from "@stellar/stellar-sdk";
 import { buyResearch } from "../../../../apps/consumer-agent/src/research-agent.js";
 import { FilePurchaseOutcomeStore } from "../../../../apps/consumer-agent/src/outcome-store.js";
 import { FileSettlementReceiptStore } from "../../../../apps/consumer-agent/src/receipt-store.js";
@@ -22,6 +22,8 @@ import { FileBoundRedemptionStore } from "../../../../apps/fulfillment-agent/src
 import { startServer } from "../../../../apps/fulfillment-agent/src/server.js";
 import { ackrateHome } from "../secrets.js";
 import { assertNoPendingSettlement } from "../settlement-store.js";
+import { requireMainnetUsdcAuthorization } from "../mainnet-preflight.js";
+import { requireMainnetFunding } from "../mainnet-funding.js";
 import { stellarCliSigner } from "../stellar-cli-signer.js";
 import { banner, c, link, log } from "../ui.js";
 
@@ -176,23 +178,11 @@ async function mainnetRuntime(options: DemoOptions): Promise<DemoRuntime> {
   const server = new rpc.Server(net.rpcUrl);
   const identity = await server.getNetwork();
   if (identity.passphrase !== Networks.PUBLIC) throw new Error("mainnet RPC identity mismatch");
-  await Promise.all([
-    server.getAccount(userSigner.publicKey),
-    server.getAccount(boundAgentSigner.publicKey),
-    server.getAccount(merchant),
-  ]);
-  const [chainDecimals, userUsdc, userXlm, agentXlm] = await Promise.all([
-    token.decimals(net, net.settlementAsset.contractId, userSigner.publicKey),
-    token.balance(net, net.settlementAsset.contractId, userSigner.publicKey),
-    token.balance(net, net.nativeSac, userSigner.publicKey),
-    token.balance(net, net.nativeSac, boundAgentSigner.publicKey),
-  ]);
+  await requireMainnetUsdcAuthorization(net, userSigner.publicKey, merchant);
+  const chainDecimals = await token.decimals(net, net.settlementAsset.contractId, userSigner.publicKey);
   if (chainDecimals !== net.settlementAsset.decimals) throw new Error("manifest and chain USDC decimals differ");
-  if (userUsdc < budgetUnits) throw new Error("mainnet user USDC balance is below the requested budget");
-  const feeReserve = toStroops("0.50", 7);
-  if (userXlm < feeReserve || agentXlm < feeReserve) {
-    throw new Error("mainnet user and agent must each retain at least 0.50 XLM");
-  }
+  await requireMainnetFunding(server, new Asset(net.settlementAsset.code, net.settlementAsset.issuer),
+    userSigner.publicKey, boundAgentSigner.publicKey, merchant, budgetUnits);
   if ((await registryClient(net, expectedAgentSigner).is_paused()).result) {
     throw new Error("mainnet MandateRegistry is paused");
   }

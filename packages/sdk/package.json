@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/core",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Thin, untrusted client for the Ackrate MandateRegistry. The contract is the source of truth.",
   "repository": {
     "type": "git",
@@ -32,18 +32,23 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/x402.test.ts src/payment-sequence.test.ts src/fetch.test.ts test/index.test.mjs"
+    "test": "node --import tsx --test src/x402.test.ts src/payment-sequence.test.ts src/registered-id.test.ts src/fetch.test.ts test/index.test.mjs"
   },
   "dependencies": {
-    "@ackrate/stellar": "^0.2.4",
-    "@stellar/stellar-sdk": "^14.5.0",
+    "@ackrate/stellar": "^0.2.5",
+    "@stellar/stellar-sdk": "16.3.0",
     "buffer": "6.0.3"
   },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }

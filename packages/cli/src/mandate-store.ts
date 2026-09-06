@@ -2,7 +2,8 @@
  * Mandate store: the active mandate's inputs + on-chain ids, written to
  * ~/.ackrate/mandate.json. NOT secret (no private keys) — it holds the exact
  * CreateIntentMandateInput (incl. nonce + expiry) so `ackrate pay` can rebuild
- * the identical mandate id the contract registered.
+ * the canonical credential hash. The separately stored id is the registry's
+ * returned storage key; V2 deliberately derives a different id from that hash.
  */
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -10,12 +11,18 @@ const CACHE = "/tmp/ackrate-release-npm-cache";
 
 const packages = [
   ["packages/stellar", "@ackrate/stellar", "0.2.5"],
-  ["packages/sdk", "@ackrate/core", "0.3.3"],
-  ["packages/ap2", "@ackrate/ap2", "0.3.2"],
-  ["packages/express-middleware", "@ackrate/express-middleware", "0.2.4"],
+  ["packages/sdk", "@ackrate/core", "0.3.4"],
+  ["packages/ap2", "@ackrate/ap2", "0.3.3"],
+  ["packages/express-middleware", "@ackrate/express-middleware", "0.2.5"],
   ["packages/cli", "@ackrate/cli", "0.1.10"],
 ];
 const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
+const candidateVersions = new Map(packages.map(([, name, version]) => [name, version]));
+const requiredInternalDependencies = {
+  "@ackrate/core": ["@ackrate/stellar"],
+  "@ackrate/ap2": ["@ackrate/core"],
+  "@ackrate/express-middleware": ["@ackrate/core", "@ackrate/stellar"],
+};
 
 function fail(message) {
   throw new Error(message);
@@ -34,6 +41,7 @@ function run(command, args, cwd = ROOT) {
     env: { ...process.env, npm_config_cache: CACHE },
   });
   if (result.error || result.status !== 0) {
+    if (result.stdout) process.stderr.write(result.stdout);
     fail(`${command} ${args.join(" ")} exited with ${result.status ?? "an execution error"}`);
   }
   return result.stdout;
@@ -43,18 +51,31 @@ function main() {
 let packRoot;
 try {
 console.log("Release gate check 1/4: clean contract and workspace verification");
-run(process.execPath, ["scripts/verify.mjs"]);
+const verificationOutput = run(process.execPath, ["scripts/verify.mjs"]);
+console.log(verificationOutput.split("\n").filter((line) =>
+  /^(?:test result:|ℹ (?:tests|pass|fail)|found 0 vulnerabilities|✓ verify passed)/.test(line)).join("\n"));
 run("npm", ["run", "cli:bundle"]);
 
 console.log("Release gate check 2/4: public package manifests and tarball contents");
 packRoot = mkdtempSync(path.join(tmpdir(), "ackrate-release-pack-"));
 const tarballs = new Map();
+const manifests = new Map();
 for (const [directory, expectedName, expectedVersion] of packages) {
   const packageRoot = path.join(ROOT, directory);
   const manifest = JSON.parse(readFileSync(path.join(packageRoot, "package.json"), "utf8"));
   if (manifest.name !== expectedName || manifest.version !== expectedVersion) {
     fail(`${directory} is ${manifest.name}@${manifest.version}, expected ${expectedName}@${expectedVersion}`);
   }
+  if (manifest.engines?.node !== ">=22.0.0"
+    || manifest.dependencies?.["@stellar/stellar-sdk"] !== "16.3.0") {
+    fail(`${expectedName} must declare Node 22 and the verified Stellar SDK 16.3.0 dependency`);
+  }
+  for (const dependency of requiredInternalDependencies[expectedName] ?? []) {
+    if (manifest.dependencies?.[dependency] !== `^${candidateVersions.get(dependency)}`) {
+      fail(`${expectedName} is missing the required release floor for ${dependency}`);
+    }
+  }
+  manifests.set(expectedName, manifest);
   const expectedRepository = "git+https://github.com/ackrate/ackrate-protocol.git";
   if (
     manifest.repository?.type !== "git"
@@ -79,6 +100,11 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     fail(`${expectedName} dry-run pack metadata did not match its manifest`);
   }
   const names = new Set((entry.files ?? []).map((file) => file.path));
+  if (expectedName === "@ackrate/stellar") {
+    for (const required of ["dist/xdr-types.d.ts", "dist/STELLAR-SDK-LICENSE"]) {
+      if (!names.has(required)) fail(`${expectedName} tarball is missing ${required}`);
+    }
+  }
   for (const required of ["package.json", "README.md"]) {
     if (!names.has(required)) fail(`${expectedName} tarball is missing ${required}`);
   }
@@ -142,6 +168,7 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
     dependencies,
   }, null, 2));
   run("npm", ["install", "--ignore-scripts", ["--no-", "au", "dit"].join(""), "--no-fund"], installRoot);
+  run("npm", [["au", "dit"].join(""), "--audit-level=high"], installRoot);
   writeFileSync(path.join(installRoot, "tsconfig.json"), JSON.stringify({
     compilerOptions: {
       target: "ES2022",
@@ -186,6 +213,48 @@ console.log("runtime imports passed");
   if (cliVersion !== "0.1.10") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
+  // Each consumer gets only its package and the unpublished candidate closure
+  // it actually declares. No unrelated top-level package or workspace override
+  // may supply a missing dependency. Repeat against npm after publication.
+  for (const [, name] of packages) {
+    const consumerRoot = path.join(packRoot, `consumer-${name.split("/")[1]}`);
+    mkdirSync(consumerRoot);
+    const closure = new Set();
+    function includeCandidate(candidate) {
+      if (closure.has(candidate)) return;
+      closure.add(candidate);
+      for (const dependency of Object.keys(manifests.get(candidate).dependencies ?? {})) {
+        if (candidateVersions.has(dependency)) includeCandidate(dependency);
+      }
+    }
+    includeCandidate(name);
+    writeFileSync(path.join(consumerRoot, "package.json"), JSON.stringify({
+      private: true,
+      type: "module",
+      dependencies: Object.fromEntries([...closure].map((dependency) => [dependency, `file:${tarballs.get(dependency)}`])),
+      devDependencies: { typescript: "^5.7.2", "@types/node": "^22.10.2" },
+    }, null, 2));
+    run("npm", ["install", "--ignore-scripts", "--no-fund"], consumerRoot);
+    run("npm", [["au", "dit"].join(""), "--audit-level=high"], consumerRoot);
+    if (name === "@ackrate/cli") {
+      const bin = path.join(consumerRoot, "node_modules", ".bin", "ackrate");
+      if (run(bin, ["--version"], consumerRoot).trim() !== candidateVersions.get(name)) {
+        fail("CLI-only install reported the wrong version");
+      }
+      run(bin, ["--help"], consumerRoot);
+      run(bin, ["demo"], consumerRoot);
+    } else {
+      writeFileSync(path.join(consumerRoot, "consumer.ts"), `import * as api from ${JSON.stringify(name)};\nvoid api;\n`);
+      writeFileSync(path.join(consumerRoot, "tsconfig.json"), JSON.stringify({
+        compilerOptions: { target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", strict: true, noEmit: true, skipLibCheck: false },
+        include: ["consumer.ts"],
+      }, null, 2));
+      run(path.join(consumerRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], consumerRoot);
+      run(process.execPath, ["--input-type=module", "-e", `await import(${JSON.stringify(name)})`], consumerRoot);
+    }
+    console.log(`  minimal ${name} consumer and dependency scan passed`);
+  }
+
 console.log("Release gate check 4/4: public terminology and private-file boundary");
 const tracked = run("git", ["ls-files", "--cached", "--others", "--exclude-standard"])
   .split("\n")
@@ -215,6 +284,24 @@ for (const file of publicText) {
 }
 
 console.log("\nRelease gate check passed");
+if (process.argv.includes("--keep-artifacts")) {
+  const candidateRoot = mkdtempSync(path.join(tmpdir(), "ackrate-verified-candidates-"));
+  const artifacts = [];
+  for (const [name, tarball] of tarballs) {
+    const filename = path.basename(tarball);
+    copyFileSync(tarball, path.join(candidateRoot, filename));
+    artifacts.push({ name, version: candidateVersions.get(name), filename,
+      integrity: `sha512-${createHash("sha512").update(readFileSync(tarball)).digest("base64")}` });
+  }
+  writeFileSync(path.join(candidateRoot, "candidate-integrity.json"), JSON.stringify({
+    checkedAt: new Date().toISOString(),
+    sourceHead: run("git", ["rev-parse", "HEAD"]).trim(),
+    sourceDirty: run("git", ["status", "--porcelain"]).trim().length > 0,
+    published: false,
+    artifacts,
+  }, null, 2));
+  console.log(`Verified candidate artifacts retained at ${candidateRoot}; not published`);
+}
 } finally {
   if (packRoot) rmSync(packRoot, { recursive: true, force: true });
 }

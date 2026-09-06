@@ -72,21 +72,25 @@ flowchart LR
 | Express middleware | [`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
 | CLI | [`@ackrate/cli`](https://www.npmjs.com/package/@ackrate/cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
 
-### Pinned testnet release map
+### Published packages and current source candidates
 
-Package releases and protocol/specification versions are separate axes. The
-submission and live demo use this exact set:
+Package releases and protocol/specification versions are separate axes.
+Registry verification on **2026-09-07** identified the published versions below.
+The newer versions are **source candidates, not published releases**; their
+V2 fixes and dependency changes must not be attributed to the older packages.
 
-| Deliverable | Package release | Protocol/specification target |
-|---|---:|---|
-| Stellar binding | `@ackrate/stellar@0.2.5` | Verified Mainnet manifest and typed contract bindings |
-| High-level SDK | `@ackrate/core@0.3.3` | Ackrate testnet toolkit |
-| AP2 validator | `@ackrate/ap2@0.3.2` | AP2 `0.1.0` profile |
-| Express middleware | `@ackrate/express-middleware@0.2.4` | bound-v2 proof flow |
-| CLI | `@ackrate/cli@0.1.10` | installed command `ackrate` |
+| Package | Published | Source candidate | Protocol/specification target |
+|---|---:|---:|---|
+| `@ackrate/stellar` | `0.2.4` | `0.2.5` | Verified Mainnet manifest, including V2 schema, and typed bindings |
+| `@ackrate/core` | `0.3.3` | `0.3.4` | Mandates, returned V2 storage IDs, payments, and delivery recovery |
+| `@ackrate/ap2` | `0.3.2` | `0.3.3` | AP2 `0.1.0` profile |
+| `@ackrate/express-middleware` | `0.2.4` | `0.2.5` | bound-v2 proof flow |
+| `@ackrate/cli` | `0.1.9` | `0.1.10` | installed command `ackrate`, current reference-agent HTTP flow |
 
-In particular, `@ackrate/ap2@0.3.2` implements the AP2 `0.1.0` profile;
-the package version is not the AP2 specification version.
+The candidate set requires **Node.js 22 or newer** and uses the exact
+`@stellar/stellar-sdk@16.3.0` dependency. AP2 candidate `0.3.3` still implements
+the AP2 `0.1.0` profile; the package version is not the specification version.
+See the [package release matrix](docs/ackrate-sdk-npm.md) for installation status.
 
 The contract is authoritative. SDK-side checks only fail fast; they never replace on-chain validation.
 
@@ -111,16 +115,23 @@ The contract is authoritative. SDK-side checks only fail fast; they never replac
 
 ## 🚀 Run the Flow
 
+Use **Node.js 22+**. Build and verify the current candidate from this checkout:
+
 ```bash
 npm ci
 npm run gatecheck:release
 ```
 
-Run the reviewer CLI from any clean directory:
+Run the candidate CLI from the verified source build:
 
 ```bash
-npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet
+npm run cli:bundle
+node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent --network testnet
 ```
+
+After `@ackrate/cli@0.1.10` is published and clean-install verified, its pinned
+command will be `npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet`.
+It is not available as that published candidate at the September 7 checkpoint.
 
 Run both reference agents from this repository with one command:
 
@@ -135,10 +146,12 @@ rejected by the contract-enforced budget. The run also proves exact bound-v2
 receipts and rejects an old settlement re-signed for a fresh request. No local
 key or environment file is required.
 
-The published CLI also contains an explicit, fail-closed mainnet mode. It does
-not embed a contract ID or accept an arbitrary production mapping: Friday's
-real-USDC canary will consume the completed verified deployment manifest and
-named external Stellar CLI signer identities without changing source.
+The candidate CLI contains an explicit, fail-closed Mainnet mode. It requires a
+complete verified deployment manifest, distinct funded actors, external signer
+configuration, and explicit real-USDC confirmation. The currently published
+CLI does not contain this candidate's reference-agent HTTP flow. Follow the
+[source CLI instructions](docs/cli.md); a current Mainnet delivery run remains
+separate from historical direct-payment receipts and local package tests.
 
 Run the three named SDK failure drills separately:
 

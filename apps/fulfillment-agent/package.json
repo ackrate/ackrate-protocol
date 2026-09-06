@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "tsx src/server.ts",
+    "start": "tsx src/standalone.ts",
     "test": "node --import tsx --test src/server.test.ts src/redemption-store.test.ts"
   },
   "dependencies": {
@@ -16,7 +16,7 @@
   "devDependencies": {
     "@ackrate/core": "*",
     "@ackrate/stellar": "*",
-    "@stellar/stellar-sdk": "^14.5.0",
+    "@stellar/stellar-sdk": "16.3.0",
     "@types/express": "^5.0.6"
   }
 }

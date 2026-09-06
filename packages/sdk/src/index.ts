@@ -34,6 +34,7 @@ import {
   type PaymentProof,
 } from "./x402.js";
 import { resolveExpectedPaymentSequence } from "./payment-sequence.js";
+import { applyRegisteredMandateId, registeredMandateId } from "./registered-id.js";
 
 // Re-export the typed contract errors so apps can branch on them (e.g. Errors[6] is BudgetExceeded).
 export { Errors } from "@ackrate/stellar";
@@ -56,9 +57,11 @@ export interface CreateIntentMandateInput {
 }
 
 export interface IntentMandate {
-  /** Canonical hash hex — the on-chain mandate id (`vc_hash`). */
+  /** Registry storage id after registration; credential hash before registration. */
   id: string;
   idBuffer: Buffer;
+  /** Original canonical credential hash (`vc_hash`), retained when V2 returns a distinct storage id. */
+  credentialHash?: string;
   user: string;
   agent: string;
   merchant: string;
@@ -896,12 +899,19 @@ export const ackrate = {
     };
   },
 
-  /** Register the mandate on-chain (user-signed). */
+  /** Register on-chain (user-signed), then update this mandate's id/idBuffer to
+   * the confirmed registry storage key. The original credential hash is retained. */
   async registerMandate(
     mandate: IntentMandate,
     opts: SignerInput,
     net: NetworkConfig = TESTNET,
   ): Promise<string> {
+    if (Object.isFrozen(mandate) || Object.isSealed(mandate)) {
+      throw new Error("registerMandate requires a mutable mandate to retain the confirmed on-chain identifier");
+    }
+    if (mandate.credentialHash !== undefined && !/^[0-9a-f]{64}$/.test(mandate.credentialHash)) {
+      throw new Error("mandate credentialHash must be a canonical 32-byte hex digest");
+    }
     const signer = mandateUserSigner(mandate, opts.signer, net);
     const client = registryClient(net, signer);
     const at = await client.register_mandate({
@@ -911,10 +921,11 @@ export const ackrate = {
       asset: mandate.asset,
       max_amount: mandate.maxAmount,
       expiry: BigInt(mandate.expiry),
-      vc_hash: mandate.idBuffer,
+      vc_hash: mandate.credentialHash ? Buffer.from(mandate.credentialHash, "hex") : mandate.idBuffer,
     });
+    const preparedId = registeredMandateId(at.result.unwrap());
     const sent = await at.signAndSend();
-    sent.result.unwrap();
+    applyRegisteredMandateId(mandate, preparedId, sent.result.unwrap());
     return sent.sendTransactionResponse?.hash ?? "";
   },
 

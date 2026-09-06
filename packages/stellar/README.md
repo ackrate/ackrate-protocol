@@ -19,6 +19,15 @@ npm install @ackrate/stellar@0.2.5 @stellar/stellar-sdk@14.5.0
 
 ## What it exports
 
+The current source candidate accepts verified deployment manifests with schema
+1 (separate timelock) or schema 2 (V2 registry under direct 2-of-3 administration).
+`mainnetNetworkFromDeploymentManifest` checks the supplied profile, canonical
+Circle USDC, registry/artifact identities, constructor arguments, and recorded
+verification. Its `release.schemaVersion` identifies the profile; optional
+timelock fields are absent for schema 2. Parsing a manifest is not live chain
+verification or a claim that V2 has a timelock. There is no Mainnet default.
+Version `0.2.5` is an unpublished source candidate as of 2026-09-06.
+
 | Export | What it is |
 |---|---|
 | `TESTNET` | `NetworkConfig` for Stellar testnet: RPC, passphrase, live MandateRegistry id, native asset |

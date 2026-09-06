@@ -1,18 +1,26 @@
-# @ackrate/express-middleware 0.2.4
+# @ackrate/express-middleware 0.2.5
 
 Fail-closed Express 4/5 paid JSON routes for Ackrate on Stellar.
 
-The published `@ackrate/express-middleware` package exposes the typed ESM API.
+The `@ackrate/express-middleware` package exposes the typed ESM API.
 
 The package authenticates an exact-origin GET challenge, verifies the on-chain
 settlement independently, atomically claims fulfillment, stores the exact JSON
 result before sending it, and replays those bytes on recovery. A settlement can
 never re-run arbitrary fulfillment work.
 
-## Install
+## Candidate status and installation
+
+Version **0.2.5 is a source candidate**, not a published release. The public
+registry version verified on **2026-09-07** is **0.2.4**. The candidate requires
+**Node.js 22+**, core **0.3.4**, Stellar binding **0.2.5**, and exact
+`@stellar/stellar-sdk@16.3.0`.
+
+Build from the repository while publication is pending. After the candidate
+packages are published and verified, install with:
 
 ```bash
-npm install @ackrate/express-middleware@0.2.4 express@5.2.1
+npm install --save-exact @ackrate/express-middleware@0.2.5 @stellar/stellar-sdk@16.3.0 express@5.2.1
 ```
 
 ## Safe paid route

@@ -5,7 +5,8 @@
 //   npm test   (from packages/sdk, or via the workspace)
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Keypair } from "@stellar/stellar-sdk";
+import { Keypair, scValToNative } from "@stellar/stellar-sdk";
+import { AssembledTransaction } from "@stellar/stellar-sdk/contract";
 import { toStroops, ackrate } from "@ackrate/core";
 
 const now = Math.floor(Date.now() / 1000);
@@ -78,4 +79,33 @@ test("direct pay refuses to touch the network without a pre-broadcast durable jo
     submittedAt: now,
     validUntil: now + 60,
   }), /invalid or belongs to another mandate/);
+});
+
+test("public registration API carries returned V2 id into the next registry operation", async (t) => {
+  const user = Keypair.random();
+  const mandate = ackrate.createIntentMandate({
+    user: user.publicKey(), agent: Keypair.random().publicKey(), merchant: Keypair.random().publicKey(),
+    asset: ackrate.testnet.nativeSac, maxAmount: "0.03", expiry: now + 3600,
+  });
+  const credential = Buffer.from(mandate.idBuffer);
+  const registered = Buffer.alloc(32, 42);
+  const tx = "f".repeat(64);
+  const methods = [];
+  t.mock.method(AssembledTransaction, "build", async (options) => {
+    methods.push(options.method);
+    if (options.method === "register_mandate") {
+      assert.deepEqual(Buffer.from(scValToNative(options.args[6])), credential);
+      return { result: { unwrap: () => registered }, signAndSend: async () => ({
+        result: { unwrap: () => registered }, sendTransactionResponse: { hash: tx },
+      }) };
+    }
+    assert.equal(options.method, "revoke_mandate");
+    assert.deepEqual(Buffer.from(scValToNative(options.args[0])), registered);
+    return { signAndSend: async () => ({ result: { unwrap: () => undefined }, sendTransactionResponse: { hash: tx } }) };
+  });
+  assert.equal(await ackrate.registerMandate(mandate, { signer: user }), tx);
+  assert.equal(mandate.id, registered.toString("hex"));
+  assert.equal(mandate.credentialHash, credential.toString("hex"));
+  await ackrate.revokeMandate(mandate, { signer: user });
+  assert.deepEqual(methods, ["register_mandate", "revoke_mandate"]);
 });

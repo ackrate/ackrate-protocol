@@ -155,3 +155,75 @@ test("rejects contract addresses where public G-accounts are required", () => {
   wrongAuthorityType.public_configuration.authority_2_of_3_account = contract(8);
   assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAuthorityType), /G-account/);
 });
+
+function validV2Manifest() {
+  const legacy = validManifest();
+  const authority = legacy.public_configuration.authority_2_of_3_account;
+  return {
+    schema_version: 2,
+    network: legacy.network,
+    source: { repository: legacy.source.repository, directory: "contracts/mainnet-v2/mandate-registry",
+      package: "mandate-registry", version: "0.4.1", commit: legacy.source.commit, dirty: false },
+    artifacts: { mandate_registry: { ...legacy.artifacts.mandate_registry, interface_sha256: hash("e") } },
+    public_configuration: {
+      deployment_source_account: authority, authority_2_of_3_account: authority,
+      usdc_asset_code: MAINNET_USDC.code, usdc_issuer: MAINNET_USDC.issuer, usdc_sac: MAINNET_USDC.contractId,
+      usdc_derivation_evidence: "independent derivation", usdc_independent_verifier: "Verifier A",
+    },
+    constructor_arguments: { admin: authority, initial_asset: MAINNET_USDC.contractId },
+    deployment: { authorized_by: "release approval", deployed_at: "2026-08-31T11:34:37.000Z", ledger: 64208356,
+      wasm_upload_transaction_hash: hash("c"), registry_transaction_hash: hash("d"),
+      registry_contract_id: contract(2), registry_observed_wasm_hash: hash("b") },
+    verification: {
+      artifact_hashes_match: true, constructor_arguments_match: true, registry_admin_is_2_of_3: true,
+      registry_pending_admin_is_none: true, registry_schema_version_is_2: true, registry_initially_unpaused: true,
+      registry_usdc_asset_allowed: true, authority_has_three_weight_one_signers: true,
+      authority_thresholds_are_2_of_3: true, independent_read_only_verifier: "Verifier B",
+      verified_at: "2026-09-01T13:07:18.000Z",
+    },
+  };
+}
+
+test("schema2 Mainnet manifest configures V2 without inventing timelock evidence", () => {
+  const manifest = validV2Manifest();
+  const config = mainnetNetworkFromDeploymentManifest(manifest);
+  assert.equal(config.mandateRegistryId, manifest.deployment.registry_contract_id);
+  assert.equal(config.settlementAsset.contractId, MAINNET_USDC.contractId);
+  assert.equal(config.release.schemaVersion, 2);
+  assert.equal(config.release.authorityAccount, manifest.constructor_arguments.admin);
+  assert.equal(config.release.registryInterfaceSha256, manifest.artifacts.mandate_registry.interface_sha256);
+  assert.equal(config.release.timelockContractId, undefined);
+});
+
+test("schema2 rejects noncanonical asset and non-account or conflicting authority", () => {
+  const wrongAsset = validV2Manifest();
+  wrongAsset.public_configuration.usdc_sac = contract(9);
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAsset), /canonical Circle/);
+  const wrongAuthority = validV2Manifest();
+  wrongAuthority.public_configuration.authority_2_of_3_account = contract(8);
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAuthority), /G-account/);
+  const wrongSource = validV2Manifest();
+  wrongSource.public_configuration.deployment_source_account = Keypair.random().publicKey();
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongSource), /same 2-of-3/);
+  const wrongAdmin = validV2Manifest();
+  wrongAdmin.constructor_arguments.admin = Keypair.random().publicKey();
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongAdmin), /constructor admin/);
+});
+
+test("schema2 rejects incomplete proofs, conflicting WASM, stale verification, and unsafe RPC", () => {
+  const incomplete = validV2Manifest();
+  incomplete.verification.authority_thresholds_are_2_of_3 = false;
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(incomplete), /authority_thresholds_are_2_of_3/);
+  const wrongHash = validV2Manifest();
+  wrongHash.deployment.registry_observed_wasm_hash = hash("a");
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongHash), /artifact and observed/);
+  const stale = validV2Manifest();
+  stale.verification.verified_at = "2026-08-01T00:00:00.000Z";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(stale), /predates deployment/);
+  const unsafeRpc = validV2Manifest();
+  unsafeRpc.network.rpc_url = "https://secret:secret@rpc.example.test";
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(unsafeRpc), /credential-free HTTPS/);
+  const wrongSchema = validV2Manifest();
+  wrongSchema.schema_version = 3;
+  assert.throws(() => mainnetNetworkFromDeploymentManifest(wrongSchema), /unsupported release manifest/);
+});

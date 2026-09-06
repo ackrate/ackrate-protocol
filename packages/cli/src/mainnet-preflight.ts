@@ -1,8 +1,9 @@
-import { Networks, rpc } from "@stellar/stellar-sdk";
+import { Asset, Networks, rpc } from "@stellar/stellar-sdk";
 import { registryClient, token, type ReleaseNetworkConfig, type StellarSigner } from "@ackrate/stellar";
 import { toStroops } from "@ackrate/core";
 import { networkConfig, type MainnetConfig } from "./config.js";
 import { stellarCliSigner } from "./stellar-cli-signer.js";
+import { requireMainnetFunding } from "./mainnet-funding.js";
 
 export interface MainnetProjectRuntime {
   net: ReleaseNetworkConfig;
@@ -13,6 +14,25 @@ export interface MainnetProjectRuntime {
   userUsdc: bigint;
   userXlm: bigint;
   agentXlm: bigint;
+}
+
+/** Both ends of a SAC transfer must be authorized, even when their balances exist. */
+export async function requireMainnetUsdcAuthorization(
+  net: ReleaseNetworkConfig,
+  user: string,
+  merchant: string,
+  readAuthorization: typeof token.authorized = token.authorized,
+): Promise<void> {
+  const [userAuthorized, merchantAuthorized] = await Promise.all([
+    readAuthorization(net, net.settlementAsset.contractId, user),
+    readAuthorization(net, net.settlementAsset.contractId, merchant),
+  ]);
+  if (userAuthorized !== true) {
+    throw new Error("mainnet user is not authorized to send Circle USDC; resolve its trustline authorization before registering a mandate");
+  }
+  if (merchantAuthorized !== true) {
+    throw new Error("mainnet merchant is not authorized to receive Circle USDC; resolve its trustline authorization before registering a mandate");
+  }
 }
 
 export async function mainnetProjectPreflight(
@@ -32,27 +52,14 @@ export async function mainnetProjectPreflight(
   if (identity.passphrase !== Networks.PUBLIC || net.networkPassphrase !== Networks.PUBLIC) {
     throw new Error("mainnet RPC identity does not match the public Stellar network");
   }
-  await Promise.all([
-    server.getAccount(userSigner.publicKey),
-    server.getAccount(agentSigner.publicKey),
-    server.getAccount(config.merchant),
-  ]);
-  const [chainDecimals, userUsdc, userXlm, agentXlm] = await Promise.all([
-    token.decimals(net, net.settlementAsset.contractId, userSigner.publicKey),
-    token.balance(net, net.settlementAsset.contractId, userSigner.publicKey),
-    token.balance(net, net.nativeSac, userSigner.publicKey),
-    token.balance(net, net.nativeSac, agentSigner.publicKey),
-  ]);
+  await requireMainnetUsdcAuthorization(net, userSigner.publicKey, config.merchant);
+  const chainDecimals = await token.decimals(net, net.settlementAsset.contractId, userSigner.publicKey);
   if (chainDecimals !== net.settlementAsset.decimals) {
     throw new Error(`USDC decimals conflict: manifest=${net.settlementAsset.decimals}, chain=${chainDecimals}`);
   }
-  if (userUsdc < toStroops(requiredUsdc, chainDecimals)) {
-    throw new Error("mainnet user USDC balance is below the required amount");
-  }
-  const feeReserve = toStroops("0.50", 7);
-  if (userXlm < feeReserve || agentXlm < feeReserve) {
-    throw new Error("mainnet user and agent must each retain at least 0.50 XLM for fees and reserve headroom");
-  }
+  const { userUsdc, userXlm, agentXlm } = await requireMainnetFunding(server,
+    new Asset(net.settlementAsset.code, net.settlementAsset.issuer),
+    userSigner.publicKey, agentSigner.publicKey, config.merchant, toStroops(requiredUsdc, chainDecimals));
   if ((await registryClient(net, agentSigner).is_paused()).result) {
     throw new Error("mainnet MandateRegistry is paused");
   }

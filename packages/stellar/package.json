@@ -32,15 +32,17 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "test": "node --import tsx --test src/deployments.test.ts src/release-manifest.test.ts src/signer.test.ts"
+    "build": "tsc && node ../../scripts/copy-stellar-type-compat.mjs",
+    "test": "node --import tsx --test src/deployments.test.ts src/release-manifest.test.ts src/signer.test.ts src/token-authorization.test.ts"
   },
   "dependencies": {
     "@types/json-schema": "^7.0.15",
     "@types/urijs": "^1.19.26",
-    "@stellar/stellar-sdk": "^14.5.0",
+    "@stellar/stellar-sdk": "16.3.0",
     "buffer": "6.0.3"
   },
   "devDependencies": {
@@ -49,5 +51,8 @@
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   }
 }
