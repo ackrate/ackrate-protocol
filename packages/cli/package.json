@@ -1,7 +1,7 @@
 {
   "name": "@ackrate/cli",
-  "version": "0.1.10",
-  "description": "Command-line tool for the Ackrate MandateRegistry: scaffold a project, fund testnet accounts, create AP2 mandates, and pay on-chain. The contract is the source of truth.",
+  "version": "0.2.0",
+  "description": "ACKRATE Mainnet CLI for project setup, mandate registration, USDC payments, reference agents, and signature coordination.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ackrate/ackrate-protocol.git",

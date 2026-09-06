@@ -1,7 +1,7 @@
 {
   "name": "@ackrate/stellar",
-  "version": "0.2.5",
-  "description": "Soroban client + typed MandateRegistry bindings, network config, and signing helpers for Ackrate.",
+  "version": "0.3.0",
+  "description": "Stellar Mainnet configuration, Soroban mandate client, and signing helpers for the official ACKRATE MandateRegistry.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ackrate/ackrate-protocol.git",

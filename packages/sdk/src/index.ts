@@ -1,5 +1,5 @@
 /**
- * @ackrate/core — create an agent, connect to the testnet MandateRegistry, and
+ * @ackrate/core — create an agent, connect to the Mainnet MandateRegistry, and
  * execute a crash-safe mandate-validated payment through a small typed surface.
  *
  * The SDK is UNTRUSTED infrastructure: it never holds the allowance (only the
@@ -15,6 +15,7 @@
 import { Buffer } from "buffer";
 import { Keypair, hash, rpc } from "@stellar/stellar-sdk";
 import {
+  MAINNET,
   TESTNET,
   registryClient,
   stellarSigner,
@@ -857,10 +858,11 @@ export class Agent {
 }
 
 export const ackrate = {
+  mainnet: MAINNET,
   testnet: TESTNET,
 
   /** Build an AP2-style IntentMandate and its canonical id (no chain calls). */
-  createIntentMandate(input: CreateIntentMandateInput, net: NetworkConfig = TESTNET): IntentMandate {
+  createIntentMandate(input: CreateIntentMandateInput, net: NetworkConfig = MAINNET): IntentMandate {
     void net;
     // expiry is sent on-chain as u64. Validate it here so a NaN, fractional, or
     // out-of-range value fails loudly with a clear message instead of throwing
@@ -904,7 +906,7 @@ export const ackrate = {
   async registerMandate(
     mandate: IntentMandate,
     opts: SignerInput,
-    net: NetworkConfig = TESTNET,
+    net: NetworkConfig = MAINNET,
   ): Promise<string> {
     if (Object.isFrozen(mandate) || Object.isSealed(mandate)) {
       throw new Error("registerMandate requires a mutable mandate to retain the confirmed on-chain identifier");
@@ -933,7 +935,7 @@ export const ackrate = {
   async approveBudget(
     mandate: IntentMandate,
     opts: SignerInput,
-    net: NetworkConfig = TESTNET,
+    net: NetworkConfig = MAINNET,
   ): Promise<string> {
     return token.approve(
       net,
@@ -948,7 +950,7 @@ export const ackrate = {
   async revokeMandate(
     mandate: IntentMandate,
     opts: SignerInput,
-    net: NetworkConfig = TESTNET,
+    net: NetworkConfig = MAINNET,
   ): Promise<string> {
     const signer = mandateUserSigner(mandate, opts.signer, net);
     const client = registryClient(net, signer);
@@ -966,7 +968,7 @@ export const ackrate = {
       proofPolicy?: PaymentProofPolicy;
       receiptStore?: SettlementReceiptStore;
     },
-    net: NetworkConfig = TESTNET,
+    net: NetworkConfig = MAINNET,
   ): Agent {
     const signer = stellarSigner(opts.signer, net.networkPassphrase);
     if (signer.publicKey !== opts.mandate.agent) {

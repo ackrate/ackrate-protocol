@@ -3,7 +3,7 @@ import test from "node:test";
 import { Buffer } from "buffer";
 import { Keypair } from "@stellar/stellar-sdk";
 import { encodePaymentProof } from "@ackrate/core";
-import { TESTNET } from "@ackrate/stellar";
+import { MAINNET, TESTNET } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import {
   createAckratePaymentMiddleware,
@@ -131,6 +131,7 @@ function successfulVerifier(onVerify?: (tx: string, requirement: PaymentRequirem
 
 function options(overrides: Partial<AckratePaymentMiddlewareOptions> = {}): AckratePaymentMiddlewareOptions {
   return {
+    networkConfig: TESTNET,
     merchant,
     amount: "1.00",
     resource: "/source/market",
@@ -139,6 +140,20 @@ function options(overrides: Partial<AckratePaymentMiddlewareOptions> = {}): Ackr
     ...overrides,
   };
 }
+
+test("default middleware quotes the official Mainnet registry and USDC without calling a verifier", async () => {
+  let verifies = 0;
+  const result = await invoke(createAckratePaymentMiddleware(options({
+    networkConfig: undefined,
+    verifier: successfulVerifier(() => { verifies += 1; }),
+  })));
+  assert.equal(result.response.statusCode, 402);
+  const challenge = (result.response.bodyValue as { accepts: Array<{ network: string; asset: string; extra: { contract: string } }> }).accepts[0];
+  assert.equal(challenge.network, "stellar-mainnet");
+  assert.equal(challenge.asset, MAINNET.settlementAsset.contractId);
+  assert.equal(challenge.extra.contract, "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR");
+  assert.equal(verifies, 0);
+});
 
 test("missing proof returns a private 402 challenge without touching verifier or store", async () => {
   let verifies = 0;

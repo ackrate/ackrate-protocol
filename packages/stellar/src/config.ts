@@ -1,4 +1,5 @@
-import { DEPLOYMENTS } from "./deployments.js";
+import { DEPLOYMENTS, MAINNET_DEPLOYMENT_MANIFEST, publishedMainnetNetworkFromDeploymentManifest } from "./deployments.js";
+import type { ReleaseNetworkConfig } from "./release-manifest.js";
 
 /** Network configuration for Ackrate's Soroban layer. */
 export interface NetworkConfig {
@@ -9,6 +10,9 @@ export interface NetworkConfig {
   /** Native XLM Stellar Asset Contract (a real SEP-41 token) for this network. */
   nativeSac: string;
 }
+
+/** Official Ackrate Mainnet registry and canonical USDC, validated from bundled public deployment evidence. */
+export const MAINNET: ReleaseNetworkConfig = publishedMainnetNetworkFromDeploymentManifest(MAINNET_DEPLOYMENT_MANIFEST);
 
 /** Stellar testnet — the live, gatechecked MandateRegistry deployment. */
 export const TESTNET: NetworkConfig = {

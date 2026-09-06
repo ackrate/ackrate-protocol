@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
-import { Asset, Networks, StrKey } from "@stellar/stellar-sdk";
+import { Asset, Networks, StrKey, scValToNative, xdr } from "@stellar/stellar-sdk";
 
-import { networks } from "./client.js";
-import { TESTNET } from "./config.js";
-import { DEPLOYMENTS, publishedMainnetNetworkFromDeploymentManifest } from "./deployments.js";
+import { Client, networks } from "./client.js";
+import { Client as LegacyClient, networks as legacyNetworks } from "./legacy-client.js";
+import { MAINNET, TESTNET } from "./config.js";
+import { DEPLOYMENTS, MAINNET_DEPLOYMENT_MANIFEST, publishedMainnetNetworkFromDeploymentManifest } from "./deployments.js";
 import { MAINNET_USDC } from "./release-manifest.js";
+import { registryClient } from "./registry.js";
 
 const PERMANENT_TESTNET_REGISTRY =
   "CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM";
@@ -13,7 +16,7 @@ const PERMANENT_TESTNET_REGISTRY =
 test("all published testnet defaults use the permanent upgradable contract", () => {
   assert.equal(DEPLOYMENTS.testnet.mandateRegistryId, PERMANENT_TESTNET_REGISTRY);
   assert.equal(TESTNET.mandateRegistryId, PERMANENT_TESTNET_REGISTRY);
-  assert.equal(networks.testnet.contractId, PERMANENT_TESTNET_REGISTRY);
+  assert.equal(legacyNetworks.testnet.contractId, PERMANENT_TESTNET_REGISTRY);
 });
 
 function publishedManifest() {
@@ -41,7 +44,7 @@ function publishedManifest() {
   };
 }
 
-test("published Mainnet identity is discoverable without changing testnet signing defaults", () => {
+test("published Mainnet identity is pinned while explicit legacy network remains distinct", () => {
   assert.equal(DEPLOYMENTS.mainnet.mandateRegistryId, "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR");
   assert.equal(DEPLOYMENTS.mainnet.nativeSac, Asset.native().contractId(Networks.PUBLIC));
   assert.equal(DEPLOYMENTS.mainnet.settlementAsset, MAINNET_USDC);
@@ -51,6 +54,87 @@ test("published Mainnet identity is discoverable without changing testnet signin
   assert.equal("rpcUrl" in DEPLOYMENTS.mainnet, false, "deployment metadata is not an implicit spend-ready NetworkConfig");
   assert.equal(Object.isFrozen(DEPLOYMENTS.mainnet), true);
   assert.equal(Object.isFrozen(DEPLOYMENTS), true, "the published Mainnet profile cannot be replaced at runtime");
+});
+
+test("official Mainnet is ready to use from its complete bundled public deployment evidence", () => {
+  assert.equal(MAINNET.mandateRegistryId, "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR");
+  assert.equal(MAINNET.networkPassphrase, Networks.PUBLIC);
+  assert.equal(MAINNET.rpcUrl, "https://mainnet.sorobanrpc.com");
+  assert.equal(MAINNET.settlementAsset.contractId, MAINNET_USDC.contractId);
+  assert.equal(MAINNET.settlementAsset.decimals, 7);
+  assert.equal(networks.mainnet.contractId, MAINNET.mandateRegistryId);
+  assert.equal(networks.mainnet.networkPassphrase, MAINNET.networkPassphrase);
+  assert.deepEqual(MAINNET, publishedMainnetNetworkFromDeploymentManifest(MAINNET_DEPLOYMENT_MANIFEST));
+  assert.notEqual(MAINNET.mandateRegistryId, TESTNET.mandateRegistryId);
+  assert.notEqual(MAINNET.networkPassphrase, TESTNET.networkPassphrase);
+  assert.equal(Object.isFrozen(MAINNET), true);
+  assert.equal(Object.isFrozen(MAINNET.release), true);
+  assert.equal(Object.isFrozen(MAINNET.settlementAsset), true);
+  assert.equal(Object.isFrozen(networks), true);
+  assert.equal(Object.isFrozen(networks.mainnet), true);
+  assert.equal(Reflect.set(networks.mainnet, "contractId", TESTNET.mandateRegistryId), false);
+  assert.equal(Reflect.set(MAINNET, "mandateRegistryId", TESTNET.mandateRegistryId), false);
+  assert.equal(Reflect.set(MAINNET.settlementAsset, "contractId", TESTNET.nativeSac), false);
+  assert.equal(Reflect.set(MAINNET.release, "registryWasmSha256", "a".repeat(64)), false);
+  assert.equal(Object.isFrozen(MAINNET_DEPLOYMENT_MANIFEST), true);
+  for (const value of Object.values(MAINNET_DEPLOYMENT_MANIFEST)) {
+    if (typeof value === "object") assert.equal(Object.isFrozen(value), true);
+  }
+});
+
+test("payment binding encodes V2 arguments and decodes V2 registration, mandate, and payment results", () => {
+  const client = new Client({ contractId: MAINNET.mandateRegistryId, rpcUrl: MAINNET.rpcUrl, networkPassphrase: MAINNET.networkPassphrase });
+  const account = DEPLOYMENTS.mainnet.authorityAccount;
+  const credential = Buffer.alloc(32, 1);
+  const registeredId = Buffer.alloc(32, 2);
+  const args = { user: account, agent: account, merchant: account, asset: MAINNET_USDC.contractId,
+    max_amount: 600_000n, expiry: 1_800_000_000n, vc_hash: credential };
+  const decodeArg = (value: xdr.ScVal) => { const native = scValToNative(value); return native instanceof Uint8Array ? Buffer.from(native) : native; };
+  assert.deepEqual(client.spec.funcArgsToScVals("register_mandate", args).map(decodeArg), Object.values(args));
+  assert.deepEqual(Buffer.from(client.spec.funcResToNative("register_mandate", xdr.ScVal.scvBytes(registeredId)).unwrap()), registeredId);
+  const mandate = { ...args, spent: 200_000n, seq: 1, status: { tag: "Active" } };
+  const mandateScVal = client.spec.nativeToScVal(mandate, xdr.ScSpecTypeDef.scSpecTypeUdt(new xdr.ScSpecTypeUdt({ name: "Mandate" })));
+  const decoded = client.spec.funcResToNative("get_mandate", mandateScVal).unwrap();
+  assert.deepEqual({ ...decoded, vc_hash: Buffer.from(decoded.vc_hash) }, mandate);
+  assert.deepEqual(client.spec.funcArgsToScVals("execute_payment", { mandate_id: registeredId, amount: 200_000n, expected_seq: 1 }).map(decodeArg), [registeredId, 200_000n, 1]);
+  assert.deepEqual(client.spec.funcArgsToScVals("validate_mandate", { mandate_id: registeredId, amount: 200_000n, expected_seq: 1, merchant: account, asset: MAINNET_USDC.contractId }).map(decodeArg), [registeredId, 200_000n, 1, account, MAINNET_USDC.contractId]);
+  for (const method of ["execute_payment", "revoke_mandate", "validate_mandate"]) {
+    assert.equal(client.spec.funcResToNative(method, xdr.ScVal.scvVoid()).unwrap(), null);
+    assert.equal(client.spec.funcResToNative(method, xdr.ScVal.scvError(xdr.ScError.sceContract(6))).isErr(), true);
+  }
+});
+
+test("official V2 binding preserves the exact published WASM spec and all 18 functions", () => {
+  const client = new Client({ contractId: MAINNET.mandateRegistryId, rpcUrl: MAINNET.rpcUrl, networkPassphrase: MAINNET.networkPassphrase });
+  const functions = client.spec.entries.filter((entry) => entry.switch().name === "scSpecEntryFunctionV0").map((entry) => entry.functionV0().name().toString());
+  assert.deepEqual(functions.sort(), ["__constructor", "accept_admin", "derive_mandate_id", "execute_payment", "get_admin", "get_mandate", "get_pending_admin", "get_schema_version", "is_asset_allowed", "is_paused", "pause", "propose_admin", "register_mandate", "revoke_mandate", "set_asset_allowed", "unpause", "upgrade", "validate_mandate"].sort());
+  const specBytes = Buffer.concat(client.spec.entries.map((entry) => entry.toXDR()));
+  assert.equal(createHash("sha256").update(specBytes).digest("hex"), "4c5a232e101007aab8a9b3c717fec3720a65ceb454be2754f7deeb2f95737e6f");
+  for (const method of functions.filter((name) => name !== "__constructor")) {
+    assert.equal(typeof Reflect.get(client, method), "function", `${method} must be callable`);
+    assert.equal(typeof Reflect.get(client.fromJSON, method), "function", `${method} must support signature handoff`);
+  }
+  for (const removed of ["set_admin", "schedule_upgrade", "execute_upgrade", "cancel_upgrade", "get_upgrade_delay", "get_pending_upgrade"]) {
+    assert.equal(Reflect.get(client, removed), undefined, `${removed} must not be advertised on V2`);
+  }
+  const account = DEPLOYMENTS.mainnet.authorityAccount;
+  const decode = (name: string, args: Record<string, unknown>) => client.spec.funcArgsToScVals(name, args).map(scValToNative);
+  assert.deepEqual(decode("__constructor", { admin: account, initial_asset: MAINNET_USDC.contractId }), [account, MAINNET_USDC.contractId]);
+  assert.deepEqual(decode("propose_admin", { new_admin: account }), [account]);
+  assert.deepEqual(decode("set_asset_allowed", { asset: MAINNET_USDC.contractId, allowed: false }), [MAINNET_USDC.contractId, false]);
+  assert.deepEqual(Buffer.from(decode("upgrade", { new_wasm_hash: Buffer.alloc(32, 7) })[0]), Buffer.alloc(32, 7));
+  assert.equal(client.spec.funcResToNative("get_schema_version", xdr.ScVal.scvU32(2)).unwrap(), 2);
+  assert.equal(client.spec.funcResToNative("get_pending_admin", xdr.ScVal.scvVoid()), null);
+});
+
+test("registry factory selects V2 for official Mainnet and legacy only for the explicitly selected older deployment", () => {
+  const signer = { publicKey: DEPLOYMENTS.mainnet.authorityAccount, signTransaction: async () => { throw new Error("no signing in binding-selection test"); } };
+  const mainnetClient = registryClient(MAINNET, signer);
+  assert.equal(mainnetClient instanceof Client, true);
+  assert.equal(typeof mainnetClient.upgrade, "function");
+  assert.equal(registryClient(TESTNET, signer) instanceof LegacyClient, true);
+  assert.equal(registryClient({ ...TESTNET, mandateRegistryId: MAINNET.mandateRegistryId }, signer) instanceof Client, true);
+  assert.equal(registryClient({ ...MAINNET, mandateRegistryId: TESTNET.mandateRegistryId }, signer) instanceof Client, true);
 });
 
 test("published Mainnet helper requires the full verified manifest, not only its public address", () => {

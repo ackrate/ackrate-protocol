@@ -104,23 +104,23 @@ async function main() {
   const mandate = ackrate.createIntentMandate({
     user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
     asset, maxAmount: "5.00", expiry: Math.floor(Date.now() / 1000) + 3600,
-  });
+  }, ackrate.testnet);
   field("mandate id", c.dim(mandate.id));
   field("gatecheck", c.dim(`npm run gatecheck -- ${mandate.id}`));
   record("createIntentMandate", Boolean(mandate.id));
 
   step("registerMandate  (SDK, user-signed)");
-  const regHash = await ackrate.registerMandate(mandate, { signer: user });
+  const regHash = await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${regHash}`));
   record("registerMandate", Boolean(regHash));
 
   step("approveBudget  (SDK, user-signed SEP-41)");
   note("User approves the CONTRACT (not the agent) for a 5 XLM allowance.");
-  const apprHash = await ackrate.approveBudget(mandate, { signer: user });
+  const apprHash = await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${apprHash}`));
   record("approveBudget", Boolean(apprHash));
 
-  const a = ackrate.agent({ mandate, signer: agent });
+  const a = ackrate.agent({ mandate, signer: agent }, ackrate.testnet);
 
   step("agent.pay('1.00')  (SDK, agent-signed — funds move)");
   const before = await token.balance(TESTNET, asset, merchant.publicKey());
@@ -139,7 +139,7 @@ async function main() {
   record("overspend rejected by contract", overspendRejected);
 
   step("revokeMandate  (SDK, user-signed)");
-  const revHash = await ackrate.revokeMandate(mandate, { signer: user });
+  const revHash = await ackrate.revokeMandate(mandate, { signer: user }, ackrate.testnet);
   field("tx", c.link(`https://stellar.expert/explorer/testnet/tx/${revHash}`));
   record("revokeMandate", Boolean(revHash));
 

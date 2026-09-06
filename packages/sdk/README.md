@@ -1,345 +1,197 @@
-# @ackrate/core 0.3.4
+# @ackrate/core 0.4.0
 
-Create an agent, connect to the live MandateRegistry contract on Stellar, and run a crash-safe mandate-validated payment through a small typed surface.
+Give an agent a capped USDC budget on Stellar Mainnet. The MandateRegistry
+enforces the budget, merchant, agent, expiry, and payment sequence on-chain.
+The SDK prepares the workflow; it never receives custody of the user's funds.
 
-`@ackrate/core` is the high-level client for Ackrate, a protocol for agent-driven payments where the spending limit lives inside a Soroban smart contract instead of the application. A user signs a mandate that fixes a budget, a single payee, and an expiry. An agent spends against that mandate, and every payment is validated and consumed on-chain by the contract before any money moves.
+Mainnet MandateRegistry:
+[`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
 
-The SDK is untrusted by design. It never custodies funds and it never enforces the limit. If the SDK has a bug, or the agent key is stolen, the contract still rejects anything outside the mandate: overspending, paying the wrong merchant, replaying a payment, or paying after the user revokes.
+`ackrate.mainnet` uses this official deployment through `@ackrate/stellar`.
+Core's default network is Mainnet. Authorized upgrades replace the contract
+implementation at the same address; compatibility and deployment evidence
+must still be checked when the implementation changes.
 
-## Installation
-
-Version **0.3.4** includes V2 returned-mandate-ID handling and requires
-**Node.js 22+**, Stellar binding **0.2.5**, and exact
-`@stellar/stellar-sdk@16.3.0`.
-
-Install the versioned package with:
+## Install
 
 ```bash
-npm install --save-exact @ackrate/core@0.3.4 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
 ```
 
-`@stellar/stellar-sdk` is a direct dependency you also import yourself for `Keypair`. The package ships its own ESM build with TypeScript types.
+Requires Node.js 22 or newer and the coordinated Stellar package `^0.3.0`.
+See the [release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
+for publication and clean-install verification.
 
-For Mainnet, use `publishedMainnetNetworkFromDeploymentManifest` from
-`@ackrate/stellar` with the complete verified V2 deployment manifest, then pass
-the resulting network explicitly to SDK calls. `DEPLOYMENTS.mainnet` publishes
-the registry identity; it is not a replacement for a complete network configuration.
-See [Mainnet configuration](https://github.com/ackrate/ackrate-protocol#mainnet-deployment-configuration).
-Testnet defaults are unchanged.
+## Authorize a budget and pay
 
-## Quick start (Stellar testnet)
+This example authorizes real USDC. Obtain the user's approval of the merchant,
+`0.03` USDC cap, and one-hour expiry before running the signing steps. The
+accounts must exist, be authorized for USDC, and have enough XLM for fees.
+
+`userSigner` and `agentSigner` below are wallet or securely managed
+`StellarSigner` integrations. `merchantAddress` is your verified seller address;
+`saveMandate` and `paymentJournal.save` are durable application storage.
 
 ```ts
 import { ackrate } from "@ackrate/core";
-import { Keypair } from "@stellar/stellar-sdk";
-
-const user = Keypair.fromSecret(USER_SECRET);   // owns the funds, signs the mandate
-const agent = Keypair.fromSecret(AGENT_SECRET);  // the autonomous spender
 
 const mandate = ackrate.createIntentMandate({
-  user: user.publicKey(),
-  agent: agent.publicKey(),
-  merchant: MERCHANT_ADDRESS,
-  asset: ackrate.testnet.nativeSac,        // native XLM as a SEP-41 token
-  maxAmount: "5.00",                      // total budget the agent may spend
+  user: userSigner.publicKey,
+  agent: agentSigner.publicKey,
+  merchant: merchantAddress,
+  asset: ackrate.mainnet.settlementAsset.contractId,
+  maxAmount: "0.03",
   expiry: Math.floor(Date.now() / 1000) + 3600,
 });
 
-await ackrate.registerMandate(mandate, { signer: user });  // store the mandate on-chain
-await ackrate.approveBudget(mandate, { signer: user });     // SEP-41 allowance to the contract
-const hash = await ackrate.agent({ mandate, signer: agent }).pay("1.00", {
-  // Must durably save the signed hash before the SDK broadcasts it.
+await ackrate.registerMandate(mandate, { signer: userSigner });
+await saveMandate(mandate); // Retain the confirmed registry storage ID.
+await ackrate.approveBudget(mandate, { signer: userSigner });
+
+const agent = ackrate.agent({ mandate, signer: agentSigner });
+const txHash = await agent.pay("0.01", {
   onPrepared: (pending) => paymentJournal.save(pending),
 });
+
+console.log(`https://stellar.expert/explorer/public/tx/${txHash}`);
 ```
 
-After `pay` returns, one real payment has settled on testnet. `hash` is the transaction hash, which you can open on a Stellar explorer.
+The two user approvals do different jobs: registration stores the mandate;
+allowance approval lets the **contract**, not the agent, transfer up to the
+approved token allowance. The budget is a cap, not an upfront deposit. Each
+payment still has to pass the contract's `execute_payment` checks.
 
-## How it works
+Registration updates the mutable mandate's `id` and `idBuffer` to the confirmed
+on-chain storage ID and retains its original digest as `credentialHash`. Await
+registration and persist the updated mandate before constructing an agent.
 
-The flow has three signers and one contract. The user authorizes, the agent spends, and the contract is the gate every payment passes through.
+## Buy an x402 resource
 
-1. `createIntentMandate` builds the mandate object and its canonical credential hash locally. No network call happens here. Legacy registries use that hash as their storage key; V2 derives a separate storage id bound to the network, registry, and mandate policy.
-2. In **0.3.4**, `registerMandate` writes the mandate to the contract, signed by the user, then updates the supplied mutable mandate's `id` and `idBuffer` to the confirmed returned storage id. The original digest is retained as `credentialHash`. Await registration before creating an agent and persist the updated object for recovery. The contract initializes `spent`, `seq`, and `status`; the caller cannot seed those fields. This V2 id handling is not present in **0.3.3**.
-3. `approveBudget` approves a SEP-41 allowance up to the budget. The allowance goes to the **contract**, never to the agent or the SDK. This is the custody boundary: the agent can ask the contract to move money, but only the contract holds the right to pull from the user.
-4. `pay` calls `execute_payment`, signed by the agent. The contract re-checks the agent, the sequence, the merchant scope, the expiry, and the remaining budget, then advances `spent` and `seq` and transfers the funds from user to merchant in one atomic step. If any check fails, the whole call reverts and `pay` throws.
-
-## Paying for a resource (bound-v2 x402)
-
-`agent.fetch(url)` is the x402 client. For new paid endpoints, create the agent
-with `proofPolicy: "bound-v2-only"`. It advertises the bound-v2 capability and
-refuses a legacy challenge before paying. The authenticated challenge fixes the
-merchant's exact public origin, GET method, path and query, network, registry, merchant, asset,
-amount, decimals, and validity window. After `execute_payment` settles, the
-agent signs that exact challenge together with the transaction hash and mandate
-id, then retries with the bound proof.
-
-The contract still enforces the spending limit. A revoked, expired,
-over-budget, replayed, or out-of-scope payment is rejected on-chain; neither the
-SDK nor a cached mandate can bypass `execute_payment`.
+Use `proofPolicy: "bound-v2-only"` for new paid endpoints. The authenticated
+challenge binds the exact HTTP origin, GET path and query, registry, network,
+merchant, asset, amount, and validity window. The agent pays through
+`execute_payment`, then signs a proof binding that challenge to the settlement.
+The merchant independently verifies the payment before delivering its result.
 
 ```ts
 import { getSettlementReceipt } from "@ackrate/core";
 
-const agent = ackrate.agent({
+const consumer = ackrate.agent({
   mandate,
-  signer: agentKey,
+  signer: agentSigner, // Also supports detached signPayload for bound proofs.
   proofPolicy: "bound-v2-only",
-  receiptStore, // required for paid fetch; durable SettlementReceiptStore
+  receiptStore,        // Durable SettlementReceiptStore implementation.
 });
-const res = await agent.fetch("https://merchant.example/report");
-const data = await res.json(); // served only after the merchant verified the on-chain payment
 
-const receipt = getSettlementReceipt(res); // exact proof for gate checking/recovery
-await persistAcceptedResult(data, receipt); // application-owned durable commit
-await agent.acknowledgeDelivery(receipt!);   // only now clear the payment lock
+const response = await consumer.fetch("https://merchant.example/report");
+const result = await response.json();
+const receipt = getSettlementReceipt(response);
+await persistAcceptedResult(result, receipt);
+if (receipt) await consumer.acknowledgeDelivery(receipt);
 ```
 
-Before broadcast, the agent signs the transaction, derives its canonical hash
-and validity deadline, and makes the exact receipt durable. If that storage write
-fails, `fetch` aborts before broadcast and propagates the storage error. Once the
-receipt is durable, any uncertain broadcast/final ledger result, paid-retry
-network failure, non-2xx status, or incomplete body throws
-`DeliveryPendingError` with that `SettlementReceipt`. Do not call `fetch` again,
-because a fresh `402` could create another payment. Reconcile and retry the exact
-existing proof:
+Your `receiptStore` must durably implement `savePending`, `listPending`, and
+`clearPending`. The exact signed transaction hash and bound proof are saved
+**before** broadcast. Storage failure prevents submission. On restart, pending
+receipts restore the no-second-payment lock. Multi-worker applications need
+shared, linearizable storage and coordination; an in-memory store is not enough.
+
+A non-402 response is returned without payment. Redirects are disabled so a
+proof cannot be forwarded to a different origin. The HTTP adapter is separate
+from the mandate and contract, allowing the wire format to evolve independently.
+
+## Recover the original purchase
+
+If payment or delivery becomes uncertain, do not start a fresh purchase. Recover
+the saved receipt and retry its exact proof:
 
 ```ts
 import { DeliveryPendingError } from "@ackrate/core";
 
 try {
-  await agent.fetch("https://merchant.example/report");
+  const response = await consumer.fetch("https://merchant.example/report");
+  const result = await response.json();
+  const receipt = getSettlementReceipt(response);
+  await persistAcceptedResult(result, receipt);
+  if (receipt) await consumer.acknowledgeDelivery(receipt);
 } catch (error) {
-  if (error instanceof DeliveryPendingError) {
-    console.log("prepared payment transaction", error.receipt.txHash);
-    const response = await agent.retryDelivery(error.receipt);
-    const result = await response.json();
-    await persistAcceptedResult(result, error.receipt);
-    await agent.acknowledgeDelivery(error.receipt);
-    // No payment or signature occurs during retryDelivery.
-  } else {
-    throw error;
-  }
+  if (!(error instanceof DeliveryPendingError)) throw error;
+  const response = await consumer.retryDelivery(error.receipt);
+  const result = await response.json();
+  await persistAcceptedResult(result, error.receipt);
+  await consumer.acknowledgeDelivery(error.receipt);
 }
 ```
 
-`retryDelivery` verifies the receipt id, mandate, proof version, exact signed
-origin, method, path, and query. It never pays or signs and always disables
-redirects so proof material cannot be forwarded to another origin. A retry is
-not ready for acknowledgment until the complete successful response body has
-been received. The receipt remains durable and blocks another payment until the
-application validates/persists its business result and explicitly calls
-`acknowledgeDelivery`. Treat every receipt as sensitive bearer data for its exact request.
-A production merchant also needs one durable, linearizable settlement claim and
-immutable-result store keyed by the settlement so a lost response can replay the
-same bytes without charging or running fulfillment again.
+`retryDelivery` never makes another payment, signature, or transaction. It
+validates the receipt and retries only its original request. New payments remain
+blocked until the complete successful result is accepted by the application and
+acknowledged. Protect receipts as sensitive bearer data for that exact request.
 
-The x402 wire format lives in its own module, so it tracks the evolving x402 spec
-without touching the mandate or the contract. Use
-[`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware)
-to build an Express 4/5 merchant that independently verifies the on-chain
-settlement before serving.
+For direct `pay`, `SettlementUncertainError` carries the prepared hash and
+validity window. Persist it and use `agent.reconcilePendingSettlement(record)`
+to query the same transaction. A new payment is unsafe while its result is unknown.
 
-## API
+## API reference
 
-### `ackrate.createIntentMandate(input, net?)`
+| API | Purpose |
+|---|---|
+| `ackrate.mainnet` | Official Mainnet configuration and canonical USDC asset. |
+| `ackrate.createIntentMandate(input, network?)` | Create a local mandate and credential hash without signing or sending. |
+| `ackrate.registerMandate(mandate, { signer }, network?)` | User-signed registration; return a transaction hash and retain the confirmed storage ID. |
+| `ackrate.approveBudget(mandate, { signer }, network?)` | User-signed token allowance to the registry, capped at the mandate budget. |
+| `ackrate.agent(options, network?)` | Create the agent using the registered mandate and authorized signer. |
+| `agent.pay(amount, lifecycle)` | Agent-signed atomic mandate consumption and payment. |
+| `agent.fetch(url, init?)` | Request a paid resource using the x402 challenge/payment/proof flow. |
+| `agent.retryDelivery(receipt, init?)` | Recover the original delivery without paying again. |
+| `agent.acknowledgeDelivery(receipt)` | Clear pending delivery only after durable application acceptance. |
+| `agent.getPendingSettlement()` | Inspect the currently unresolved prepared payment. |
+| `agent.reconcilePendingSettlement(record?)` | Query the original hash and return `pending`, `failed`, `expired`, or `succeeded`. |
+| `getSettlementReceipt(response)` | Read the exact recovery receipt on a paid response. |
+| `ackrate.revokeMandate(mandate, { signer }, network?)` | User-signed revocation; later payments are rejected on-chain. |
+| `toStroops(amount, decimals?)` | Strict decimal-string to integer conversion. |
 
-Builds an AP2-style mandate and its credential hash locally, with no chain call.
-The default nonce makes the credential unique; pass an explicit `nonce` for a
-deterministic hash. V2's on-chain storage id is obtained during registration.
+Mandate inputs:
 
-| Field | Type | Meaning |
-|---|---|---|
-| `user` | `string` | Stellar address that owns the funds and signs the mandate |
-| `agent` | `string` | The only address allowed to call `execute_payment` |
-| `merchant` | `string` | The single payee this mandate is scoped to |
-| `asset` | `string` | SEP-41 / SAC contract id of the token (use `ackrate.testnet.nativeSac` for XLM) |
-| `maxAmount` | `string` | Total budget as a decimal string, e.g. `"5.00"` |
-| `expiry` | `number` | Unix seconds after which the mandate is dead |
-| `decimals` | `number?` | Token decimals, default 7 (Stellar assets) |
-| `nonce` | `string?` | Optional explicit nonce; defaults to a unique value so ids do not collide |
+| Field | Meaning |
+|---|---|
+| `user` | Public address that owns the funds and authorizes setup. |
+| `agent` | Public address allowed to request payments. |
+| `merchant` | Single permitted payee. |
+| `asset` | USDC token contract from `ackrate.mainnet.settlementAsset.contractId`. |
+| `maxAmount` | Total budget as a decimal string, such as `"0.03"`. |
+| `expiry` | Expiry in Unix seconds. |
+| `decimals` | Optional token precision; Stellar USDC uses `7`. |
+| `nonce` | Optional binding nonce; omitted for normal unique mandates. |
 
-Returns an `IntentMandate` with the hex `id`, the raw `idBuffer`, the parsed fields, and `maxAmount` as a `bigint` in stroops.
+Direct payments require a `PaymentSubmissionLifecycle` with durable
+`onPrepared`. For a retriable application operation, also preserve its immutable
+`expectedSeq`; both SDK and contract reject reuse of a consumed sequence.
+Signers may be an external `StellarSigner` or a securely managed Stellar keypair.
+Do not put secret material in code, URLs, logs, or command arguments.
 
-### `ackrate.registerMandate(mandate, { signer }, net?)`
+## What the contract rejects
 
-Stores the mandate on-chain. Signed by the user. Returns the transaction hash.
-Candidate **0.3.4** also updates the supplied mutable mandate with the confirmed
-returned storage id and preserves its original hash as `credentialHash`. Await
-registration and persist that updated object before creating an agent or
-preparing later payment/recovery operations.
+Unauthorized agents, wrong merchant scope, revoked or expired mandates,
+overspending, non-positive amounts, replayed sequences, disallowed assets, and
+payments while paused are rejected on-chain. A failed atomic payment does not
+partially consume its budget or transfer tokens. A read-only validation or a
+cached mandate is never a substitute for `execute_payment`.
 
-### `ackrate.approveBudget(mandate, { signer }, net?)`
+Use decimal strings, not JavaScript floats, for money. The SDK rejects negatives,
+scientific notation, excess precision, and malformed amounts. Inspect typed
+errors and recorded transaction evidence; never convert uncertainty into an
+automatic second payment.
 
-Approves the contract for a SEP-41 allowance up to the mandate budget. Signed by the user. Returns the transaction hash.
+## Related packages
 
-### `ackrate.agent({ mandate, signer }, net?).pay(amount, lifecycle)`
+- [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar): Mainnet configuration, wallet signing, and contract access.
+- [`@ackrate/ap2`](https://www.npmjs.com/package/@ackrate/ap2): signed intent admission and binding.
+- [`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware): merchant-side verification and durable delivery.
+- [`@ackrate/cli`](https://www.npmjs.com/package/@ackrate/cli): the same Mainnet workflow from a terminal.
 
-Reads the current mandate sequence, then calls `execute_payment` for `amount` (a decimal string), signed by the agent. Returns the transaction hash. Throws if the contract rejects the payment.
-
-Every direct `pay` call must pass a `PaymentSubmissionLifecycle`. Its async
-`onPrepared` hook receives the signed hash, sequence, and exact validity deadline
-before any broadcast; persist that record atomically or throw to abort without
-sending. Ackrate's CLI uses this hook and refuses another payment until
-`settlement reconcile` proves the result and an exact successful hash is
-explicitly acknowledged.
-
-For a user-visible operation that may be retried after a lost HTTP response,
-also pass its immutable `expectedSeq`. The SDK compares it with current contract
-state before signing. If a prior attempt already consumed that sequence, retry
-fails before another transaction is created; the contract repeats the same check
-at execution. Concurrent same-mandate operations in one process are rejected by
-a synchronous claim before the first chain read.
-
-### `ackrate.agent({ mandate, signer, proofPolicy?, receiptStore? }, net?)`
-
-Creates an agent. Set `proofPolicy` to `"bound-v2-only"` for every new paid
-endpoint. The default `"legacy-compatible"` exists only for migrations.
-`receiptStore` implements `SettlementReceiptStore` and is required before any
-402-triggered payment. `savePending` must become durable before transaction
-broadcast, `listPending` lets a new process restore the no-second-payment lock,
-and `clearPending` records explicit application acknowledgment after full-body
-success.
-
-### `agent.fetch(url, init?)`
-
-The x402 client. It requests `url` with bound-v2 capability negotiation; on a
-valid `402` it checks the request and mandate binding, signs the transaction,
-persists its hash plus bound proof before broadcast, pays on-chain through the
-same `pay` path, and retries with `X-PAYMENT`. Automatic redirects are disabled
-before and after settlement.
-A non-402 response is returned unchanged, with no payment.
-
-If the paid retry fails to connect, returns a non-2xx status, or fails before the
-full successful response body is received after settlement, throws
-`DeliveryPendingError` carrying a `SettlementReceipt` with the transaction hash
-and exact proof. A submitted-but-unconfirmed transaction also produces the same
-recoverable receipt and blocks every new payment on that agent until it is
-reconciled.
-
-### `agent.retryDelivery(receipt, init?)`
-
-Retries HTTP delivery with the receipt's existing `X-PAYMENT` proof. It never
-calls `pay`, never signs, and never submits a transaction. It rejects a receipt
-belonging to a different mandate or exact signed request. With a configured
-receipt store, successful full-body delivery remains pending until the
-application acknowledges it.
-
-### `agent.acknowledgeDelivery(receipt)`
-
-Validates the exact receipt and removes it from durable pending state. Call this
-only after the complete HTTP body has been validated and the business result is
-durably accepted. If acknowledgment storage fails, it throws
-`DeliveryPendingError` and keeps new payments blocked. This explicit boundary
-prevents a crash between transport success and application commit from silently
-creating a second purchase.
-
-### `agent.getPendingSettlement()` and `agent.reconcilePendingSettlement()`
-
-`getPendingSettlement` returns the captured hash, sequence, and validity deadline
-for a prepared transaction whose broadcast/final result or paid delivery has not
-been closed. While it is present, `pay` and `fetch` fail closed instead of
-risking a second payment. On restart, the first operation hydrates the same lock
-from `receiptStore.listPending`. After restarting a direct-pay process, pass the
-exact durable journal record to `reconcilePendingSettlement(record)`; it
-validates the mandate and queries that hash without submitting anything. The
-result is `pending`, `failed`, `expired`, or `succeeded`. A succeeded settlement
-with a receipt remains locked until recovery and explicit application
-acknowledgment finish the original delivery.
-
-### `getSettlementReceipt(response)`
-
-Returns the immutable receipt attached to a successful paid response. It
-includes `receiptId`, proof version, exact URL and method, transaction hash,
-mandate id, amount, and the full settlement proof.
-
-### `DeliveryPendingError`, `SettlementUncertainError`, `SettlementReceipt`, and `SettlementReceiptStore`
-
-Typed post-submission recovery evidence. The error means a canonical transaction
-hash exists and starting another payment is unsafe until that same hash is
-reconciled and its delivery is closed. Surface the hash to the user and retry
-the same receipt; never start another payment automatically. A receipt store
-must protect the full proof as sensitive data and provide atomic durable
-`savePending`, `listPending`, and `clearPending` operations. Multi-process
-consumers also need shared linearizable storage rather than the reference file
-store.
-
-`SettlementUncertainError` is the direct-`pay` equivalent: broadcast was
-attempted and the transaction may have been submitted, but the SDK did not prove
-a final ledger result. Retain its transaction hash and call
-`reconcilePendingSettlement` on the same agent before attempting any other spend.
-
-### `ackrate.revokeMandate(mandate, { signer }, net?)`
-
-Marks the mandate revoked. Signed by the user. After this, every `pay` is rejected on-chain.
-
-### `toStroops(human, decimals?)`
-
-Converts a decimal string to stroops as a `bigint`. Strict by design, because this is money: only a non-negative decimal such as `"5"` or `"5.00"` is accepted. Negatives, scientific notation, garbage, or more fraction digits than `decimals` all throw rather than produce a wrong on-chain value.
-
-### `Errors`
-
-Typed contract error codes, re-exported so you can branch on a rejection.
-
-The `signer` field on every user or agent call accepts either a `Keypair` or a raw secret string.
-
-## Amounts
-
-Amounts are decimal strings, not floats. `"5.00"`, `"0.01"`, and `"100"` are valid. The SDK converts them to integer stroops with the asset's decimals (7 by default) and rejects anything ambiguous, so you never round money by accident.
-
-## Errors and what the contract refuses
-
-When `pay` (or any call) is rejected on-chain, the SDK throws and the reason maps to a typed code. These are the guarantees a compromised agent or SDK cannot get around:
-
-| Code | Name | Cause |
-|---|---|---|
-| `Errors[1]` | AlreadyExists | A mandate with that id is already registered |
-| `Errors[2]` | NotFound | No mandate with that id |
-| `Errors[4]` | MandateExpired | The payment happened at or after `expiry` |
-| `Errors[5]` | MandateRevoked | The user revoked the mandate |
-| `Errors[6]` | BudgetExceeded | The spend would push `spent` past `maxAmount` |
-| `Errors[7]` | MerchantOutOfScope | The payee is not the mandate's merchant |
-| `Errors[8]` | BadSequence | A replayed or out-of-order payment |
-| `Errors[9]` | InvalidAmount | A non-positive amount |
-| `Errors[10]` | Paused | The contract's money path is paused |
-| `Errors[11]` | UpgradeNotScheduled | No upgrade is pending |
-| `Errors[12]` | UpgradeNotReady | The one-hour delay has not elapsed |
-| `Errors[13]` | UpgradeAlreadyScheduled | An upgrade is already pending |
-| `Errors[14]` | UpgradeRequiresPause | Execution requires paused state |
-
-```ts
-try {
-  await ackrate.agent({ mandate, signer: agent }).pay("100.00", {
-    onPrepared: (pending) => paymentJournal.save(pending),
-  });
-} catch (err) {
-  // The contract refused: budget, scope, expiry, replay, or revocation.
-  // Inspect the thrown message, or compare against Errors[...] codes.
-}
-```
-
-## Network
-
-`@ackrate/core` defaults to Stellar testnet and the upgradeable simple
-MandateRegistry pinned in `@ackrate/stellar`:
-[`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM).
-Pass a custom `NetworkConfig` as the last argument to any call to select a
-different compatible deployment, RPC, or passphrase.
-
-The current contract WASM SHA-256 is
-`ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`,
-matching the reproducible [`simple-v0.2.3` release](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0).
-
-```ts
-ackrate.testnet            // the default NetworkConfig
-ackrate.testnet.nativeSac  // native XLM as a SEP-41 contract id
-ackrate.testnet.mandateRegistryId // the live contract id
-```
-
-## Relationship to `@ackrate/stellar`
-
-`@ackrate/core` is built on [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar), which holds the typed MandateRegistry bindings, network config, signing adapter, and SEP-41 helpers. Use `core` for the agent and payment flow. Drop down to `@ackrate/stellar` only when you need direct, typed access to the contract.
-
-## License
+The [configuration source](https://github.com/ackrate/ackrate-protocol/blob/main/packages/stellar/src/deployments.ts)
+and [Mainnet deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
+show how the coordinated packages map to the contract above.
 
 Apache-2.0.

@@ -1,6 +1,6 @@
-# @ackrate/ap2 0.3.3
+# @ackrate/ap2 0.4.0
 
-Signed AP2 v0.1 Ackrate profile validation for contract-enforced Stellar payments.
+Signed AP2 v0.1 intent admission for contract-enforced USDC payments on Stellar Mainnet.
 
 `@ackrate/ap2` turns the supported AP2 v0.1 `IntentMandate` subset into a
 versioned Stellar Ed25519 credential, validates it at mandate admission, and
@@ -13,19 +13,37 @@ verifier for every upstream AP2 VC or JWS format. It has no HTTP or x402
 dependency, so later AP2 or x402 wire changes can be handled by adapters without
 redesigning `MandateRegistry`.
 
+## Mainnet contract
+
+Registered mandates use
+[`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR)
+through `@ackrate/core` and its official `ackrate.mainnet` configuration.
+AP2 is a protocol bridge: it does not maintain a second network configuration,
+receive token allowances, or move funds itself. Authorized contract upgrades
+replace the implementation at this same address; compatibility and release
+evidence must still be checked when the implementation changes.
+
 ## Installation
 
-Version **0.3.3** requires
-**Node.js 22+**, core **0.3.4**, and exact `@stellar/stellar-sdk@16.3.0`.
+Version **0.4.0** requires
+**Node.js 22+**, core **0.4.0**, and exact `@stellar/stellar-sdk@16.3.0`.
 The AP2 protocol profile remains v0.1; this package update does not change it.
 
 Install the pinned set with:
 
 ```bash
-npm install --save-exact @ackrate/ap2@0.3.3 @ackrate/core@0.3.4 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/ap2@0.4.0 @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
 ```
 
+See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
+for publication and clean-install verification.
+
 ## Signed validator quick start
+
+The example authorizes real USDC. Obtain the user's approval of the seller,
+budget, and expiry before signing or submitting. `USER_KEY` and `AGENT_KEY` are
+securely managed Stellar `Keypair` objects; never put their secrets in source or
+logs. `paymentJournal` and `saveMandate` are durable application storage.
 
 ```ts
 import {
@@ -45,37 +63,40 @@ const credential = signAp2Mandate({
   stellar: {
     user: USER_KEY.publicKey(),
     agent: AGENT_KEY.publicKey(),
-    asset: ackrate.testnet.nativeSac,
-    maxAmount: "5.00",
+    asset: ackrate.mainnet.settlementAsset.contractId,
+    maxAmount: "0.03",
   },
 }, USER_KEY);
 
 const validator = createAp2ComplianceValidator({
   replayStore: new InMemoryAp2ReplayStore(), // development only
-  replayNamespace: `stellar-testnet:${ackrate.testnet.mandateRegistryId}`,
+  replayNamespace: `stellar-mainnet:${ackrate.mainnet.mandateRegistryId}`,
 });
 
 const accepted = await validator.validateAndConsume({
   credential,
   expectedUser: USER_KEY.publicKey(), // trusted session/account identity
   merchant: MERCHANT_ADDRESS,         // trusted endpoint configuration
-  amount: "1.00",                    // semantic amount, not a wire-format claim
+  amount: "0.01",                    // semantic amount, not a wire-format claim
 });
 
 await ackrate.registerMandate(accepted.binding.mandate, { signer: USER_KEY });
+await saveMandate(accepted.binding.mandate); // Retain the returned on-chain ID.
 await ackrate.approveBudget(accepted.binding.mandate, { signer: USER_KEY });
-await ackrate.agent({ mandate: accepted.binding.mandate, signer: AGENT_KEY }).pay("1.00", {
+await ackrate.agent({ mandate: accepted.binding.mandate, signer: AGENT_KEY }).pay("0.01", {
   onPrepared: (pending) => paymentJournal.save(pending),
 });
 ```
 
 `expectedUser`, `merchant`, and `amount` must come from trusted application
 state. The validator never authorizes a payment from untrusted HTTP fields.
+The user's USDC allowance goes to the registry, never the agent or AP2 package.
+The budget is not deposited upfront; XLM pays network transaction fees.
 
 ## Replay semantics
 
 `validateAndConsume` consumes a mandate hash once at signed-mandate admission or
-registration. It is **not** called before every purchase: a Ackrate mandate is
+registration. It is **not** called before every purchase: an Ackrate mandate is
 intentionally multi-use.
 
 After admission, every payment still goes through
@@ -192,18 +213,21 @@ npm run build -w @ackrate/ap2
 npm run test -w @ackrate/ap2
 ```
 
-The package has 59 tests: 12 stable binding/vector tests plus 47 validator tests
-covering valid credentials, tampering, every version boundary, malformed
+The package's binding/vector and validator tests cover valid credentials,
+tampering, version boundaries, malformed
 signatures, trusted signer and merchant scope, exact amount limits, overspend,
 expiry, replay, 100-way concurrent admission, store outages, replay poisoning,
 and namespace isolation.
 
-## Current contract target
+## Configuration and recovery
 
-The default is the upgradeable simple `MandateRegistry` on Stellar testnet:
+The [canonical Mainnet configuration](https://github.com/ackrate/ackrate-protocol/blob/main/packages/stellar/src/deployments.ts)
+and [contract deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
+tie the coordinated packages to the registry above. Core uses that Mainnet
+configuration by default; AP2 adds signed intent admission, not another network.
 
-- Contract: [`CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
-- WASM SHA-256: `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`
-- Reproducible release: [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
+If a submitted payment is uncertain, preserve its exact prepared transaction
+hash and reconcile it with Core. Do not sign a new intent or pay again to recover
+an existing purchase. See the [Core recovery workflow](https://github.com/ackrate/ackrate-protocol/blob/main/packages/sdk/README.md#recover-the-original-purchase).
 
 Apache-2.0.

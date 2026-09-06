@@ -1,7 +1,12 @@
 # Ackrate Mainnet Delivery Roadmap
 
-Status: planning baseline. Nothing in this document claims that a mainnet
-contract, production wallet, or mainnet package release already exists.
+Status: **historical planning baseline**, not the current deployment or package
+release status. The active Mainnet V2 target is
+[CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+Use the [current five-package configuration map](mainnet-configuration.md) and
+[dated npm release matrix](ackrate-sdk-npm.md#release-matrix). The original
+OpenZeppelin/timelock design below is preserved as planning history; current V2
+uses native Stellar authorization and has no integrated timelock.
 
 This roadmap turns the current testnet toolkit into a production-oriented
 mainnet release while preserving Ackrate's core invariant:

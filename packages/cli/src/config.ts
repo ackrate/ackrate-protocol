@@ -1,12 +1,13 @@
-/** Public, committable project configuration. Mainnet is accepted only through
- * an exact deployment manifest whose SHA-256 is pinned in this file. */
+/** Public, committable project configuration for the official Mainnet registry.
+ * Optional deployment files are checked against that registry and hash-pinned. */
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { StrKey } from "@stellar/stellar-sdk";
 import {
+  MAINNET,
   TESTNET,
-  mainnetNetworkFromDeploymentManifest,
+  publishedMainnetNetworkFromDeploymentManifest,
   type NetworkConfig,
   type ReleaseNetworkConfig,
 } from "@ackrate/stellar";
@@ -27,8 +28,9 @@ export interface TestnetConfig extends ConfigBase {
 
 export interface MainnetConfig extends ConfigBase {
   network: "mainnet";
-  manifestPath: string;
-  manifestSha256: string;
+  contractId: string;
+  manifestPath?: string;
+  manifestSha256?: string;
   userSigner: string;
   agentSigner: string;
   merchant: string;
@@ -93,12 +95,30 @@ function parseConfig(input: unknown): AckrateConfig {
     return Object.freeze({ schemaVersion: 1, network: "testnet", contractId, explorer, unlockPrice, budget });
   }
   if (raw.network !== "mainnet") throw new Error("config network must be testnet or mainnet");
-  exactKeys(raw, raw.agentSecretEnv === undefined
-    ? ["schemaVersion", "network", "manifestPath", "manifestSha256", "explorer", "unlockPrice", "budget", "userSigner", "agentSigner", "merchant"]
-    : ["schemaVersion", "network", "manifestPath", "manifestSha256", "explorer", "unlockPrice", "budget", "userSigner", "agentSigner", "merchant", "agentSecretEnv"]);
-  const manifestPath = exactText(raw.manifestPath, "config manifestPath");
-  const manifestSha256 = exactText(raw.manifestSha256, "config manifestSha256").toLowerCase();
-  if (!SHA256.test(manifestSha256)) throw new Error("config manifestSha256 must be lowercase SHA-256");
+  const hasManifest = raw.manifestPath !== undefined || raw.manifestSha256 !== undefined;
+  // Old manifest-based projects predate the explicit contractId field. They are
+  // normalized to the official registry, then their actual manifest is checked
+  // before use; no alternate deployment can be selected by omitting the field.
+  const legacyManifestConfig = hasManifest && raw.contractId === undefined;
+  exactKeys(raw, [
+    "schemaVersion", "network", "explorer", "unlockPrice", "budget", "userSigner", "agentSigner", "merchant",
+    ...(!legacyManifestConfig ? ["contractId"] : []),
+    ...(hasManifest ? ["manifestPath", "manifestSha256"] : []),
+    ...(raw.agentSecretEnv !== undefined ? ["agentSecretEnv"] : []),
+  ]);
+  const contractId = legacyManifestConfig
+    ? MAINNET.mandateRegistryId
+    : exactText(raw.contractId, "config contractId");
+  if (contractId !== MAINNET.mandateRegistryId) {
+    throw new Error(`Mainnet config contractId must match the official registry ${MAINNET.mandateRegistryId}`);
+  }
+  let manifestPath: string | undefined;
+  let manifestSha256: string | undefined;
+  if (hasManifest) {
+    manifestPath = exactText(raw.manifestPath, "config manifestPath");
+    manifestSha256 = exactText(raw.manifestSha256, "config manifestSha256");
+    if (!SHA256.test(manifestSha256)) throw new Error("config manifestSha256 must be lowercase SHA-256");
+  }
   const merchant = exactText(raw.merchant, "config merchant");
   if (!StrKey.isValidEd25519PublicKey(merchant)) throw new Error("config merchant must be a Stellar G-account");
   const userSigner = signerName(raw.userSigner, "config userSigner");
@@ -111,8 +131,8 @@ function parseConfig(input: unknown): AckrateConfig {
   return Object.freeze({
     schemaVersion: 1,
     network: "mainnet",
-    manifestPath,
-    manifestSha256,
+    contractId,
+    ...(manifestPath ? { manifestPath, manifestSha256 } : {}),
     explorer,
     unlockPrice,
     budget,
@@ -123,7 +143,7 @@ function parseConfig(input: unknown): AckrateConfig {
   });
 }
 
-export function defaultConfig(): TestnetConfig {
+export function testnetConfig(): TestnetConfig {
   return {
     schemaVersion: 1,
     network: "testnet",
@@ -138,22 +158,34 @@ export function sha256File(path: string): string {
   return createHash("sha256").update(readFileSync(path)).digest("hex");
 }
 
-export function createMainnetConfig(input: {
-  manifestPath: string;
+export interface MainnetConfigInput {
+  manifestPath?: string;
   userSigner: string;
   agentSigner: string;
   merchant: string;
   unlockPrice: string;
   budget: string;
   agentSecretEnv?: string;
-}, cwd: string = process.cwd()): MainnetConfig {
-  const absoluteManifest = resolve(cwd, input.manifestPath);
-  mainnetNetworkFromDeploymentManifest(JSON.parse(readFileSync(absoluteManifest, "utf8")) as unknown);
+}
+
+/** Public actors are explicit; the deployed contract and network are built in. */
+export function defaultConfig(input: MainnetConfigInput, cwd: string = process.cwd()): MainnetConfig {
+  return createMainnetConfig(input, cwd);
+}
+
+export function createMainnetConfig(input: MainnetConfigInput, cwd: string = process.cwd()): MainnetConfig {
+  let manifestSha256: string | undefined;
+  if (input.manifestPath !== undefined) {
+    const path = exactText(input.manifestPath, "config manifestPath");
+    const bytes = readFileSync(resolve(cwd, path));
+    publishedMainnetNetworkFromDeploymentManifest(JSON.parse(bytes.toString("utf8")) as unknown);
+    manifestSha256 = createHash("sha256").update(bytes).digest("hex");
+  }
   return parseConfig({
     schemaVersion: 1,
     network: "mainnet",
-    manifestPath: input.manifestPath,
-    manifestSha256: sha256File(absoluteManifest),
+    contractId: MAINNET.mandateRegistryId,
+    ...(input.manifestPath !== undefined ? { manifestPath: input.manifestPath, manifestSha256 } : {}),
     explorer: "https://stellar.expert/explorer/public",
     unlockPrice: input.unlockPrice,
     budget: input.budget,
@@ -165,12 +197,14 @@ export function createMainnetConfig(input: {
 }
 
 export function networkConfig(config: AckrateConfig, cwd: string = process.cwd()): NetworkConfig | ReleaseNetworkConfig {
-  if (config.network === "testnet") return { ...TESTNET, mandateRegistryId: config.contractId };
-  const manifest = resolve(cwd, config.manifestPath);
-  if (sha256File(manifest) !== config.manifestSha256) {
+  const checked = parseConfig(config);
+  if (checked.network === "testnet") return { ...TESTNET, mandateRegistryId: checked.contractId };
+  if (!checked.manifestPath) return MAINNET;
+  const bytes = readFileSync(resolve(cwd, checked.manifestPath));
+  if (createHash("sha256").update(bytes).digest("hex") !== checked.manifestSha256) {
     throw new Error("mainnet deployment manifest no longer matches the SHA-256 pinned in ackrate.config.json");
   }
-  return mainnetNetworkFromDeploymentManifest(JSON.parse(readFileSync(manifest, "utf8")) as unknown);
+  return publishedMainnetNetworkFromDeploymentManifest(JSON.parse(bytes.toString("utf8")) as unknown);
 }
 
 export function configPath(cwd: string = process.cwd()): string {

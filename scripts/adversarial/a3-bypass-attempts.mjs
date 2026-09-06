@@ -40,9 +40,9 @@ const mandate = ackrate.createIntentMandate({
   asset: ackrate.testnet.nativeSac,
   maxAmount: "2.00",
   expiry: Math.floor(Date.now() / 1000) + 3600,
-});
-await ackrate.registerMandate(mandate, { signer: user });
-await ackrate.approveBudget(mandate, { signer: user });
+}, ackrate.testnet);
+await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
+await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
 console.log(`mandate ${mandate.id} live with 2.00 XLM allowance to the contract`);
 
 const asAgent = registryClient(TESTNET, keypairSigner(agent.secret(), TESTNET.networkPassphrase));

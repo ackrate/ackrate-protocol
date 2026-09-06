@@ -88,9 +88,9 @@ async function main() {
   const mandate = ackrate.createIntentMandate({
     user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
     asset, maxAmount: BUDGET, expiry: Math.floor(Date.now() / 1000) + 3600,
-  });
-  const reg = await ackrate.registerMandate(mandate, { signer: user.secret() });
-  const appr = await ackrate.approveBudget(mandate, { signer: user.secret() });
+  }, ackrate.testnet);
+  const reg = await ackrate.registerMandate(mandate, { signer: user.secret() }, ackrate.testnet);
+  const appr = await ackrate.approveBudget(mandate, { signer: user.secret() }, ackrate.testnet);
   field("mandate", c.dim(mandate.id));
   field("register", tx(reg));
   field("approve", tx(appr));

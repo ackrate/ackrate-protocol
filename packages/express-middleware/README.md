@@ -1,46 +1,65 @@
-# @ackrate/express-middleware 0.2.5
+# @ackrate/express-middleware 0.3.0
 
-Fail-closed Express 4/5 paid JSON routes for Ackrate on Stellar.
-
-The `@ackrate/express-middleware` package exposes the typed ESM API.
+Paid JSON routes for Express 4/5, settled in USDC on Stellar Mainnet.
 
 The package authenticates an exact-origin GET challenge, verifies the on-chain
 settlement independently, atomically claims fulfillment, stores the exact JSON
 result before sending it, and replays those bytes on recovery. A settlement can
 never re-run arbitrary fulfillment work.
 
+## Mainnet contract
+
+The merchant verifies payments against
+[`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR),
+using the official `MAINNET` configuration from `@ackrate/stellar`.
+This middleware never signs a consumer payment or receives the user's allowance.
+The registry enforces the mandate; the merchant verifies the resulting settlement.
+Authorized upgrades replace the registry implementation at the same contract
+address. Re-check implementation compatibility and release evidence after upgrades.
+
 ## Installation
 
-Version **0.2.5** requires
-**Node.js 22+**, core **0.3.4**, Stellar binding **0.2.5**, and exact
+Version **0.3.0** requires
+**Node.js 22+**, core **0.4.0**, Stellar binding **0.3.0**, and exact
 `@stellar/stellar-sdk@16.3.0`.
 
 Install with:
 
 ```bash
-npm install --save-exact @ackrate/express-middleware@0.2.5 @stellar/stellar-sdk@16.3.0 express@5.2.1
+npm install --save-exact @ackrate/express-middleware@0.3.0 @ackrate/stellar@0.3.0 @stellar/stellar-sdk@16.3.0 express@5.2.1
 ```
+
+See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
+for publication and clean-install verification.
 
 ## Safe paid route
 
+`redemptionStore` is your shared durable `BoundRedemptionStore` implementation.
+`loadResearchOnce` represents application fulfillment. Configure a funded public
+read-source address, your merchant address, HTTPS origin, and a private challenge
+key through your deployment's secret manager.
+
 ```ts
 import express from "express";
+import { MAINNET } from "@ackrate/stellar";
 import {
-  InMemoryBoundRedemptionStore,
   createBoundAckratePaidJsonRoute,
 } from "@ackrate/express-middleware";
 
 const app = express();
 
 const paidResearch = createBoundAckratePaidJsonRoute({
+  networkConfig: MAINNET,
+  network: "stellar-mainnet",
+  asset: MAINNET.settlementAsset.contractId,
+  decimals: MAINNET.settlementAsset.decimals,
   merchant: process.env.ACKRATE_MERCHANT_ADDRESS!,
   sourceAccount: process.env.ACKRATE_READ_SOURCE_ADDRESS!,
   audience: "https://api.example", // exact public origin; never Host-derived
   challengeSecret: process.env.ACKRATE_CHALLENGE_SECRET!, // at least 32 bytes
-  amount: "1.00",
+  amount: "0.01", // USDC; callers authorize their own mandate and budget.
   resource: (request) => request.originalUrl,
-  // One-process demo only. Production needs a shared linearizable store.
-  redemptionStore: new InMemoryBoundRedemptionStore(),
+  redemptionStore,
 }, async ({ request, payment }) => ({
   body: {
     ok: true,
@@ -155,8 +174,7 @@ Runtime exports include `createBoundAckratePaidJsonRoute`,
 `createStellarPaymentVerifier`, strict event
 selection helpers, and all TypeScript store/evidence/result types.
 
-Legacy proof-v1 middleware remains available only through the legacy API. The
-low-level bound authorization middleware is intentionally not exported from the
+The low-level bound authorization middleware is intentionally not exported from the
 package root; public paid endpoints use the result-storing route wrapper.
 
 ## Wire-format isolation
@@ -164,10 +182,10 @@ package root; public paid endpoints use the result-storing route wrapper.
 x402 and AP2 evolve outside the MandateRegistry. HTTP/profile adapters may
 change without changing contract storage or weakening `execute_payment`.
 
-## Current contract evidence
+## Configuration evidence
 
-- Testnet contract: [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
-- WASM SHA-256: `ba370a80369daa0a0dea2554410dca6f2a9f7a76ba707cb92a83434e2fe76e87`
-- Release: [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0)
+- [Canonical Mainnet configuration](https://github.com/ackrate/ackrate-protocol/blob/main/packages/stellar/src/deployments.ts).
+- [Mainnet contract deployment, source, and original artifact](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md).
+- [Consumer payment and recovery workflow](https://github.com/ackrate/ackrate-protocol/blob/main/packages/sdk/README.md).
 
 Apache-2.0.

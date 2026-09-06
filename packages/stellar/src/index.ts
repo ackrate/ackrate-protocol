@@ -8,6 +8,8 @@
  */
 export * from "./deployments.js";
 export * from "./client.js";
+export { Client as LegacyClient } from "./legacy-client.js";
+export * as legacy from "./legacy-client.js";
 export * from "./config.js";
 export * from "./signer.js";
 export * from "./registry.js";

@@ -1,3 +1,9 @@
+/**
+ * Official Mainnet V2 binding, generated offline with Stellar CLI 26.1.0 from
+ * published WASM SHA-256 982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01faacff62.
+ * Contract spec bytes SHA-256 4c5a232e101007aab8a9b3c717fec3720a65ceb454be2754f7deeb2f95737e6f.
+ * Do not edit ABI entries by hand; regenerate from the verified release artifact.
+ */
 import { Buffer } from "buffer";
 import { Address } from "@stellar/stellar-sdk";
 import { DEPLOYMENTS } from "./deployments.js";
@@ -31,16 +37,12 @@ if (typeof window !== "undefined") {
   window.Buffer = window.Buffer || Buffer;
 }
 
-export const networks = {
-  testnet: {
-    networkPassphrase: "Test SDF Network ; September 2015",
-    contractId: DEPLOYMENTS.testnet.mandateRegistryId,
-  },
-} as const;
-export interface PendingUpgrade {
-  execute_after: u64;
-  wasm_hash: Buffer;
-}
+
+
+
+export const networks = Object.freeze({
+  mainnet: Object.freeze({ networkPassphrase: "Public Global Stellar Network ; September 2015", contractId: DEPLOYMENTS.mainnet.mandateRegistryId }),
+} as const);
 
 export const Errors = {
   1: {message:"AlreadyExists"},
@@ -52,10 +54,14 @@ export const Errors = {
   8: {message:"BadSequence"},
   9: {message:"InvalidAmount"},
   10: {message:"Paused"},
-  11: {message:"UpgradeNotScheduled"},
-  12: {message:"UpgradeNotReady"},
-  13: {message:"UpgradeAlreadyScheduled"},
-  14: {message:"UpgradeRequiresPause"}
+  14: {message:"UpgradeRequiresPause"},
+  15: {message:"AssetNotAllowed"},
+  16: {message:"MandateTooLong"},
+  17: {message:"SequenceExhausted"},
+  18: {message:"AssetPolicyRequiresPause"},
+  19: {message:"InvalidState"},
+  20: {message:"NoPendingAdmin"},
+  21: {message:"AssetOutOfScope"}
 }
 
 export type Status = {tag: "Active", values: void} | {tag: "Revoked", values: void} | {tag: "Exhausted", values: void};
@@ -63,45 +69,54 @@ export type Status = {tag: "Active", values: void} | {tag: "Revoked", values: vo
 
 export interface Mandate {
   /**
- * The ONLY principal permitted to call `execute_payment`.
+ * The only principal permitted to call `execute_payment`.
  */
 agent: string;
   /**
- * SEP-41 / SAC contract id (USDC on testnet).
+ * SEP-41 token contract used for settlement.
  */
 asset: string;
   /**
- * Ledger close timestamp (seconds) after which the mandate is dead.
+ * Ledger-close timestamp after which the mandate is invalid.
  */
 expiry: u64;
   /**
- * Total budget authorized by the mandate.
+ * Total amount authorized by the mandate.
  */
 max_amount: i128;
   /**
- * MVP: single allowed payee (scope). Future: `Vec<Address>` or scope-hash.
+ * The only allowed payment recipient.
  */
 merchant: string;
   /**
- * Monotonic payment counter (mandate-level trace / replay guard).
+ * Monotonic replay guard for successful payments.
  */
 seq: u32;
   /**
- * Cumulative consumed; invariant: `0 <= spent <= max_amount`.
+ * Amount consumed so far; always between zero and `max_amount`.
  */
 spent: i128;
   status: Status;
   /**
- * Signer of the AP2 IntentMandate; grants the SEP-41 allowance.
+ * Principal authorizing the mandate and token allowance.
  */
 user: string;
   /**
- * Hash binding to the off-chain AP2 IntentMandate VC; also the storage key.
+ * Credential commitment and caller-supplied uniqueness source. The
+ * on-chain mandate identifier is a domain-separated hash over this value
+ * and every immutable mandate term.
  */
 vc_hash: Buffer;
 }
 
-export type DataKey = {tag: "Admin", values: void} | {tag: "Paused", values: void} | {tag: "PendingUpgrade", values: void} | {tag: "Mandate", values: readonly [Buffer]};
+
+
+
+
+
+
+
+
 
 export interface Client {
   /**
@@ -117,6 +132,13 @@ export interface Client {
   unpause: (options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
+   * Construct and simulate a upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Replace this contract's WASM at the same address. Upgrades require the
+   * administrator's authorization and an already-paused money path.
+   */
+  upgrade: ({new_wasm_hash}: {new_wasm_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+
+  /**
    * Construct and simulate a get_admin transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
    * Current operational administrator.
    */
@@ -129,84 +151,91 @@ export interface Client {
   is_paused: (options?: MethodOptions) => Promise<AssembledTransaction<boolean>>
 
   /**
-   * Construct and simulate a set_admin transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Rotate operational authority. Authorized by the current administrator.
-   */
-  set_admin: ({new_admin}: {new_admin: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
-
-  /**
    * Construct and simulate a get_mandate transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Read-only accessor for the stored mandate (inspection / preflight).
+   * Non-value-moving accessor for inspection and off-chain preflight. A
+   * successful read may refresh the mandate's persistence horizon.
    */
   get_mandate: ({mandate_id}: {mandate_id: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Result<Mandate>>>
 
   /**
-   * Construct and simulate a cancel_upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Cancel the currently scheduled upgrade.
+   * Construct and simulate a accept_admin transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Accept a pending handoff. Authorized by the proposed administrator.
    */
-  cancel_upgrade: (options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+  accept_admin: (options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+
+  /**
+   * Construct and simulate a propose_admin transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Propose a recoverable authority handoff. The current administrator keeps
+   * control until the candidate proves control by calling `accept_admin`.
+   */
+  propose_admin: ({new_admin}: {new_admin: string}, options?: MethodOptions) => Promise<AssembledTransaction<null>>
 
   /**
    * Construct and simulate a revoke_mandate transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * User withdraws consent; marks the mandate Revoked. Authorized by the user.
+   * User withdrawal of consent. Authorized by the bound user.
    */
   revoke_mandate: ({mandate_id}: {mandate_id: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
 
   /**
    * Construct and simulate a execute_payment transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * The only money path. Atomic: require_auth(agent) → replay guard
-   * (`expected_seq` == current `seq`, else `BadSequence`) → re-validate →
-   * advance spent+seq → SEP-41 transfer_from(user → merchant). Reverts on any
-   * failure. `expected_seq` is the mandate's current sequence (read from
-   * `get_mandate`), preventing duplicate/out-of-order consumption.
+   * The only money path. State consumption and transfer are atomic; a token
+   * failure reverts the stored `spent`, `seq`, and status changes.
    */
   execute_payment: ({mandate_id, amount, expected_seq}: {mandate_id: Buffer, amount: i128, expected_seq: u32}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
 
   /**
-   * Construct and simulate a execute_upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Execute the scheduled upgrade after the delay while the contract is paused.
+   * Construct and simulate a is_asset_allowed transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Whether an asset is currently admitted for validation and settlement.
    */
-  execute_upgrade: (options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+  is_asset_allowed: ({asset}: {asset: string}, options?: MethodOptions) => Promise<AssembledTransaction<boolean>>
 
   /**
    * Construct and simulate a register_mandate transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Store a user-signed mandate from its authorized parameters. The contract
-   * sets `spent=0, seq=0, status=Active` itself. Authorized by `user`.
-   * Returns the mandate id (= `vc_hash`, the storage key).
+   * Store a user-authorized mandate. Mutable fields are initialized by the
+   * contract so the caller cannot seed a spent balance, sequence, or status.
    */
   register_mandate: ({user, agent, merchant, asset, max_amount, expiry, vc_hash}: {user: string, agent: string, merchant: string, asset: string, max_amount: i128, expiry: u64, vc_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Result<Buffer>>>
 
   /**
-   * Construct and simulate a schedule_upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Schedule a same-address WASM upgrade after the fixed one-hour delay.
-   */
-  schedule_upgrade: ({new_wasm_hash}: {new_wasm_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Result<u64>>>
-
-  /**
    * Construct and simulate a validate_mandate transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Read-only preflight — would this spend be permitted right now? Mutates
-   * nothing and requires no auth; the authoritative consume happens only in
-   * `execute_payment`. (It is a dry-run; it consumes nothing.)
+   * Non-value-moving preview. It may refresh TTLs; the authoritative checks
+   * are repeated by `execute_payment` against current stored state.
    */
-  validate_mandate: ({mandate_id, amount, merchant}: {mandate_id: Buffer, amount: i128, merchant: string}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+  validate_mandate: ({mandate_id, amount, expected_seq, merchant, asset}: {mandate_id: Buffer, amount: i128, expected_seq: u32, merchant: string, asset: string}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
 
   /**
-   * Construct and simulate a get_upgrade_delay transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Fixed timelock duration in seconds.
+   * Construct and simulate a derive_mandate_id transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Deterministically derive the domain-separated identifier returned by
+   * `register_mandate` without depending on any x402 wire representation.
    */
-  get_upgrade_delay: (options?: MethodOptions) => Promise<AssembledTransaction<u64>>
+  derive_mandate_id: ({user, agent, merchant, asset, max_amount, expiry, vc_hash}: {user: string, agent: string, merchant: string, asset: string, max_amount: i128, expiry: u64, vc_hash: Buffer}, options?: MethodOptions) => Promise<AssembledTransaction<Buffer>>
 
   /**
-   * Construct and simulate a get_pending_upgrade transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
-   * Read the pending upgrade, including hash and earliest execution time.
+   * Construct and simulate a get_pending_admin transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Candidate administrator waiting to accept a proposed handoff.
    */
-  get_pending_upgrade: (options?: MethodOptions) => Promise<AssembledTransaction<Option<PendingUpgrade>>>
+  get_pending_admin: (options?: MethodOptions) => Promise<AssembledTransaction<Option<string>>>
+
+  /**
+   * Construct and simulate a set_asset_allowed transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Change the reviewed-token admission policy. Policy changes are allowed
+   * only while the money path is paused; removal also blocks existing
+   * mandates from executing against that asset.
+   */
+  set_asset_allowed: ({asset, allowed}: {asset: string, allowed: boolean}, options?: MethodOptions) => Promise<AssembledTransaction<Result<void>>>
+
+  /**
+   * Construct and simulate a get_schema_version transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
+   * Current durable storage schema. Money-path methods reject a missing or
+   * unexpected version so an incompatible upgrade cannot fail open.
+   */
+  get_schema_version: (options?: MethodOptions) => Promise<AssembledTransaction<Result<u32>>>
 
 }
 export class Client extends ContractClient {
   static async deploy<T = Client>(
         /** Constructor/Initialization Args for the contract's `__constructor` method */
-        {admin}: {admin: string},
+        {admin, initial_asset}: {admin: string, initial_asset: string},
     /** Options for initializing a Client as well as for calling a method, with extras specific to deploying. */
     options: MethodOptions &
       Omit<ContractClientOptions, "contractId"> & {
@@ -218,49 +247,60 @@ export class Client extends ContractClient {
         format?: "hex" | "base64";
       }
   ): Promise<AssembledTransaction<T>> {
-    return ContractClient.deploy({admin}, options)
+    return ContractClient.deploy({admin, initial_asset}, options)
   }
   constructor(public readonly options: ContractClientOptions) {
     super(
       new ContractSpec([ "AAAAAAAAAC5FbWVyZ2VuY3kgc3RvcCBmb3IgdGhlIHNvbGUgbW9uZXktbW92aW5nIHBhdGguAAAAAAAFcGF1c2UAAAAAAAAAAAAAAA==",
         "AAAAAAAAADZSZXN0b3JlIHRoZSBtb25leS1tb3ZpbmcgcGF0aCBhZnRlciBhbiBlbWVyZ2VuY3kgc3RvcC4AAAAAAAd1bnBhdXNlAAAAAAAAAAAA",
+        "AAAAAAAAAIZSZXBsYWNlIHRoaXMgY29udHJhY3QncyBXQVNNIGF0IHRoZSBzYW1lIGFkZHJlc3MuIFVwZ3JhZGVzIHJlcXVpcmUgdGhlCmFkbWluaXN0cmF0b3IncyBhdXRob3JpemF0aW9uIGFuZCBhbiBhbHJlYWR5LXBhdXNlZCBtb25leSBwYXRoLgAAAAAAB3VwZ3JhZGUAAAAAAQAAAAAAAAANbmV3X3dhc21faGFzaAAAAAAAA+4AAAAgAAAAAQAAA+kAAAACAAAAAw==",
         "AAAAAAAAACJDdXJyZW50IG9wZXJhdGlvbmFsIGFkbWluaXN0cmF0b3IuAAAAAAAJZ2V0X2FkbWluAAAAAAAAAAAAAAEAAAAT",
         "AAAAAAAAADRSZWFkIHRoZSBlbWVyZ2VuY3ktc3RvcCBzdGF0ZSB3aXRob3V0IGF1dGhvcml6YXRpb24uAAAACWlzX3BhdXNlZAAAAAAAAAAAAAABAAAAAQ==",
-        "AAAAAAAAAEZSb3RhdGUgb3BlcmF0aW9uYWwgYXV0aG9yaXR5LiBBdXRob3JpemVkIGJ5IHRoZSBjdXJyZW50IGFkbWluaXN0cmF0b3IuAAAAAAAJc2V0X2FkbWluAAAAAAAAAQAAAAAAAAAJbmV3X2FkbWluAAAAAAAAEwAAAAA=",
-        "AAAAAAAAAENSZWFkLW9ubHkgYWNjZXNzb3IgZm9yIHRoZSBzdG9yZWQgbWFuZGF0ZSAoaW5zcGVjdGlvbiAvIHByZWZsaWdodCkuAAAAAAtnZXRfbWFuZGF0ZQAAAAABAAAAAAAAAAptYW5kYXRlX2lkAAAAAAPuAAAAIAAAAAEAAAPpAAAH0AAAAAdNYW5kYXRlAAAAAAM=",
-        "AAAAAAAAAIRBdG9taWNhbGx5IGVzdGFibGlzaGVzIHRoZSBpbml0aWFsIGFkbWluaXN0cmF0b3IgZHVyaW5nIGRlcGxveW1lbnQuCkNvbnN0cnVjdG9ycyBydW4gb25seSBvbmNlOyBXQVNNIHVwZ3JhZGVzIGRvIG5vdCBydW4gdGhlbSBhZ2Fpbi4AAAANX19jb25zdHJ1Y3RvcgAAAAAAAAEAAAAAAAAABWFkbWluAAAAAAAAEwAAAAA=",
-        "AAAAAAAAACdDYW5jZWwgdGhlIGN1cnJlbnRseSBzY2hlZHVsZWQgdXBncmFkZS4AAAAADmNhbmNlbF91cGdyYWRlAAAAAAAAAAAAAQAAA+kAAAPtAAAAAAAAAAM=",
-        "AAAAAAAAAEpVc2VyIHdpdGhkcmF3cyBjb25zZW50OyBtYXJrcyB0aGUgbWFuZGF0ZSBSZXZva2VkLiBBdXRob3JpemVkIGJ5IHRoZSB1c2VyLgAAAAAADnJldm9rZV9tYW5kYXRlAAAAAAABAAAAAAAAAAptYW5kYXRlX2lkAAAAAAPuAAAAIAAAAAEAAAPpAAAD7QAAAAAAAAAD",
-        "AAAAAAAAAV1UaGUgb25seSBtb25leSBwYXRoLiBBdG9taWM6IHJlcXVpcmVfYXV0aChhZ2VudCkg4oaSIHJlcGxheSBndWFyZAooYGV4cGVjdGVkX3NlcWAgPT0gY3VycmVudCBgc2VxYCwgZWxzZSBgQmFkU2VxdWVuY2VgKSDihpIgcmUtdmFsaWRhdGUg4oaSCmFkdmFuY2Ugc3BlbnQrc2VxIOKGkiBTRVAtNDEgdHJhbnNmZXJfZnJvbSh1c2VyIOKGkiBtZXJjaGFudCkuIFJldmVydHMgb24gYW55CmZhaWx1cmUuIGBleHBlY3RlZF9zZXFgIGlzIHRoZSBtYW5kYXRlJ3MgY3VycmVudCBzZXF1ZW5jZSAocmVhZCBmcm9tCmBnZXRfbWFuZGF0ZWApLCBwcmV2ZW50aW5nIGR1cGxpY2F0ZS9vdXQtb2Ytb3JkZXIgY29uc3VtcHRpb24uAAAAAAAAD2V4ZWN1dGVfcGF5bWVudAAAAAADAAAAAAAAAAptYW5kYXRlX2lkAAAAAAPuAAAAIAAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAxleHBlY3RlZF9zZXEAAAAEAAAAAQAAA+kAAAPtAAAAAAAAAAM=",
-        "AAAAAAAAAEtFeGVjdXRlIHRoZSBzY2hlZHVsZWQgdXBncmFkZSBhZnRlciB0aGUgZGVsYXkgd2hpbGUgdGhlIGNvbnRyYWN0IGlzIHBhdXNlZC4AAAAAD2V4ZWN1dGVfdXBncmFkZQAAAAAAAAAAAQAAA+kAAAPtAAAAAAAAAAM=",
-        "AAAAAAAAAMJTdG9yZSBhIHVzZXItc2lnbmVkIG1hbmRhdGUgZnJvbSBpdHMgYXV0aG9yaXplZCBwYXJhbWV0ZXJzLiBUaGUgY29udHJhY3QKc2V0cyBgc3BlbnQ9MCwgc2VxPTAsIHN0YXR1cz1BY3RpdmVgIGl0c2VsZi4gQXV0aG9yaXplZCBieSBgdXNlcmAuClJldHVybnMgdGhlIG1hbmRhdGUgaWQgKD0gYHZjX2hhc2hgLCB0aGUgc3RvcmFnZSBrZXkpLgAAAAAAEHJlZ2lzdGVyX21hbmRhdGUAAAAHAAAAAAAAAAR1c2VyAAAAEwAAAAAAAAAFYWdlbnQAAAAAAAATAAAAAAAAAAhtZXJjaGFudAAAABMAAAAAAAAABWFzc2V0AAAAAAAAEwAAAAAAAAAKbWF4X2Ftb3VudAAAAAAACwAAAAAAAAAGZXhwaXJ5AAAAAAAGAAAAAAAAAAd2Y19oYXNoAAAAA+4AAAAgAAAAAQAAA+kAAAPuAAAAIAAAAAM=",
-        "AAAAAAAAAERTY2hlZHVsZSBhIHNhbWUtYWRkcmVzcyBXQVNNIHVwZ3JhZGUgYWZ0ZXIgdGhlIGZpeGVkIG9uZS1ob3VyIGRlbGF5LgAAABBzY2hlZHVsZV91cGdyYWRlAAAAAQAAAAAAAAANbmV3X3dhc21faGFzaAAAAAAAA+4AAAAgAAAAAQAAA+kAAAAGAAAAAw==",
-        "AAAAAAAAAMtSZWFkLW9ubHkgcHJlZmxpZ2h0IOKAlCB3b3VsZCB0aGlzIHNwZW5kIGJlIHBlcm1pdHRlZCByaWdodCBub3c/IE11dGF0ZXMKbm90aGluZyBhbmQgcmVxdWlyZXMgbm8gYXV0aDsgdGhlIGF1dGhvcml0YXRpdmUgY29uc3VtZSBoYXBwZW5zIG9ubHkgaW4KYGV4ZWN1dGVfcGF5bWVudGAuIChJdCBpcyBhIGRyeS1ydW47IGl0IGNvbnN1bWVzIG5vdGhpbmcuKQAAAAAQdmFsaWRhdGVfbWFuZGF0ZQAAAAMAAAAAAAAACm1hbmRhdGVfaWQAAAAAA+4AAAAgAAAAAAAAAAZhbW91bnQAAAAAAAsAAAAAAAAACG1lcmNoYW50AAAAEwAAAAEAAAPpAAAD7QAAAAAAAAAD",
-        "AAAAAAAAACNGaXhlZCB0aW1lbG9jayBkdXJhdGlvbiBpbiBzZWNvbmRzLgAAAAARZ2V0X3VwZ3JhZGVfZGVsYXkAAAAAAAAAAAAAAQAAAAY=",
-        "AAAAAAAAAEVSZWFkIHRoZSBwZW5kaW5nIHVwZ3JhZGUsIGluY2x1ZGluZyBoYXNoIGFuZCBlYXJsaWVzdCBleGVjdXRpb24gdGltZS4AAAAAAAATZ2V0X3BlbmRpbmdfdXBncmFkZQAAAAAAAAAAAQAAA+gAAAfQAAAADlBlbmRpbmdVcGdyYWRlAAA=",
-        "AAAAAQAAAAAAAAAAAAAADlBlbmRpbmdVcGdyYWRlAAAAAAACAAAAAAAAAA1leGVjdXRlX2FmdGVyAAAAAAAABgAAAAAAAAAJd2FzbV9oYXNoAAAAAAAD7gAAACA=",
-        "AAAABAAAAAAAAAAAAAAABUVycm9yAAAAAAAADQAAAAAAAAANQWxyZWFkeUV4aXN0cwAAAAAAAAEAAAAAAAAACE5vdEZvdW5kAAAAAgAAAAAAAAAOTWFuZGF0ZUV4cGlyZWQAAAAAAAQAAAAAAAAADk1hbmRhdGVSZXZva2VkAAAAAAAFAAAAAAAAAA5CdWRnZXRFeGNlZWRlZAAAAAAABgAAAAAAAAASTWVyY2hhbnRPdXRPZlNjb3BlAAAAAAAHAAAAAAAAAAtCYWRTZXF1ZW5jZQAAAAAIAAAAAAAAAA1JbnZhbGlkQW1vdW50AAAAAAAACQAAAAAAAAAGUGF1c2VkAAAAAAAKAAAAAAAAABNVcGdyYWRlTm90U2NoZWR1bGVkAAAAAAsAAAAAAAAAD1VwZ3JhZGVOb3RSZWFkeQAAAAAMAAAAAAAAABdVcGdyYWRlQWxyZWFkeVNjaGVkdWxlZAAAAAANAAAAAAAAABRVcGdyYWRlUmVxdWlyZXNQYXVzZQAAAA4=",
+        "AAAAAAAAAIJOb24tdmFsdWUtbW92aW5nIGFjY2Vzc29yIGZvciBpbnNwZWN0aW9uIGFuZCBvZmYtY2hhaW4gcHJlZmxpZ2h0LiBBCnN1Y2Nlc3NmdWwgcmVhZCBtYXkgcmVmcmVzaCB0aGUgbWFuZGF0ZSdzIHBlcnNpc3RlbmNlIGhvcml6b24uAAAAAAALZ2V0X21hbmRhdGUAAAAAAQAAAAAAAAAKbWFuZGF0ZV9pZAAAAAAD7gAAACAAAAABAAAD6QAAB9AAAAAHTWFuZGF0ZQAAAAAD",
+        "AAAAAAAAAENBY2NlcHQgYSBwZW5kaW5nIGhhbmRvZmYuIEF1dGhvcml6ZWQgYnkgdGhlIHByb3Bvc2VkIGFkbWluaXN0cmF0b3IuAAAAAAxhY2NlcHRfYWRtaW4AAAAAAAAAAQAAA+kAAAACAAAAAw==",
+        "AAAAAAAAAIBBdG9taWNhbGx5IGVzdGFibGlzaGVzIHRoZSBpbml0aWFsIGFkbWluaXN0cmF0b3IgZHVyaW5nIGRlcGxveW1lbnQuCkNvbnN0cnVjdG9ycyBydW4gb25seSBvbmNlOyBXQVNNIHVwZ3JhZGVzIGRvIG5vdCByZXJ1biB0aGVtLgAAAA1fX2NvbnN0cnVjdG9yAAAAAAAAAgAAAAAAAAAFYWRtaW4AAAAAAAATAAAAAAAAAA1pbml0aWFsX2Fzc2V0AAAAAAAAEwAAAAA=",
+        "AAAAAAAAAI5Qcm9wb3NlIGEgcmVjb3ZlcmFibGUgYXV0aG9yaXR5IGhhbmRvZmYuIFRoZSBjdXJyZW50IGFkbWluaXN0cmF0b3Iga2VlcHMKY29udHJvbCB1bnRpbCB0aGUgY2FuZGlkYXRlIHByb3ZlcyBjb250cm9sIGJ5IGNhbGxpbmcgYGFjY2VwdF9hZG1pbmAuAAAAAAANcHJvcG9zZV9hZG1pbgAAAAAAAAEAAAAAAAAACW5ld19hZG1pbgAAAAAAABMAAAAA",
+        "AAAAAAAAADlVc2VyIHdpdGhkcmF3YWwgb2YgY29uc2VudC4gQXV0aG9yaXplZCBieSB0aGUgYm91bmQgdXNlci4AAAAAAAAOcmV2b2tlX21hbmRhdGUAAAAAAAEAAAAAAAAACm1hbmRhdGVfaWQAAAAAA+4AAAAgAAAAAQAAA+kAAAACAAAAAw==",
+        "AAAAAAAAAIZUaGUgb25seSBtb25leSBwYXRoLiBTdGF0ZSBjb25zdW1wdGlvbiBhbmQgdHJhbnNmZXIgYXJlIGF0b21pYzsgYSB0b2tlbgpmYWlsdXJlIHJldmVydHMgdGhlIHN0b3JlZCBgc3BlbnRgLCBgc2VxYCwgYW5kIHN0YXR1cyBjaGFuZ2VzLgAAAAAAD2V4ZWN1dGVfcGF5bWVudAAAAAADAAAAAAAAAAptYW5kYXRlX2lkAAAAAAPuAAAAIAAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAxleHBlY3RlZF9zZXEAAAAEAAAAAQAAA+kAAAACAAAAAw==",
+        "AAAAAAAAAEVXaGV0aGVyIGFuIGFzc2V0IGlzIGN1cnJlbnRseSBhZG1pdHRlZCBmb3IgdmFsaWRhdGlvbiBhbmQgc2V0dGxlbWVudC4AAAAAAAAQaXNfYXNzZXRfYWxsb3dlZAAAAAEAAAAAAAAABWFzc2V0AAAAAAAAEwAAAAEAAAAB",
+        "AAAAAAAAAI9TdG9yZSBhIHVzZXItYXV0aG9yaXplZCBtYW5kYXRlLiBNdXRhYmxlIGZpZWxkcyBhcmUgaW5pdGlhbGl6ZWQgYnkgdGhlCmNvbnRyYWN0IHNvIHRoZSBjYWxsZXIgY2Fubm90IHNlZWQgYSBzcGVudCBiYWxhbmNlLCBzZXF1ZW5jZSwgb3Igc3RhdHVzLgAAAAAQcmVnaXN0ZXJfbWFuZGF0ZQAAAAcAAAAAAAAABHVzZXIAAAATAAAAAAAAAAVhZ2VudAAAAAAAABMAAAAAAAAACG1lcmNoYW50AAAAEwAAAAAAAAAFYXNzZXQAAAAAAAATAAAAAAAAAAptYXhfYW1vdW50AAAAAAALAAAAAAAAAAZleHBpcnkAAAAAAAYAAAAAAAAAB3ZjX2hhc2gAAAAD7gAAACAAAAABAAAD6QAAA+4AAAAgAAAAAw==",
+        "AAAAAAAAAIdOb24tdmFsdWUtbW92aW5nIHByZXZpZXcuIEl0IG1heSByZWZyZXNoIFRUTHM7IHRoZSBhdXRob3JpdGF0aXZlIGNoZWNrcwphcmUgcmVwZWF0ZWQgYnkgYGV4ZWN1dGVfcGF5bWVudGAgYWdhaW5zdCBjdXJyZW50IHN0b3JlZCBzdGF0ZS4AAAAAEHZhbGlkYXRlX21hbmRhdGUAAAAFAAAAAAAAAAptYW5kYXRlX2lkAAAAAAPuAAAAIAAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAxleHBlY3RlZF9zZXEAAAAEAAAAAAAAAAhtZXJjaGFudAAAABMAAAAAAAAABWFzc2V0AAAAAAAAEwAAAAEAAAPpAAAAAgAAAAM=",
+        "AAAAAAAAAIpEZXRlcm1pbmlzdGljYWxseSBkZXJpdmUgdGhlIGRvbWFpbi1zZXBhcmF0ZWQgaWRlbnRpZmllciByZXR1cm5lZCBieQpgcmVnaXN0ZXJfbWFuZGF0ZWAgd2l0aG91dCBkZXBlbmRpbmcgb24gYW55IHg0MDIgd2lyZSByZXByZXNlbnRhdGlvbi4AAAAAABFkZXJpdmVfbWFuZGF0ZV9pZAAAAAAAAAcAAAAAAAAABHVzZXIAAAATAAAAAAAAAAVhZ2VudAAAAAAAABMAAAAAAAAACG1lcmNoYW50AAAAEwAAAAAAAAAFYXNzZXQAAAAAAAATAAAAAAAAAAptYXhfYW1vdW50AAAAAAALAAAAAAAAAAZleHBpcnkAAAAAAAYAAAAAAAAAB3ZjX2hhc2gAAAAD7gAAACAAAAABAAAD7gAAACA=",
+        "AAAAAAAAAD1DYW5kaWRhdGUgYWRtaW5pc3RyYXRvciB3YWl0aW5nIHRvIGFjY2VwdCBhIHByb3Bvc2VkIGhhbmRvZmYuAAAAAAAAEWdldF9wZW5kaW5nX2FkbWluAAAAAAAAAAAAAAEAAAPoAAAAEw==",
+        "AAAAAAAAALRDaGFuZ2UgdGhlIHJldmlld2VkLXRva2VuIGFkbWlzc2lvbiBwb2xpY3kuIFBvbGljeSBjaGFuZ2VzIGFyZSBhbGxvd2VkCm9ubHkgd2hpbGUgdGhlIG1vbmV5IHBhdGggaXMgcGF1c2VkOyByZW1vdmFsIGFsc28gYmxvY2tzIGV4aXN0aW5nCm1hbmRhdGVzIGZyb20gZXhlY3V0aW5nIGFnYWluc3QgdGhhdCBhc3NldC4AAAARc2V0X2Fzc2V0X2FsbG93ZWQAAAAAAAACAAAAAAAAAAVhc3NldAAAAAAAABMAAAAAAAAAB2FsbG93ZWQAAAAAAQAAAAEAAAPpAAAAAgAAAAM=",
+        "AAAAAAAAAIZDdXJyZW50IGR1cmFibGUgc3RvcmFnZSBzY2hlbWEuIE1vbmV5LXBhdGggbWV0aG9kcyByZWplY3QgYSBtaXNzaW5nIG9yCnVuZXhwZWN0ZWQgdmVyc2lvbiBzbyBhbiBpbmNvbXBhdGlibGUgdXBncmFkZSBjYW5ub3QgZmFpbCBvcGVuLgAAAAAAEmdldF9zY2hlbWFfdmVyc2lvbgAAAAAAAAAAAAEAAAPpAAAABAAAAAM=",
+        "AAAABAAAAAAAAAAAAAAABUVycm9yAAAAAAAAEQAAAAAAAAANQWxyZWFkeUV4aXN0cwAAAAAAAAEAAAAAAAAACE5vdEZvdW5kAAAAAgAAAAAAAAAOTWFuZGF0ZUV4cGlyZWQAAAAAAAQAAAAAAAAADk1hbmRhdGVSZXZva2VkAAAAAAAFAAAAAAAAAA5CdWRnZXRFeGNlZWRlZAAAAAAABgAAAAAAAAASTWVyY2hhbnRPdXRPZlNjb3BlAAAAAAAHAAAAAAAAAAtCYWRTZXF1ZW5jZQAAAAAIAAAAAAAAAA1JbnZhbGlkQW1vdW50AAAAAAAACQAAAAAAAAAGUGF1c2VkAAAAAAAKAAAAAAAAABRVcGdyYWRlUmVxdWlyZXNQYXVzZQAAAA4AAAAAAAAAD0Fzc2V0Tm90QWxsb3dlZAAAAAAPAAAAAAAAAA5NYW5kYXRlVG9vTG9uZwAAAAAAEAAAAAAAAAARU2VxdWVuY2VFeGhhdXN0ZWQAAAAAAAARAAAAAAAAABhBc3NldFBvbGljeVJlcXVpcmVzUGF1c2UAAAASAAAAAAAAAAxJbnZhbGlkU3RhdGUAAAATAAAAAAAAAA5Ob1BlbmRpbmdBZG1pbgAAAAAAFAAAAAAAAAAPQXNzZXRPdXRPZlNjb3BlAAAAABU=",
         "AAAAAgAAAAAAAAAAAAAABlN0YXR1cwAAAAAAAwAAAAAAAAAAAAAABkFjdGl2ZQAAAAAAAAAAAAAAAAAHUmV2b2tlZAAAAAAAAAAAAAAAAAlFeGhhdXN0ZWQAAAA=",
-        "AAAAAQAAAAAAAAAAAAAAB01hbmRhdGUAAAAACgAAADdUaGUgT05MWSBwcmluY2lwYWwgcGVybWl0dGVkIHRvIGNhbGwgYGV4ZWN1dGVfcGF5bWVudGAuAAAAAAVhZ2VudAAAAAAAABMAAAArU0VQLTQxIC8gU0FDIGNvbnRyYWN0IGlkIChVU0RDIG9uIHRlc3RuZXQpLgAAAAAFYXNzZXQAAAAAAAATAAAAQUxlZGdlciBjbG9zZSB0aW1lc3RhbXAgKHNlY29uZHMpIGFmdGVyIHdoaWNoIHRoZSBtYW5kYXRlIGlzIGRlYWQuAAAAAAAABmV4cGlyeQAAAAAABgAAACdUb3RhbCBidWRnZXQgYXV0aG9yaXplZCBieSB0aGUgbWFuZGF0ZS4AAAAACm1heF9hbW91bnQAAAAAAAsAAABETVZQOiBzaW5nbGUgYWxsb3dlZCBwYXllZSAoc2NvcGUpLiBUMTogYFZlYzxBZGRyZXNzPmAgb3Igc2NvcGUtaGFzaC4AAAAIbWVyY2hhbnQAAAATAAAAP01vbm90b25pYyBwYXltZW50IGNvdW50ZXIgKG1hbmRhdGUtbGV2ZWwgdHJhY2UgLyByZXBsYXkgZ3VhcmQpLgAAAAADc2VxAAAAAAQAAAA7Q3VtdWxhdGl2ZSBjb25zdW1lZDsgaW52YXJpYW50OiBgMCA8PSBzcGVudCA8PSBtYXhfYW1vdW50YC4AAAAABXNwZW50AAAAAAAACwAAAAAAAAAGc3RhdHVzAAAAAAfQAAAABlN0YXR1cwAAAAAAPVNpZ25lciBvZiB0aGUgQVAyIEludGVudE1hbmRhdGU7IGdyYW50cyB0aGUgU0VQLTQxIGFsbG93YW5jZS4AAAAAAAAEdXNlcgAAABMAAABJSGFzaCBiaW5kaW5nIHRvIHRoZSBvZmYtY2hhaW4gQVAyIEludGVudE1hbmRhdGUgVkM7IGFsc28gdGhlIHN0b3JhZ2Uga2V5LgAAAAAAAAd2Y19oYXNoAAAAA+4AAAAg",
-        "AAAAAgAAAAAAAAAAAAAAB0RhdGFLZXkAAAAABAAAAAAAAAAAAAAABUFkbWluAAAAAAAAAAAAAAAAAAAGUGF1c2VkAAAAAAAAAAAAAAAAAA5QZW5kaW5nVXBncmFkZQAAAAAAAQAAAAAAAAAHTWFuZGF0ZQAAAAABAAAD7gAAACA=" ]),
+        "AAAAAQAAAAAAAAAAAAAAB01hbmRhdGUAAAAACgAAADdUaGUgb25seSBwcmluY2lwYWwgcGVybWl0dGVkIHRvIGNhbGwgYGV4ZWN1dGVfcGF5bWVudGAuAAAAAAVhZ2VudAAAAAAAABMAAAAqU0VQLTQxIHRva2VuIGNvbnRyYWN0IHVzZWQgZm9yIHNldHRsZW1lbnQuAAAAAAAFYXNzZXQAAAAAAAATAAAAOkxlZGdlci1jbG9zZSB0aW1lc3RhbXAgYWZ0ZXIgd2hpY2ggdGhlIG1hbmRhdGUgaXMgaW52YWxpZC4AAAAAAAZleHBpcnkAAAAAAAYAAAAnVG90YWwgYW1vdW50IGF1dGhvcml6ZWQgYnkgdGhlIG1hbmRhdGUuAAAAAAptYXhfYW1vdW50AAAAAAALAAAAI1RoZSBvbmx5IGFsbG93ZWQgcGF5bWVudCByZWNpcGllbnQuAAAAAAhtZXJjaGFudAAAABMAAAAvTW9ub3RvbmljIHJlcGxheSBndWFyZCBmb3Igc3VjY2Vzc2Z1bCBwYXltZW50cy4AAAAAA3NlcQAAAAAEAAAAPUFtb3VudCBjb25zdW1lZCBzbyBmYXI7IGFsd2F5cyBiZXR3ZWVuIHplcm8gYW5kIGBtYXhfYW1vdW50YC4AAAAAAAAFc3BlbnQAAAAAAAALAAAAAAAAAAZzdGF0dXMAAAAAB9AAAAAGU3RhdHVzAAAAAAA2UHJpbmNpcGFsIGF1dGhvcml6aW5nIHRoZSBtYW5kYXRlIGFuZCB0b2tlbiBhbGxvd2FuY2UuAAAAAAAEdXNlcgAAABMAAACpQ3JlZGVudGlhbCBjb21taXRtZW50IGFuZCBjYWxsZXItc3VwcGxpZWQgdW5pcXVlbmVzcyBzb3VyY2UuIFRoZQpvbi1jaGFpbiBtYW5kYXRlIGlkZW50aWZpZXIgaXMgYSBkb21haW4tc2VwYXJhdGVkIGhhc2ggb3ZlciB0aGlzIHZhbHVlCmFuZCBldmVyeSBpbW11dGFibGUgbWFuZGF0ZSB0ZXJtLgAAAAAAAAd2Y19oYXNoAAAAA+4AAAAg",
+        "AAAABQAAAAAAAAAAAAAABlBhdXNlZAAAAAAAAQAAAAZwYXVzZWQAAAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAEAAAAAAAAABGRhdGEAAAACAAAAAAAAAAA=",
+        "AAAABQAAAAAAAAAAAAAACEFkbWluU2V0AAAAAQAAAAVhZG1pbgAAAAAAAAEAAAAAAAAACW5ld19hZG1pbgAAAAAAABMAAAAAAAAAAA==",
+        "AAAABQAAAAAAAAAAAAAACFVucGF1c2VkAAAAAQAAAAh1bnBhdXNlZAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAEAAAAAAAAABGRhdGEAAAACAAAAAAAAAAA=",
+        "AAAABQAAAAAAAAAAAAAACFVwZ3JhZGVkAAAAAQAAAAd1cGdyYWRlAAAAAAIAAAAAAAAABWFkbWluAAAAAAAAEwAAAAEAAAAAAAAACXdhc21faGFzaAAAAAAAA+4AAAAgAAAAAAAAAAA=",
+        "AAAABQAAAAAAAAAAAAAADk1hbmRhdGVSZXZva2VkAAAAAAABAAAABnJldm9rZQAAAAAAAQAAAAAAAAAKbWFuZGF0ZV9pZAAAAAAD7gAAACAAAAAAAAAAAA==",
+        "AAAABQAAAAAAAAAAAAAAD1BheW1lbnRFeGVjdXRlZAAAAAABAAAAB3BheW1lbnQAAAAABQAAAAAAAAAIbWVyY2hhbnQAAAATAAAAAQAAAAAAAAAFYXNzZXQAAAAAAAATAAAAAQAAAAAAAAAKbWFuZGF0ZV9pZAAAAAAD7gAAACAAAAAAAAAAAAAAAAZhbW91bnQAAAAAAAsAAAAAAAAAAAAAAAhzZXF1ZW5jZQAAAAQAAAAAAAAAAQ==",
+        "AAAABQAAAAAAAAAAAAAAEU1hbmRhdGVSZWdpc3RlcmVkAAAAAAAAAQAAAAhyZWdpc3RlcgAAAAIAAAAAAAAABHVzZXIAAAATAAAAAQAAAAAAAAAKbWFuZGF0ZV9pZAAAAAAD7gAAACAAAAAAAAAAAA==",
+        "AAAABQAAAAAAAAAAAAAAEkFzc2V0UG9saWN5Q2hhbmdlZAAAAAAAAQAAAAxhc3NldF9wb2xpY3kAAAACAAAAAAAAAAVhc3NldAAAAAAAABMAAAABAAAAAAAAAAdhbGxvd2VkAAAAAAEAAAAAAAAAAA==",
+        "AAAABQAAAAAAAAAAAAAAFUFkbWluVHJhbnNmZXJQcm9wb3NlZAAAAAAAAAEAAAANYWRtaW5fcGVuZGluZwAAAAAAAAEAAAAAAAAADXBlbmRpbmdfYWRtaW4AAAAAAAATAAAAAAAAAAA=" ]),
       options
     )
   }
   public readonly fromJSON = {
     pause: this.txFromJSON<null>,
         unpause: this.txFromJSON<null>,
+        upgrade: this.txFromJSON<Result<void>>,
         get_admin: this.txFromJSON<string>,
         is_paused: this.txFromJSON<boolean>,
-        set_admin: this.txFromJSON<null>,
         get_mandate: this.txFromJSON<Result<Mandate>>,
-        cancel_upgrade: this.txFromJSON<Result<void>>,
+        accept_admin: this.txFromJSON<Result<void>>,
+        propose_admin: this.txFromJSON<null>,
         revoke_mandate: this.txFromJSON<Result<void>>,
         execute_payment: this.txFromJSON<Result<void>>,
-        execute_upgrade: this.txFromJSON<Result<void>>,
+        is_asset_allowed: this.txFromJSON<boolean>,
         register_mandate: this.txFromJSON<Result<Buffer>>,
-        schedule_upgrade: this.txFromJSON<Result<u64>>,
         validate_mandate: this.txFromJSON<Result<void>>,
-        get_upgrade_delay: this.txFromJSON<u64>,
-        get_pending_upgrade: this.txFromJSON<Option<PendingUpgrade>>
+        derive_mandate_id: this.txFromJSON<Buffer>,
+        get_pending_admin: this.txFromJSON<Option<string>>,
+        set_asset_allowed: this.txFromJSON<Result<void>>,
+        get_schema_version: this.txFromJSON<Result<u32>>
   }
 }

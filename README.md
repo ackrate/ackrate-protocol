@@ -2,7 +2,7 @@
 
 **Protocol, SDK, CLI, and reference agents for mandate-enforced agent payments on Stellar. The SDK prepares requests; the contract decides whether money moves.**
 
-[![Stellar](https://img.shields.io/badge/Stellar-Testnet-7B73FF?logo=stellar&logoColor=white)](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM)
+[![Stellar](https://img.shields.io/badge/Stellar-Mainnet-111111?logo=stellar&logoColor=white)](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR)
 [![CI](https://github.com/ackrate/ackrate-protocol/actions/workflows/ci.yml/badge.svg)](https://github.com/ackrate/ackrate-protocol/actions/workflows/ci.yml)
 [![TypeScript](https://img.shields.io/badge/TypeScript-SDK-3178C6?logo=typescript&logoColor=white)](packages/sdk)
 [![npm](https://img.shields.io/badge/npm-%40ackrate%2Fcore-CB3837?logo=npm&logoColor=white)](https://www.npmjs.com/package/@ackrate/core)
@@ -41,7 +41,7 @@ flowchart LR
     style T fill:#16213e,stroke:#e94560,color:#fff
 ```
 
-> **Core invariant:** money moves only through `MandateRegistry.execute_payment` (solo payments) and `clear_pool` (composite capture of a pooled schedule each member pre-authorized at registration), each of which validates-and-consumes atomically before any transfer. The user approves the SEP-41 allowance for the **contract**, never for the agent, SDK, or CLI.
+> **Mainnet invariant:** money moves only through `MandateRegistry.execute_payment`, which validates and consumes the mandate atomically with its transfer. The user approves the SEP-41 allowance for the **contract**, never for the agent, SDK, or CLI. Historical composite contracts have their own separately documented payment interface.
 
 ---
 
@@ -55,7 +55,7 @@ flowchart LR
 | Replay resistance | Every spend supplies the current mandate sequence; stale and out-of-order calls are rejected. |
 | Bound HTTP delivery | Exact-origin GET challenges, agent signatures, pre-broadcast receipts, explicit application acknowledgment, and atomic claim plus immutable-result replay close public-transaction reuse. |
 | Adaptable HTTP layer | x402 request and response parsing is isolated from the mandate model and contract interface. |
-| Controlled evolution | The default testnet contract supports admin pause and a one-hour timelocked same-address upgrade while preserving storage and contract ID. |
+| Controlled evolution | Mainnet V2 supports native 2-of-3 administration, pause, and authorized same-address implementation upgrades. |
 
 ---
 
@@ -63,36 +63,46 @@ flowchart LR
 
 The current Mainnet V2 registry is
 [`CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
-Its published SDK identity is `DEPLOYMENTS.mainnet`, exported by
-`@ackrate/stellar@0.2.5` and used through the coordinated package dependencies
-and rebuilt CLI. The source and artifact identity are pinned alongside the address.
+The coordinated release makes this the default Mainnet target through `MAINNET`
+from `@ackrate/stellar@0.3.0`, `ackrate.mainnet` in Core, and the rebuilt CLI.
+The complete official manifest is bundled; users do not need to copy the address
+or supply a separate manifest file. Source and artifact identity remain pinned
+alongside the address.
+
+See the [five-package Mainnet configuration map](docs/mainnet-configuration.md)
+for Stellar **0.3.0**, Core **0.4.0**, AP2 **0.4.0**, Express middleware **0.3.0**,
+and CLI **0.2.0**, including the exact configuration file and clickable contract
+explorer links. These coordinated versions are pending publication; status is below.
 
 ```ts
-import { DEPLOYMENTS, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
+import { MAINNET } from "@ackrate/stellar";
+import { ackrate } from "@ackrate/core";
 
-console.log(DEPLOYMENTS.mainnet.mandateRegistryId);
-const mainnet = publishedMainnetNetworkFromDeploymentManifest(verifiedDeploymentManifest);
+console.log(MAINNET.mandateRegistryId);
+console.log(ackrate.mainnet.settlementAsset.contractId); // Canonical Mainnet USDC.
 ```
 
-Supply the complete verified deployment manifest, not only a contract ID.
-The helper checks the manifest against this published V2 identity; callers still
-verify current chain state before signing. Testnet remains the default and keeps
-its own address. Mainnet uses canonical Circle USDC and explicit real-value
-authorization. It does not reuse testnet keys or silently switch networks.
+Mainnet uses real USDC and XLM fees. A default configuration is not permission
+to spend: user/agent signatures, budget approval, live-state checks, and the CLI's
+real-USDC confirmation guards remain required. The advanced
+`publishedMainnetNetworkFromDeploymentManifest` helper validates a supplied
+complete record against this official deployment; it is not required to use the
+bundled Mainnet profile. Authorized upgrades replace the implementation at the
+same contract address, with compatibility and release-evidence review still required.
 
 V2 administration uses native Stellar 2-of-3 account authorization. Upgrades
 require administrator authorization and paused state. This V2 deployment has
 no integrated timelock and does not use the older registry's OpenZeppelin role
 implementation. The separate older contracts remain documented under their own
 addresses and profiles. See the [Stellar package configuration](packages/stellar/README.md)
-and [signature-coordination commands](packages/cli/README.md#mainnet-2-of-3-coordination).
+and [signature-coordination commands](packages/cli/README.md#two-signature-coordination).
 
-## 🌐 Current Testnet Surfaces
+## 🌐 Mainnet Packages and Applications
 
 | Surface | Current source or deployment |
 |---|---|
-| Default simple MandateRegistry | [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM) — [`simple-v0.2.3`](https://github.com/ackrate/ackrate-protocol-contracts/releases/tag/simple-v0.2.3_contracts_simple_mandate_registry_mandate-registry_pkg0.2.3_cli25.1.0), WASM `ba370a80…76e87`, verified source, pause, authority rotation, and one-hour same-address upgrades |
-| Composite MandateRegistry | [`CCYRF7FK…HEYW`](https://stellar.expert/explorer/testnet/contract/CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW) — deterministic clearing pools with the same operational controls |
+| Mainnet V2 MandateRegistry | [`CCLZEBJX…4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR) — the official default registry, native 2-of-3 administration, and same-address upgrades |
+| Hosted wallet workflow | [Wallet demo project](https://github.com/ackrate/ackrate-protocol-demo) — user-signed setup, mandate-validated payments, and service results |
 | Contract releases and hashes | [`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts) |
 | High-level SDK | [`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core) — mandates, payments, and `agent.fetch()` |
 | Stellar binding | [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar) — typed contract client, network config, signers, and SEP-41 helpers |
@@ -100,23 +110,25 @@ and [signature-coordination commands](packages/cli/README.md#mainnet-2-of-3-coor
 | Express middleware | [`@ackrate/express-middleware`](https://www.npmjs.com/package/@ackrate/express-middleware) — authenticated bound-v2 challenges, independent settlement verification, and a paid JSON route with atomic claim plus immutable-result replay |
 | CLI | [`@ackrate/cli`](https://www.npmjs.com/package/@ackrate/cli) — setup, mandate creation, crash-safe payment reconciliation, exact success acknowledgment, and demo flow |
 
-### Published packages and current source candidates
+### Published packages and coordinated release status
 
 Package releases and protocol/specification versions are separate axes.
-Registry verification on **2026-09-07** identified the published versions below.
-The newer versions are **source candidates, not published releases**; their
-V2 fixes and dependency changes must not be attributed to the older packages.
+Registry verification on **2026-09-07 at 03:33 Bangkok (UTC+7)** found Stellar
+**0.2.5**, Core **0.3.4**, AP2 **0.3.2**, middleware **0.2.4**, and CLI **0.1.9**
+publicly available. All five newer coordinated Mainnet-default versions below
+are pending publication and public clean-install verification. Do not attribute
+their new defaults or APIs to those older npm releases.
 
-| Package | Published | Source candidate | Protocol/specification target |
+| Package | Public npm version | Coordinated version | Protocol/specification target |
 |---|---:|---:|---|
-| `@ackrate/stellar` | `0.2.4` | `0.2.5` | Verified Mainnet manifest, including V2 schema, and typed bindings |
-| `@ackrate/core` | `0.3.3` | `0.3.4` | Mandates, returned V2 storage IDs, payments, and delivery recovery |
-| `@ackrate/ap2` | `0.3.2` | `0.3.3` | AP2 `0.1.0` profile |
-| `@ackrate/express-middleware` | `0.2.4` | `0.2.5` | bound-v2 proof flow |
-| `@ackrate/cli` | `0.1.9` | `0.1.10` | installed command `ackrate`, current reference-agent HTTP flow |
+| `@ackrate/stellar` | `0.2.5` | `0.3.0` — pending | Built-in official `MAINNET`, complete manifest, and contract access |
+| `@ackrate/core` | `0.3.4` | `0.4.0` — pending | Mainnet-default mandates, payments, and delivery recovery |
+| `@ackrate/ap2` | `0.3.2` | `0.4.0` — pending | AP2 `0.1.0` profile bridged into the Mainnet Core flow |
+| `@ackrate/express-middleware` | `0.2.4` | `0.3.0` — pending | Mainnet USDC bound-v2 proof verification and durable delivery |
+| `@ackrate/cli` | `0.1.9` | `0.2.0` — pending | Mainnet-default `ackrate` command with the official manifest bundled |
 
-The candidate set requires **Node.js 22 or newer** and uses the exact
-`@stellar/stellar-sdk@16.3.0` dependency. AP2 candidate `0.3.3` still implements
+The coordinated set requires **Node.js 22 or newer** and uses the exact
+`@stellar/stellar-sdk@16.3.0` dependency. AP2 candidate `0.4.0` still implements
 the AP2 `0.1.0` profile; the package version is not the specification version.
 See the [package release matrix](docs/ackrate-sdk-npm.md) for installation status.
 
@@ -150,18 +162,44 @@ npm ci
 npm run gatecheck:release
 ```
 
-Run the candidate CLI from the verified source build:
+The source Mainnet workflow needs existing funded actors and named secure
+signers. Replace the example identities and merchant address before running;
+the fully configured command spends real USDC:
 
 ```bash
 npm run cli:bundle
-node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent --network testnet
+node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent \
+  --network mainnet \
+  --user-signer ackrate-user --agent-signer ackrate-agent \
+  --agent-secret-env ACKRATE_AGENT_SECRET \
+  --merchant G... --price 0.01 --budget 0.03 --confirm-real-usdc
 ```
 
-After `@ackrate/cli@0.1.10` is published and clean-install verified, its pinned
-command will be `npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet`.
-It is not available as that published candidate at the September 7 checkpoint.
+The flag `--agent-secret-env` names an environment variable injected by a secret
+manager; never substitute the secret value into the command. The official
+Mainnet manifest is bundled. No manual manifest file is needed for this registry.
 
-Run both reference agents from this repository with one command:
+After `@ackrate/cli@0.2.0` is published and clean-install verified, use
+`npx --yes @ackrate/cli@0.2.0` in place of the local bundle command, retaining the
+same signer, merchant, price, budget, and confirmation options. This candidate
+is not yet a verified public npm release.
+
+The command starts both reference agents and delivers three resources through
+HTTP 402, on-chain payment, independent proof verification, and HTTP 200. The
+contract must reject purchase four without payment. Follow the full
+[CLI prerequisites and recovery instructions](docs/cli.md). A new Mainnet
+reference-agent delivery run remains separate from historical direct-payment
+receipts, local tests, or the hosted marketplace's human test.
+
+### Explicit development networks and historical evidence
+
+Existing development deployments and evidence are retained separately from the
+official Mainnet default:
+
+- [Simple development registry CCHQ5G4Y…CZRM](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM).
+- [Composite development registry CCYRF7FK…HEYW](https://stellar.expert/explorer/testnet/contract/CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW).
+
+To explicitly run the funded development-network reference flow:
 
 ```bash
 npm run agents:testnet
@@ -173,13 +211,6 @@ purchases. Three resources settle and are independently verified; the fourth is
 rejected by the contract-enforced budget. The run also proves exact bound-v2
 receipts and rejects an old settlement re-signed for a fresh request. No local
 key or environment file is required.
-
-The candidate CLI contains an explicit, fail-closed Mainnet mode. It requires a
-complete verified deployment manifest, distinct funded actors, external signer
-configuration, and explicit real-USDC confirmation. The currently published
-CLI does not contain this candidate's reference-agent HTTP flow. Follow the
-[source CLI instructions](docs/cli.md); a current Mainnet delivery run remains
-separate from historical direct-payment receipts and local package tests.
 
 Run the three named SDK failure drills separately:
 

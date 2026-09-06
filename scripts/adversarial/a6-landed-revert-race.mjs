@@ -25,9 +25,9 @@ await fund(user); await fund(agent); await fund(merchant);
 const mandate = ackrate.createIntentMandate({
   user: user.publicKey(), agent: agent.publicKey(), merchant: merchant.publicKey(),
   asset: TESTNET.nativeSac, maxAmount: "2.00", expiry: Math.floor(Date.now() / 1000) + 3600,
-});
-await ackrate.registerMandate(mandate, { signer: user });
-await ackrate.approveBudget(mandate, { signer: user });
+}, ackrate.testnet);
+await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
+await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
 console.log(`mandate ${mandate.id} live; budget 2.00 XLM`);
 
 function execOp() {

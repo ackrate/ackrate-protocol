@@ -6,7 +6,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { Buffer } from "buffer";
-import { Address, StrKey } from "@stellar/stellar-sdk";
+import { Address, Networks, StrKey } from "@stellar/stellar-sdk";
 import {
   BOUND_PAYMENT_CAPABILITY,
   BOUND_PAYMENT_SCHEME,
@@ -21,7 +21,7 @@ import {
   type BoundPaymentChallengeV2,
   type UnsignedBoundPaymentChallengeV2,
 } from "@ackrate/core";
-import { TESTNET, type NetworkConfig } from "@ackrate/stellar";
+import { MAINNET, MAINNET_USDC, type NetworkConfig } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { createStellarPaymentVerifier } from "./verification.js";
 import {
@@ -55,11 +55,11 @@ export interface BoundAckratePaymentMiddlewareOptions {
   redemptionStore: BoundRedemptionStore;
   /** Exact path + query resolver. Defaults to request.originalUrl. */
   resource?: RequestValue;
-  /** SEP-41 asset contract. Defaults to networkConfig.nativeSac. */
+  /** SEP-41 asset contract. Defaults to canonical USDC on Mainnet. */
   asset?: string;
-  /** Contract/RPC configuration. Defaults to Ackrate testnet. */
+  /** Contract/RPC configuration. Defaults to the official ACKRATE Mainnet registry. */
   networkConfig?: NetworkConfig;
-  /** x402 network label. Defaults to stellar-testnet. */
+  /** x402 network label. Derived from the network; defaults to stellar-mainnet. */
   network?: string;
   /** Asset decimals. Defaults to 7. */
   decimals?: number;
@@ -219,16 +219,17 @@ export function createBoundAckratePaymentMiddleware(
   ) {
     throw new Error("redemptionStore with atomic lookup, claim, and complete operations is required.");
   }
-  const networkConfig = options.networkConfig ?? TESTNET;
+  const networkConfig = options.networkConfig ?? MAINNET;
+  const isMainnet = networkConfig.networkPassphrase === Networks.PUBLIC;
   const merchant = stellarAddress("merchant", options.merchant);
   const registryId = exactText("networkConfig.mandateRegistryId", networkConfig.mandateRegistryId);
   if (!StrKey.isValidContract(registryId)) {
     throw new Error("networkConfig.mandateRegistryId must be a valid Stellar contract address.");
   }
-  const asset = exactText("asset", options.asset ?? networkConfig.nativeSac);
+  const asset = exactText("asset", options.asset ?? (isMainnet ? MAINNET_USDC.contractId : networkConfig.nativeSac));
   if (!StrKey.isValidContract(asset)) throw new Error("asset must be a valid Stellar contract address.");
   if (typeof options.audience === "string") canonicalPaymentOrigin(options.audience, "audience");
-  const network = exactText("network", options.network ?? "stellar-testnet");
+  const network = exactText("network", options.network ?? (isMainnet ? "stellar-mainnet" : "stellar-testnet"));
   const decimals = options.decimals ?? 7;
   const maxHeaderBytes = options.maxHeaderBytes ?? DEFAULT_MAX_HEADER_BYTES;
   const maxProofAgeLedgers = options.maxProofAgeLedgers ?? DEFAULT_MAX_PROOF_AGE_LEDGERS;

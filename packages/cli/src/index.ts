@@ -27,8 +27,8 @@ program
 program
   .command("init")
   .description("scaffold a project in the current directory (writes ackrate.config.json)")
-  .option("--network <network>", "testnet or mainnet", "testnet")
-  .option("--manifest <path>", "verified Mainnet deployment manifest")
+  .option("--network <network>", "network selection", "mainnet")
+  .option("--manifest <path>", "optional verified manifest for the official Mainnet registry")
   .option("--user-signer <identity>", "named Stellar CLI identity for the mandate user")
   .option("--agent-signer <identity>", "named Stellar CLI identity for direct payments")
   .option("--merchant <address>", "merchant Stellar G-account")
@@ -97,10 +97,10 @@ ops
 
 program
   .command("demo")
-  .description("run the reference research-agent payment flow on testnet or explicitly configured mainnet")
+  .description("run the reference research-agent payment flow on the official Mainnet registry")
   .argument("[target]", "which demo to run; omit to list available demos")
-  .option("--network <network>", "testnet or mainnet", "testnet")
-  .option("--manifest <path>", "verified mainnet deployment manifest JSON")
+  .option("--network <network>", "network selection", "mainnet")
+  .option("--manifest <path>", "optional verified manifest for the official Mainnet registry")
   .option("--user-signer <identity>", "Stellar CLI identity for the mandate user")
   .option("--agent-signer <identity>", "Stellar CLI identity for the payment agent")
   .option("--agent-secret-env <name>", "environment-variable name supplied by a secret manager for bound-v2 proofs")

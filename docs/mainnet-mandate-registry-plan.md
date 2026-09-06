@@ -1,12 +1,13 @@
 # Mainnet MandateRegistry activation plan
 
-Status: product planning and testnet prototyping only.
-
-Nothing described here has been deployed to Stellar mainnet. There is no
-mainnet MandateRegistry contract ID, approved USDC Stellar Asset Contract ID,
-final custodian roster, activation date, or production finding to publish yet.
-Those values enter generated configuration only after the exact candidate is
-verified and the corresponding chain state exists.
+Status: **historical pre-deployment plan**, not a statement of today's chain or
+release status. Current Mainnet V2 is
+[CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+The [current configuration guide](mainnet-configuration.md) maps all five
+coordinated npm versions to this deployment and links the
+[release status](ackrate-sdk-npm.md#release-matrix). The original design below
+is retained as history: V2 uses native Stellar authorization, not the older
+OpenZeppelin role system, and timelock integration is deferred.
 
 This document is the working notebook for the first mainnet workstream. It
 combines design exploration with a one-step-at-a-time execution plan. It does

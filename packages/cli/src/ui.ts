@@ -80,7 +80,7 @@ const ART: Seg[][] = [
   [["╚═╝  ╚═╝", "cyan"], [" ╚═════╝", "mint"], ["╚═╝  ╚═╝", "emerald"], ["╚═╝  ╚═╝", "teal"], ["╚═╝  ╚═╝", "green"], ["   ╚═╝   ", "cyan"], ["╚══════╝", "mint"]],
 ];
 
-export function banner(environment = "stellar testnet"): string {
+export function banner(environment = "stellar mainnet · USDC"): string {
   const paint = (col: keyof typeof c, t: string) => (c[col] as (s: string) => string)(t);
   const art = ART.map((row) => "  " + row.map(([t, col]) => paint(col, t)).join("")).join("\n");
   const tag =

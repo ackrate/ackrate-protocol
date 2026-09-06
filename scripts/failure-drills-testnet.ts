@@ -115,9 +115,9 @@ async function register(
     asset: TESTNET.nativeSac,
     maxAmount,
     expiry,
-  });
-  await ackrate.registerMandate(mandate, { signer: user });
-  await ackrate.approveBudget(mandate, { signer: user });
+  }, ackrate.testnet);
+  await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
+  await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
   return mandate;
 }
 
@@ -237,7 +237,7 @@ async function main(): Promise<void> {
     "2.00",
     Math.floor(Date.now() / 1_000) + 3_600,
   );
-  const rogueAgent = ackrate.agent({ mandate: rogueMandate, signer: agentKey });
+  const rogueAgent = ackrate.agent({ mandate: rogueMandate, signer: agentKey }, ackrate.testnet);
   const rogueBefore = await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey());
   const rogueJournal = join(drillRoot, "rogue-payment.json");
   const rogueTx = await journaledPay(rogueAgent, "1.00", rogueJournal);
@@ -246,7 +246,7 @@ async function main(): Promise<void> {
   assert.equal(rogueAfter - rogueBefore, 10_000_000n);
   assert.equal(rogueState.spent, 10_000_000n);
   assert.equal(rogueState.seq, 1);
-  await ackrate.revokeMandate(rogueMandate, { signer: user });
+  await ackrate.revokeMandate(rogueMandate, { signer: user }, ackrate.testnet);
   await assert.rejects(() => journaledPay(rogueAgent, "0.50", rogueJournal), /#5|MandateRevoked/);
   assert.equal(await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey()), rogueAfter);
   log("PASS: within-scope spend settled; revoke blocked the next request", txUrl(rogueTx));
@@ -264,7 +264,7 @@ async function main(): Promise<void> {
     signer: agentKey,
     proofPolicy: "bound-v2-only",
     receiptStore: new FileSettlementReceiptStore(join(drillRoot, "pending-receipts.json")),
-  });
+  }, ackrate.testnet);
   const downtimeBefore = await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey());
   const challengeSecret = randomBytes(32).toString("hex");
   const redemptionStore = new FileBoundRedemptionStore(join(drillRoot, "redemptions.json"));
@@ -311,7 +311,7 @@ async function main(): Promise<void> {
   const closeTime = await latestTestnetCloseTime();
   const expiry = closeTime + 45;
   const expiryMandate = await register(user, agentKey, merchant, "1.00", expiry);
-  const expiryAgent = ackrate.agent({ mandate: expiryMandate, signer: agentKey, proofPolicy: "bound-v2-only" });
+  const expiryAgent = ackrate.agent({ mandate: expiryMandate, signer: agentKey, proofPolicy: "bound-v2-only" }, ackrate.testnet);
   const expiryServer = await startServer({ merchant: merchant.publicKey(), port: 0 });
   const expiryBefore = await token.balance(TESTNET, TESTNET.nativeSac, merchant.publicKey());
   try {

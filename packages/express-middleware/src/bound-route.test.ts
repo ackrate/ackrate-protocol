@@ -61,6 +61,7 @@ async function start(options: {
     },
   };
   const route = createBoundAckratePaidJsonRoute({
+    networkConfig: TESTNET,
     merchant,
     amount: "1.00",
     audience: options.audience ?? (() => runtimeAudience),

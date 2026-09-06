@@ -51,7 +51,7 @@ function makeAgent() {
     expiry: Math.floor(Date.now() / 1000) + 3600,
   });
   return {
-    agent: ackrate.agent({ mandate, signer, receiptStore: memoryReceiptStore() }),
+    agent: ackrate.agent({ mandate, signer, receiptStore: memoryReceiptStore() }, ackrate.testnet),
     mandate,
   };
 }
@@ -337,7 +337,7 @@ function makeBoundAgent(receiptStore: SettlementReceiptStore = memoryReceiptStor
       signer,
       proofPolicy: "bound-v2-only",
       receiptStore,
-    }),
+    }, ackrate.testnet),
   };
 }
 
@@ -746,7 +746,7 @@ test("submitted-but-unconfirmed settlement survives Agent restart and blocks a s
     signer,
     proofPolicy: "bound-v2-only",
     receiptStore,
-  });
+  }, ackrate.testnet);
   const afterRestart = stubFetch(() => new Response("must not request or pay"));
   try {
     await assert.rejects(

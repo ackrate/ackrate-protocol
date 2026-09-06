@@ -12,11 +12,11 @@ const MAINNET_REGISTRY = "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4H
 const MAINNET_WASM = "982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01faacff62";
 
 const packages = [
-  ["packages/stellar", "@ackrate/stellar", "0.2.5"],
-  ["packages/sdk", "@ackrate/core", "0.3.4"],
-  ["packages/ap2", "@ackrate/ap2", "0.3.3"],
-  ["packages/express-middleware", "@ackrate/express-middleware", "0.2.5"],
-  ["packages/cli", "@ackrate/cli", "0.1.10"],
+  ["packages/stellar", "@ackrate/stellar", "0.3.0"],
+  ["packages/sdk", "@ackrate/core", "0.4.0"],
+  ["packages/ap2", "@ackrate/ap2", "0.4.0"],
+  ["packages/express-middleware", "@ackrate/express-middleware", "0.3.0"],
+  ["packages/cli", "@ackrate/cli", "0.2.0"],
 ];
 const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
 const candidateVersions = new Map(packages.map(([, name, version]) => [name, version]));
@@ -145,6 +145,12 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   const artifactFiles = listing.split("\n").filter((name) => /\.(?:js|mjs|cjs|d\.ts|json|md)$/i.test(name));
   for (const artifactFile of artifactFiles) {
     const body = run("tar", ["-xOzf", tarballPath, artifactFile]);
+    if (artifactFile === "package/README.md") {
+      if (!body.includes(`https://stellar.expert/explorer/public/contract/${MAINNET_REGISTRY}`)) {
+        fail(`${expectedName} README is missing the official Mainnet explorer link`);
+      }
+      if (/testnet|time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current Mainnet product only`);
+    }
     if (OBSOLETE_BRAND.test(body)) {
       fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);
     }
@@ -190,11 +196,14 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
   }, null, 2));
   writeFileSync(path.join(installRoot, "clean-install.ts"), `
 import { ackrate, DeliveryPendingError } from "@ackrate/core";
-import { DEPLOYMENTS, TESTNET, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
+import { Client, DEPLOYMENTS, MAINNET, MAINNET_DEPLOYMENT_MANIFEST, registryClient, publishedMainnetNetworkFromDeploymentManifest, type StellarSigner } from "@ackrate/stellar";
 import { createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
 import { createBoundAckratePaidJsonRoute, InMemoryBoundRedemptionStore } from "@ackrate/express-middleware";
 
-void [ackrate, DeliveryPendingError, TESTNET, DEPLOYMENTS.mainnet.mandateRegistryId, publishedMainnetNetworkFromDeploymentManifest];
+void [ackrate.mainnet, DeliveryPendingError, MAINNET, MAINNET_DEPLOYMENT_MANIFEST, DEPLOYMENTS.mainnet.mandateRegistryId, publishedMainnetNetworkFromDeploymentManifest];
+declare const signer: StellarSigner;
+const officialClient: Client = registryClient(MAINNET, signer);
+void [officialClient.upgrade, officialClient.propose_admin, officialClient.accept_admin, officialClient.set_asset_allowed];
 const validator = createAp2ComplianceValidator({
   replayStore: new InMemoryAp2ReplayStore(),
   replayNamespace: "clean-install",
@@ -210,7 +219,9 @@ void [validator, route];
 `);
   writeFileSync(path.join(installRoot, "runtime.mjs"), `
 import assert from "node:assert/strict";
-import { DEPLOYMENTS, TESTNET, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
+import { createHash } from "node:crypto";
+import { Client, DEPLOYMENTS, MAINNET, MAINNET_DEPLOYMENT_MANIFEST, TESTNET, publishedMainnetNetworkFromDeploymentManifest } from "@ackrate/stellar";
+import { ackrate } from "@ackrate/core";
 await Promise.all([
   import("@ackrate/core"), import("@ackrate/stellar"),
   import("@ackrate/ap2"), import("@ackrate/express-middleware"),
@@ -218,6 +229,16 @@ await Promise.all([
 assert.equal(DEPLOYMENTS.mainnet.mandateRegistryId, ${JSON.stringify(MAINNET_REGISTRY)});
 assert.equal(DEPLOYMENTS.mainnet.registryWasmSha256, ${JSON.stringify(MAINNET_WASM)});
 assert.equal(DEPLOYMENTS.mainnet.schemaVersion, 2);
+assert.equal(MAINNET.mandateRegistryId, ${JSON.stringify(MAINNET_REGISTRY)});
+assert.equal(MAINNET.networkPassphrase, "Public Global Stellar Network ; September 2015");
+assert.equal(MAINNET.settlementAsset.code, "USDC");
+assert.equal(ackrate.mainnet, MAINNET);
+assert.deepEqual(publishedMainnetNetworkFromDeploymentManifest(MAINNET_DEPLOYMENT_MANIFEST), MAINNET);
+const client = new Client({ contractId: MAINNET.mandateRegistryId, rpcUrl: MAINNET.rpcUrl, networkPassphrase: MAINNET.networkPassphrase });
+const specBytes = Buffer.concat(client.spec.entries.map((entry) => entry.toXDR()));
+assert.equal(createHash("sha256").update(specBytes).digest("hex"), "4c5a232e101007aab8a9b3c717fec3720a65ceb454be2754f7deeb2f95737e6f");
+assert.equal(client.spec.entries.filter((entry) => entry.switch().name === "scSpecEntryFunctionV0").length, 18);
+for (const method of ["upgrade", "propose_admin", "accept_admin", "set_asset_allowed", "execute_payment"]) assert.equal(typeof client[method], "function");
 assert.equal(TESTNET.mandateRegistryId, "CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM");
 assert.equal("rpcUrl" in DEPLOYMENTS.mainnet, false);
 assert.throws(() => publishedMainnetNetworkFromDeploymentManifest({}), /manifest/);
@@ -227,7 +248,7 @@ console.log("runtime imports and fail-closed published deployment configuration 
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);
   const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "ackrate"), ["--version"], installRoot).trim();
-  if (cliVersion !== "0.1.10") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
+  if (cliVersion !== "0.2.0") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
   // Each consumer gets only its package and the unpublished candidate closure

@@ -117,8 +117,8 @@ function exactDateAt(parent: JsonObject, key: string): string {
 
 /**
  * Convert the completed contracts deployment manifest into SDK configuration.
- * There is deliberately no built-in mainnet default: a partial, stale, or
- * internally inconsistent manifest fails closed before a wallet is prompted.
+ * The official MAINNET configuration passes its bundled evidence through this
+ * same validator. Partial or internally inconsistent manifests fail closed.
  */
 export function mainnetNetworkFromDeploymentManifest(input: unknown): ReleaseNetworkConfig {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {

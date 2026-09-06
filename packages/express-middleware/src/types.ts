@@ -69,11 +69,11 @@ export interface AckratePaymentMiddlewareOptions {
   amount: RequestValue;
   /** Resource identifier placed in the 402 challenge. Defaults to originalUrl. */
   resource?: RequestValue;
-  /** SEP-41 asset contract. Defaults to networkConfig.nativeSac. */
+  /** SEP-41 asset contract. Defaults to canonical USDC on Mainnet. */
   asset?: string;
-  /** Contract/RPC configuration. Defaults to Ackrate testnet. */
+  /** Contract/RPC configuration. Defaults to the official ACKRATE Mainnet registry. */
   networkConfig?: NetworkConfig;
-  /** x402 network label. Defaults to stellar-testnet. */
+  /** x402 network label. Derived from the network; defaults to stellar-mainnet. */
   network?: string;
   /** Settlement scheme. Defaults to ackrate-soroban. */
   scheme?: string;

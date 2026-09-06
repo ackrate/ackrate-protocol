@@ -8,8 +8,8 @@ import {
   CONFIG_FILE,
   configExists,
   configPath,
-  createMainnetConfig,
   defaultConfig,
+  testnetConfig,
   saveConfig,
 } from "../config.js";
 
@@ -31,7 +31,8 @@ function required(value: string | undefined, flag: string): string {
 }
 
 export function runInit(opts: InitOptions = {}): void {
-  console.log("\n" + banner() + "\n");
+  const network = opts.network ?? "mainnet";
+  console.log("\n" + banner(network === "mainnet" ? "stellar mainnet · USDC" : "stellar testnet") + "\n");
 
   if (configExists() && !opts.force) {
     log.warn(`${CONFIG_FILE} already exists`, { path: configPath() });
@@ -42,9 +43,9 @@ export function runInit(opts: InitOptions = {}): void {
   if (opts.network !== undefined && opts.network !== "testnet" && opts.network !== "mainnet") {
     throw new Error("--network must be testnet or mainnet");
   }
-  const config = opts.network === "mainnet"
-    ? createMainnetConfig({
-        manifestPath: required(opts.manifest, "--manifest <path>"),
+  const config = network === "mainnet"
+    ? defaultConfig({
+        ...(opts.manifest !== undefined ? { manifestPath: opts.manifest } : {}),
         userSigner: required(opts.userSigner, "--user-signer <identity>"),
         agentSigner: required(opts.agentSigner, "--agent-signer <identity>"),
         merchant: required(opts.merchant, "--merchant <G...>"),
@@ -52,12 +53,13 @@ export function runInit(opts: InitOptions = {}): void {
         budget: required(opts.budget, "--budget <usdc>"),
         ...(opts.agentSecretEnv ? { agentSecretEnv: opts.agentSecretEnv } : {}),
       })
-    : defaultConfig();
+    : testnetConfig();
   const path = saveConfig(config);
   log.ok(`wrote ${CONFIG_FILE}`, { path });
   log.info("config", {
     network: config.network,
-    contract: config.network === "testnet" ? config.contractId : "from verified manifest",
+    contract: config.contractId,
+    explorer: `${config.explorer}/contract/${config.contractId}`,
   });
 
   console.log(
@@ -69,11 +71,11 @@ export function runInit(opts: InitOptions = {}): void {
       c.gray(config.network === "mainnet" ? "   run read-only Mainnet readiness checks" : "   configure keys + fund testnet accounts") +
       "\n" +
       c.gray("  2. ") +
-      c.white("ackrate mandate create") +
+      c.white(config.network === "mainnet" ? "ackrate mandate create --confirm-real-usdc" : "ackrate mandate create") +
       c.gray("   register an AP2 mandate on-chain") +
       "\n" +
       c.gray("  3. ") +
-      c.white("ackrate pay") +
+      c.white(config.network === "mainnet" ? "ackrate pay --confirm-real-usdc" : "ackrate pay") +
       c.gray("   make an agent-signed payment") +
       "\n",
   );

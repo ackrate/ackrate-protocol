@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, test } from "node:test";
 import { Keypair } from "@stellar/stellar-sdk";
-import { TESTNET } from "@ackrate/stellar";
+import { MAINNET, MAINNET_DEPLOYMENT_MANIFEST, TESTNET } from "@ackrate/stellar";
 import { build } from "esbuild";
 import { runDemo, secretManagerAgentSigner } from "./commands/demo.js";
 
@@ -36,12 +36,26 @@ test("mainnet demo fails before reading configuration without real-USDC confirma
   );
 });
 
-test("mainnet demo requires the verified deployment manifest after confirmation", async () => {
+test("default demo is Mainnet and requires real-USDC confirmation before selecting signers", async () => {
+  await isolatedHome();
+  await assert.rejects(runDemo("research-agent"), /--confirm-real-usdc/);
+});
+
+test("mainnet demo uses bundled deployment and asks for public actors, not a manifest", async () => {
   await isolatedHome();
   await assert.rejects(
     runDemo("research-agent", { network: "mainnet", confirmRealUsdc: true }),
-    /--manifest/,
+    /--merchant/,
   );
+});
+
+test("demo rejects an alternate Mainnet contract before selecting signers", async () => {
+  await isolatedHome();
+  const manifest = structuredClone(MAINNET_DEPLOYMENT_MANIFEST);
+  (manifest.deployment as { registry_contract_id: string }).registry_contract_id = TESTNET.mandateRegistryId;
+  const path = join(process.env.ACKRATE_HOME!, "manifest.json");
+  await writeFile(path, JSON.stringify(manifest));
+  await assert.rejects(runDemo("research-agent", { confirmRealUsdc: true, manifest: path }), /published Mainnet deployment/);
 });
 
 test("unknown network fails closed", async () => {
@@ -94,6 +108,40 @@ test("bundled CLI help, demo listing, and unconfirmed Mainnet never bootstrap th
   assert.equal(rejected.status, 1);
   assert.match(rejected.stderr, /--confirm-real-usdc/);
   assert.doesNotMatch(`${rejected.stdout}\n${rejected.stderr}`, /ACKRATE_NETWORK must|fulfillment-agent listening|ACKRATE_CHALLENGE_SECRET/);
+  const defaultRejected = spawnSync(process.execPath, [bundlePath, "demo", "research-agent"], {
+    cwd: repoRoot, env, encoding: "utf8", timeout: 10_000,
+  });
+  assert.equal(defaultRejected.status, 1);
+  assert.match(defaultRejected.stderr, /--confirm-real-usdc/);
+  assert.doesNotMatch(`${defaultRejected.stdout}\n${defaultRejected.stderr}`, /friendbot|funding three|fulfillment-agent listening/);
+
+  const init = spawnSync(process.execPath, [bundlePath, "init",
+    "--user-signer", "user", "--agent-signer", "agent", "--merchant", Keypair.random().publicKey(),
+    "--price", "0.01", "--budget", "0.03"], {
+    cwd: bundleRoot, env, encoding: "utf8", timeout: 10_000,
+  });
+  assert.ifError(init.error);
+  assert.equal(init.status, 0, init.stderr);
+  const config = JSON.parse(await readFile(join(bundleRoot, "ackrate.config.json"), "utf8"));
+  assert.equal(config.network, "mainnet");
+  assert.equal(config.contractId, MAINNET.mandateRegistryId);
+  assert.equal(config.manifestPath, undefined);
+  assert.match(init.stdout, new RegExp(`https://stellar.expert/explorer/public/contract/${MAINNET.mandateRegistryId}`));
+  const unconfirmedMandate = spawnSync(process.execPath, [bundlePath, "mandate", "create"], {
+    cwd: bundleRoot, env, encoding: "utf8", timeout: 10_000,
+  });
+  assert.equal(unconfirmedMandate.status, 1);
+  assert.match(unconfirmedMandate.stderr, /--confirm-real-usdc/);
+  // The guard must run before even decoding the stored mandate or invoking an
+  // external signer. An unreadable-as-mandate marker makes that order observable.
+  await mkdir(env.ACKRATE_HOME, { recursive: true });
+  await writeFile(join(env.ACKRATE_HOME, "mandate.json"), "{}\n");
+  const unconfirmedPayment = spawnSync(process.execPath, [bundlePath, "pay"], {
+    cwd: bundleRoot, env, encoding: "utf8", timeout: 10_000,
+  });
+  assert.ifError(unconfirmedPayment.error);
+  assert.equal(unconfirmedPayment.status, 1);
+  assert.match(unconfirmedPayment.stderr, /--confirm-real-usdc/);
 });
 
 test("bound-v2 Mainnet signer is accepted only from the named secret-manager environment variable", () => {

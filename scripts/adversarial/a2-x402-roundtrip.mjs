@@ -39,9 +39,9 @@ const mandate = ackrate.createIntentMandate({
   asset: ackrate.testnet.nativeSac,
   maxAmount: "3.00",
   expiry: Math.floor(Date.now() / 1000) + 3600,
-});
-await ackrate.registerMandate(mandate, { signer: user });
-await ackrate.approveBudget(mandate, { signer: user });
+}, ackrate.testnet);
+await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
+await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
 console.log(`mandate ${mandate.id} registered + funded (3.00 XLM)`);
 
 // --- merchant: 402-gated Express API from the published middleware ---
@@ -50,6 +50,9 @@ const ORIGIN = `http://127.0.0.1:${PORT}`;
 let fulfillments = 0;
 const app = express();
 const paid = createBoundAckratePaidJsonRoute({
+  networkConfig: ackrate.testnet,
+  network: "stellar-testnet",
+  asset: ackrate.testnet.nativeSac,
   merchant: merchant.publicKey(),
   sourceAccount: merchant.publicKey(),
   audience: ORIGIN,
@@ -73,7 +76,7 @@ const receiptStore = {
   async listPending() { return [...pendings.values()]; },
   async clearPending(receiptId) { pendings.delete(receiptId); },
 };
-const consumer = ackrate.agent({ mandate, signer: agentKey, proofPolicy: "bound-v2-only", receiptStore });
+const consumer = ackrate.agent({ mandate, signer: agentKey, proofPolicy: "bound-v2-only", receiptStore }, ackrate.testnet);
 
 const txes = [];
 const receipts = [];

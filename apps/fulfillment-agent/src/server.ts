@@ -24,7 +24,7 @@ import {
   type BoundRedemptionStore,
   type PaymentVerifier,
 } from "@ackrate/express-middleware";
-import type { NetworkConfig } from "@ackrate/stellar";
+import { TESTNET, type NetworkConfig } from "@ackrate/stellar";
 
 export const SOURCE_PRICE = "1.00";
 
@@ -74,7 +74,7 @@ export function createFulfillmentApp(options: FulfillmentAppOptions): Express {
     merchant: options.merchant,
     sourceAccount: options.sourceAccount ?? options.merchant,
     amount: options.amount ?? SOURCE_PRICE,
-    networkConfig: options.networkConfig,
+    networkConfig: options.networkConfig ?? TESTNET,
     asset: options.asset,
     network: options.network,
     audience: options.audience,

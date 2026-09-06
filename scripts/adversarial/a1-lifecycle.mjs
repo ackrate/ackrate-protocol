@@ -35,15 +35,15 @@ const mandate = ackrate.createIntentMandate({
   asset: ackrate.testnet.nativeSac,
   maxAmount: "2.50",
   expiry: Math.floor(Date.now() / 1000) + 3600,
-});
+}, ackrate.testnet);
 console.log(`mandate id ${mandate.id}`);
 
-const regTx = await ackrate.registerMandate(mandate, { signer: user });
+const regTx = await ackrate.registerMandate(mandate, { signer: user }, ackrate.testnet);
 record("registerMandate settles on-chain", typeof regTx === "string" && regTx.length === 64, `tx=${regTx}`);
-const apprTx = await ackrate.approveBudget(mandate, { signer: user });
+const apprTx = await ackrate.approveBudget(mandate, { signer: user }, ackrate.testnet);
 record("approveBudget (allowance to CONTRACT) settles", typeof apprTx === "string" && apprTx.length === 64, `tx=${apprTx}`);
 
-const payer = ackrate.agent({ mandate, signer: agent });
+const payer = ackrate.agent({ mandate, signer: agent }, ackrate.testnet);
 const pay1 = await payer.pay("1.00", lifecycle);
 record("pay #1 (1.00) settles", pay1.length === 64, `tx=${pay1}`);
 const pay2 = await payer.pay("1.00", lifecycle);
@@ -72,7 +72,7 @@ record("on-chain spent == 2.50 (independent readback)", m.spent === toStroops("2
 record("on-chain seq == 3 (one per payment)", m.seq === 3, `seq=${m.seq}`);
 
 // --- negative: revoke, then pay ---
-const revTx = await ackrate.revokeMandate(mandate, { signer: user });
+const revTx = await ackrate.revokeMandate(mandate, { signer: user }, ackrate.testnet);
 record("revokeMandate settles", revTx.length === 64, `tx=${revTx}`);
 try {
   await payer.pay("0.01", lifecycle);
@@ -90,13 +90,13 @@ const shortMandate = ackrate.createIntentMandate({
   asset: ackrate.testnet.nativeSac,
   maxAmount: "1.00",
   expiry: Math.floor(Date.now() / 1000) + 45,
-});
-await ackrate.registerMandate(shortMandate, { signer: user });
-await ackrate.approveBudget(shortMandate, { signer: user });
+}, ackrate.testnet);
+await ackrate.registerMandate(shortMandate, { signer: user }, ackrate.testnet);
+await ackrate.approveBudget(shortMandate, { signer: user }, ackrate.testnet);
 console.log("waiting 75s for the short mandate to expire on-ledger…");
 await new Promise(r => setTimeout(r, 75_000));
 try {
-  await ackrate.agent({ mandate: shortMandate, signer: agent }).pay("0.10", lifecycle);
+  await ackrate.agent({ mandate: shortMandate, signer: agent }, ackrate.testnet).pay("0.10", lifecycle);
   record("contract rejects expired mandate (MandateExpired)", false, "payment unexpectedly settled");
 } catch (err) {
   const msg = String(err?.message ?? err);

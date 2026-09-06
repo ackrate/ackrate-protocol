@@ -1,90 +1,138 @@
-# CLI tool
+# Mainnet CLI workflow
 
-Implemented commands: `init`, `setup`, `mandate create`, `pay`, `settlement
-reconcile`, `settlement acknowledge <TX_HASH>`, and `demo research-agent`. Before
-broadcast, the CLI durably records the signed hash and validity window; another
-process cannot pay until exact-hash reconciliation closes uncertainty. The demo
-creates testnet actors, registers and funds a real mandate, settles three purchases,
-then proves the fourth is rejected by the contract budget. Its explicit mainnet
-mode consumes only a complete verified deployment manifest, canonical Circle
-USDC, named external Stellar CLI identities, and a visible real-value confirmation.
+The coordinated `@ackrate/cli@0.2.0` release makes Stellar Mainnet the default
+and bundles the official deployment manifest for
+[CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+No separate manifest download or manual contract-address entry is needed.
+Signatures, user-approved spending limits, and `--confirm-real-usdc` remain
+required for real-value actions. A configured default is not payment permission.
 
-## Reviewer source command
+The installed command is `ackrate`. Implemented workflows include `init`,
+`setup`, `mandate create`, `pay`, `settlement reconcile`, exact-hash settlement
+acknowledgment, two-signature `ops` coordination, and `demo research-agent`.
 
-Registry verification on **2026-09-07**: the published CLI is `@ackrate/cli@0.1.9`.
-The source candidate `0.1.10` has not been published. The older npm bundle does
-not include the current `buyResearch` reference-agent flow. The candidate
-requires **Node.js 22+** and exact **`@stellar/stellar-sdk@16.3.0`**. It bundles
-the candidate core **0.3.4**, Stellar binding **0.2.5**, and middleware **0.2.5**
-implementation; AP2 **0.3.3** is part of the accompanying package release set.
+## Release status
 
-The published package checkpoint is core **0.3.3**, Stellar binding **0.2.4**,
-AP2 **0.3.2**, middleware **0.2.4**, and CLI **0.1.9**. Do not attribute the
-candidate's V2 manifest or returned-mandate-ID handling to those old packages.
-Build this checkout to evaluate the current V2-compatible implementation:
+At the **2026-09-07 03:33 Bangkok (UTC+7)** registry checkpoint, the public CLI
+was `@ackrate/cli@0.1.9`. Public libraries were Stellar `0.2.5`, Core `0.3.4`,
+AP2 `0.3.2`, and middleware `0.2.4`.
+
+The new coordinated candidates—CLI `0.2.0`, Stellar `0.3.0`, Core `0.4.0`,
+AP2 `0.4.0`, and middleware `0.3.0`—are **pending publication and public
+clean-install verification**. Their new defaults are not present merely because
+an older package is installed. The CLI embeds library output at bundle time;
+installing a newer standalone library cannot rewrite an older CLI bundle.
+
+The package name is `@ackrate/cli`, not the unrelated publisher's `ackrate-cli`.
+Earlier grant wording used a retired unscoped CLI name; record the package-name
+change in the submission. Follow the [release matrix](ackrate-sdk-npm.md) for
+dated publication evidence.
+
+## Build the current source
+
+Use Node.js 22 or newer. The coordinated source pins
+`@stellar/stellar-sdk@16.3.0`.
 
 ```bash
 npm ci
 npm run build
 npm run cli:bundle
-node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent --network testnet
+node packages/cli/dist/ackrate-cli.bundle.mjs --help
 ```
 
-Build the libraries before bundling: the CLI embeds their generated output.
-The standalone fulfillment process has a separate entrypoint, so help and demo
-listing do not start a merchant server. After publication and clean-install
-verification, the corresponding pinned command is:
+Build the libraries before bundling. Help and demo listing do not start a
+merchant server or payment. The full [release gate](ackrate-sdk-npm.md#clean-package-gate-check)
+also checks real package archives in independent clean consumers.
 
-```bash
-npx --yes @ackrate/cli@0.1.10 demo research-agent --network testnet
-```
+## Run the Mainnet reference agents
 
-That npm command remains pending until the exact candidate version is published.
+Prepare three distinct existing accounts: a USDC-funded user, an authorized
+agent, and the verified merchant. The user and agent need XLM fee headroom and
+named Stellar CLI signing identities. A secret manager must inject the matching
+agent key for detached HTTP proof signing into `ACKRATE_AGENT_SECRET`.
+The flag below names that variable; never substitute its secret value.
 
-The package installs the `ackrate` command. The
-roadmap's proposed unscoped npm name `ackrate-cli` is owned by an unrelated
-publisher, so the canonical Ackrate package is `@ackrate/cli`.
-Earlier deliverable text uses a retired unscoped CLI name. Use the pinned
-`@ackrate/cli` package when reviewing a published release, and record the
-package naming change in the submission.
-
-The Mainnet reference-agent run requires a completed deployment manifest and
-three distinct funded accounts: the user, agent, and merchant. Choose the
-verified manifest for the deployment under review; the SDK does not select a
-Mainnet contract by default. The user and agent must have named Stellar CLI
-identities, and a secret manager must inject the matching agent key into
-`ACKRATE_AGENT_SECRET` for detached request-proof signing. The flag below names
-the environment variable; never substitute the secret itself into the command.
+Replace the example identity names and `G...` with your configured values.
+This command authorizes and spends real USDC:
 
 ```bash
 node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent \
-  --network mainnet --manifest ./mainnet-deployment.json \
-  --user-signer ackrate-canary-user --agent-signer ackrate-canary-agent \
+  --network mainnet \
+  --user-signer ackrate-user --agent-signer ackrate-agent \
   --agent-secret-env ACKRATE_AGENT_SECRET \
-  --merchant <merchant-G-address> \
+  --merchant G... \
   --price 0.01 --budget 0.03 --confirm-real-usdc
 ```
 
+The official Mainnet manifest is already bundled. Advanced integrations may
+pass `--manifest ./mainnet-deployment.json`; that optional complete record must
+validate against the same official deployment, not select an arbitrary address.
+
 The command starts the reference fulfillment server, registers a mandate,
 approves only the registry to spend USDC, and has the consumer buy three sources.
-Each delivered source follows HTTP 402, on-chain `execute_payment`, bound proof
-verification, and HTTP 200. A fourth purchase must fail at the contract without
-payment. This reference server serves deterministic content; the hosted app's
-external marketplace integration is a separate acceptance check.
+Each delivered source follows HTTP 402, on-chain `execute_payment`, independent
+bound-proof verification, and HTTP 200. The contract must reject purchase four
+without payment. The reference server serves deterministic research content;
+the hosted app's external marketplace acceptance is a separate check.
 
-Before registration, Mainnet preflight verifies both USDC endpoints are authorized,
-uses the current ledger's base reserve and account sponsorship/liability fields
-to require at least **0.50 spendable XLM** for both user and agent, and checks
-USDC sending capacity and the merchant's receiving limit. These unsigned reads
-do not reserve funds or guarantee future fees. Running the fully configured
-command is a real purchase, not a read-only preflight command.
+Unsigned preflight checks verify network, registry state, distinct actors,
+USDC authorization and sending/receiving capacity, and spendable XLM fee
+headroom. These reads do not reserve funds or guarantee future fees. The fully
+configured demo command is a real purchase, not a read-only readiness check.
 
-The earlier Mainnet direct-payment run, exact transaction links, contract
-rejection, and recipient balance delta are published in
-[`mainnet-live-usdc-evidence.md`](mainnet-live-usdc-evidence.md). Those historical
-transactions do not establish completion of the later bound-v2 reference-agent
-HTTP flow; retain a new run's delivery receipts and transaction evidence before
-marking that acceptance check complete.
+After publication and clean-install verification, run the same options with
+the pinned npm command:
 
-An npm release containing the current source, followed by a clean-install
-verification of its exact `npx` command, remains a separate delivery check.
+```bash
+npx --yes @ackrate/cli@0.2.0 demo research-agent \
+  --network mainnet \
+  --user-signer ackrate-user --agent-signer ackrate-agent \
+  --agent-secret-env ACKRATE_AGENT_SECRET \
+  --merchant G... \
+  --price 0.01 --budget 0.03 --confirm-real-usdc
+```
+
+This exact npm version remains pending until the release matrix records its
+publication. A successful local build is not public registry or live-payment evidence.
+
+## Persistent project and recovery
+
+```bash
+ackrate init \
+  --user-signer ackrate-user --agent-signer ackrate-agent \
+  --merchant G... --price 0.01 --budget 0.03
+ackrate setup
+ackrate mandate create --confirm-real-usdc
+ackrate pay --confirm-real-usdc
+ackrate settlement reconcile
+ackrate settlement acknowledge <EXACT_CONFIRMED_TX_HASH>
+```
+
+`setup` is read-only. Registration and USDC allowance approval are distinct
+user-authorized transactions. The allowance belongs to the contract, never the
+agent or SDK, and each spend remains subject to atomic on-chain enforcement.
+
+Before broadcast, the CLI durably records the signed hash and validity window.
+Concurrent processes using the same state cannot pay around its pending lock.
+Reconcile the original transaction after uncertainty; do not submit a second
+payment or delete the journal. A confirmed success requires explicit
+acknowledgment of that exact transaction hash before the payment path reopens.
+
+See the [complete command and two-signature guide](../packages/cli/README.md)
+for signer setup, local state, and governed transaction coordination.
+
+## Contract and acceptance evidence
+
+The [five-package configuration map](mainnet-configuration.md) and
+[Mainnet deployment README](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
+link the canonical address, source, and artifact. Authorized upgrades replace
+the implementation at the same contract address; compatibility and release
+evidence still need review after implementation changes.
+
+Historical Mainnet direct-payment transactions, rejection evidence, and the
+recipient balance delta remain in
+[`mainnet-live-usdc-evidence.md`](mainnet-live-usdc-evidence.md). Those receipts
+do not prove completion of the newer reference-agent HTTP flow. Retain a new
+run's delivery receipts and transaction evidence before marking that acceptance
+check complete. Publication, public clean installation, and live delivery are
+separate checks.

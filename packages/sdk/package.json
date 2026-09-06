@@ -1,7 +1,7 @@
 {
   "name": "@ackrate/core",
-  "version": "0.3.4",
-  "description": "Thin, untrusted client for the Ackrate MandateRegistry. The contract is the source of truth.",
+  "version": "0.4.0",
+  "description": "Mainnet SDK for ACKRATE mandates, USDC payments, and x402 delivery. The MandateRegistry enforces every payment.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ackrate/ackrate-protocol.git",
@@ -40,7 +40,7 @@
     "test": "node --import tsx --test src/x402.test.ts src/payment-sequence.test.ts src/registered-id.test.ts src/fetch.test.ts test/index.test.mjs"
   },
   "dependencies": {
-    "@ackrate/stellar": "^0.2.5",
+    "@ackrate/stellar": "^0.3.0",
     "@stellar/stellar-sdk": "16.3.0",
     "buffer": "6.0.3"
   },

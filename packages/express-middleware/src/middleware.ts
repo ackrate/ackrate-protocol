@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import { Buffer } from "buffer";
-import { Address, StrKey } from "@stellar/stellar-sdk";
+import { Address, Networks, StrKey } from "@stellar/stellar-sdk";
 import { X_PAYMENT_HEADER, decodePaymentProof, toStroops } from "@ackrate/core";
-import { TESTNET } from "@ackrate/stellar";
+import { MAINNET, MAINNET_USDC } from "@ackrate/stellar";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import { createStellarPaymentVerifier } from "./verification.js";
 import type {
@@ -114,18 +114,19 @@ export function createAckratePaymentMiddleware(
     throw new Error("redemptionStore with an atomic consumeOnce(record) operation is required.");
   }
 
-  const networkConfig = options.networkConfig ?? TESTNET;
+  const networkConfig = options.networkConfig ?? MAINNET;
+  const isMainnet = networkConfig.networkPassphrase === Networks.PUBLIC;
   const merchant = stellarAddress("merchant", options.merchant);
   const registryId = exactText("networkConfig.mandateRegistryId", networkConfig.mandateRegistryId);
   if (!StrKey.isValidContract(registryId)) {
     throw new Error("networkConfig.mandateRegistryId must be a valid Stellar contract address.");
   }
-  const asset = exactText("asset", options.asset ?? networkConfig.nativeSac);
+  const asset = exactText("asset", options.asset ?? (isMainnet ? MAINNET_USDC.contractId : networkConfig.nativeSac));
   if (!StrKey.isValidContract(asset)) {
     throw new Error("asset must be a valid Stellar contract address.");
   }
   const scheme = exactText("scheme", options.scheme ?? "ackrate-soroban");
-  const network = exactText("network", options.network ?? "stellar-testnet");
+  const network = exactText("network", options.network ?? (isMainnet ? "stellar-mainnet" : "stellar-testnet"));
   const decimals = options.decimals ?? 7;
   const maxHeaderBytes = options.maxHeaderBytes ?? DEFAULT_MAX_HEADER_BYTES;
   const maxProofAgeLedgers = options.maxProofAgeLedgers ?? DEFAULT_MAX_PROOF_AGE_LEDGERS;

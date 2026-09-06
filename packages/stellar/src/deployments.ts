@@ -9,7 +9,7 @@ import { MAINNET_USDC, mainnetNetworkFromDeploymentManifest, type ReleaseNetwork
  * and the reference apps — reads from this module, so there is never a second copy
  * to keep in sync.
  *
- * The testnet `mandateRegistryId` is the permanent same-address upgrade target.
+ * The mainnet `mandateRegistryId` is the official same-address upgrade target.
  * `npm run deploy:testnet` writes experimental deployments only to `.env`; it does
  * not rewrite this published default. To point at a different deployment at
  * runtime without editing source, pass a custom `NetworkConfig` to any SDK call.
@@ -40,6 +40,58 @@ export const DEPLOYMENTS = Object.freeze({
     authorityAccount: "GCIURCX7JHEKQLRTW6RDZU7OJUVCDM7WWNQPIKRERIHQOHSLW7UY7TXG",
     deploymentRecordUrl: "https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md",
     artifactUrl: "https://github.com/ackrate/ackrate-protocol-contracts/releases/download/v2-source-verify-v0.4.1.6_mandate-registry_pkg0.4.1_cli27.0.0/mandate-registry_v0.4.1.wasm",
+  }),
+} as const);
+
+/**
+ * Public deployment evidence bundled with every release. This records the
+ * verified deployment identity; it is not a live chain-state assertion and
+ * contains no credentials. Consumers do not need to supply their own manifest
+ * to connect to the official Mainnet registry.
+ */
+export const MAINNET_DEPLOYMENT_MANIFEST = Object.freeze({
+  schema_version: 2,
+  network: Object.freeze({
+    name: "mainnet", passphrase: Networks.PUBLIC, rpc_url: "https://mainnet.sorobanrpc.com",
+  }),
+  source: Object.freeze({
+    repository: DEPLOYMENTS.mainnet.sourceRepository,
+    directory: DEPLOYMENTS.mainnet.sourceDirectory,
+    package: "mandate-registry", version: DEPLOYMENTS.mainnet.sourceVersion,
+    commit: DEPLOYMENTS.mainnet.sourceCommit, dirty: false,
+  }),
+  artifacts: Object.freeze({ mandate_registry: Object.freeze({
+    sha256: DEPLOYMENTS.mainnet.registryWasmSha256,
+    interface_sha256: DEPLOYMENTS.mainnet.registryInterfaceSha256,
+    size_bytes: DEPLOYMENTS.mainnet.registryWasmSizeBytes,
+  }) }),
+  public_configuration: Object.freeze({
+    deployment_source_account: DEPLOYMENTS.mainnet.authorityAccount,
+    authority_2_of_3_account: DEPLOYMENTS.mainnet.authorityAccount,
+    usdc_asset_code: MAINNET_USDC.code, usdc_issuer: MAINNET_USDC.issuer,
+    usdc_sac: MAINNET_USDC.contractId,
+    usdc_derivation_evidence: "Circle issuer plus independent Stellar CLI and SDK derivation",
+    usdc_independent_verifier: "Stellar CLI, Horizon, and @stellar/stellar-sdk",
+  }),
+  constructor_arguments: Object.freeze({
+    admin: DEPLOYMENTS.mainnet.authorityAccount, initial_asset: MAINNET_USDC.contractId,
+  }),
+  deployment: Object.freeze({
+    authorized_by: "Ackrate Mainnet 2-of-3 authority", deployed_at: "2026-08-31T11:34:37.000Z",
+    ledger: DEPLOYMENTS.mainnet.deploymentLedger,
+    wasm_upload_transaction_hash: DEPLOYMENTS.mainnet.wasmUploadTransactionHash,
+    registry_transaction_hash: DEPLOYMENTS.mainnet.deploymentTransactionHash,
+    registry_contract_id: DEPLOYMENTS.mainnet.mandateRegistryId,
+    registry_observed_wasm_hash: DEPLOYMENTS.mainnet.registryWasmSha256,
+  }),
+  verification: Object.freeze({
+    artifact_hashes_match: true, constructor_arguments_match: true,
+    registry_admin_is_2_of_3: true, registry_pending_admin_is_none: true,
+    registry_schema_version_is_2: true, registry_initially_unpaused: true,
+    registry_usdc_asset_allowed: true, authority_has_three_weight_one_signers: true,
+    authority_thresholds_are_2_of_3: true,
+    independent_read_only_verifier: "Mainnet V2 deployment gate, Horizon, Stellar RPC, and StellarExpert public API",
+    verified_at: "2026-09-01T13:07:18.000Z",
   }),
 } as const);
 

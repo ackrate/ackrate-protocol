@@ -5,9 +5,10 @@ import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "nod
 import { join } from "node:path";
 import { ackrate, toStroops } from "@ackrate/core";
 import {
+  MAINNET,
   TESTNET,
   keypairSigner,
-  mainnetNetworkFromDeploymentManifest,
+  publishedMainnetNetworkFromDeploymentManifest,
   registryClient,
   token,
   type NetworkConfig,
@@ -151,10 +152,11 @@ async function mainnetRuntime(options: DemoOptions): Promise<DemoRuntime> {
   if (!options.confirmRealUsdc) {
     throw new Error("mainnet demo requires --confirm-real-usdc before reading configuration or opening a signer");
   }
-  const manifestPath = required(options.manifest, "--manifest <path>");
-  const net = mainnetNetworkFromDeploymentManifest(
-    JSON.parse(readFileSync(manifestPath, "utf8")) as unknown,
-  );
+  const net = options.manifest !== undefined
+    ? publishedMainnetNetworkFromDeploymentManifest(
+        JSON.parse(readFileSync(required(options.manifest, "--manifest <path>"), "utf8")) as unknown,
+      )
+    : MAINNET;
   const merchant = required(options.merchant, "--merchant <G...>");
   if (!StrKey.isValidEd25519PublicKey(merchant)) throw new Error("--merchant must be a Stellar G-account");
   const budget = required(options.budget, "--budget <usdc>");
@@ -321,7 +323,7 @@ const DEMOS = [{ id: "research-agent", summary: "Reference consumer and fulfillm
 
 function listDemos(): void {
   console.log(`\n${banner()}\n`);
-  for (const demo of DEMOS) log.step(demo.id, { run: `ackrate demo ${demo.id} --network testnet` });
+  for (const demo of DEMOS) log.step(demo.id, { run: `ackrate demo ${demo.id} --help` });
 }
 
 export async function runDemo(target?: string, options: DemoOptions = {}): Promise<void> {
@@ -331,7 +333,7 @@ export async function runDemo(target?: string, options: DemoOptions = {}): Promi
   if (options.network !== undefined && options.network !== "testnet" && options.network !== "mainnet") {
     throw new Error("--network must be testnet or mainnet");
   }
-  const network = options.network ?? "testnet";
+  const network = options.network ?? "mainnet";
   console.log(`\n${banner(network === "mainnet" ? "stellar mainnet · real USDC" : "stellar testnet · XLM")}\n`);
   await executeDemo(network === "mainnet" ? await mainnetRuntime(options) : await testnetRuntime());
 }

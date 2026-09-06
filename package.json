@@ -48,7 +48,7 @@
     "esbuild": "0.28.1"
   },
   "dependencies": {
-    "@ackrate/core": "^0.3.4"
+    "@ackrate/core": "^0.4.0"
   },
   "overrides": {
     "axios": "1.19.0",

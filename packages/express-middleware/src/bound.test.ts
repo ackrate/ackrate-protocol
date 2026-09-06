@@ -15,7 +15,7 @@ import {
   type BoundPaymentProofV2,
   type LegacyPaymentProof,
 } from "@ackrate/core";
-import { TESTNET } from "@ackrate/stellar";
+import { MAINNET, TESTNET } from "@ackrate/stellar";
 import {
   getVerifiedPayment,
   InMemoryBoundRedemptionStore,
@@ -86,6 +86,7 @@ async function start(options: {
   let runtimeAudience = "";
   const app = express();
   const requirePayment = createBoundAckratePaymentMiddleware({
+    networkConfig: TESTNET,
     merchant,
     amount: "1.00",
     audience: options.audience ?? (() => runtimeAudience),
@@ -128,6 +129,19 @@ async function quote(baseUrl: string, resource = "/source/market"): Promise<Boun
   assert.ok(required.challenge);
   return required.challenge;
 }
+
+test("default bound middleware binds its quote to the official Mainnet registry and USDC", async () => {
+  let verifies = 0;
+  const app = await start({
+    middleware: { networkConfig: undefined },
+    verifier: successfulVerifier(() => { verifies += 1; }),
+  });
+  const challenge = await quote(app.url);
+  assert.equal(challenge.network, "stellar-mainnet");
+  assert.equal(challenge.registryId, "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR");
+  assert.equal(challenge.asset, MAINNET.settlementAsset.contractId);
+  assert.equal(verifies, 0);
+});
 
 function signedProof(challenge: BoundPaymentChallengeV2, signer = agentKey): BoundPaymentProofV2 {
   return createBoundPaymentProof({ challenge, txHash, mandateId, signer });
