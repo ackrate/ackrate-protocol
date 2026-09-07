@@ -1,4 +1,4 @@
-# @ackrate/cli 0.2.0
+# @ackrate/cli 0.2.1
 
 Run Ackrate's contract-enforced USDC payment workflow on Stellar Mainnet from
 your terminal: configure signers, register a mandate, approve its budget, pay a
@@ -16,7 +16,7 @@ still be checked when that implementation changes.
 ## Install
 
 ```bash
-npm install -g @ackrate/cli@0.2.0
+npm install -g @ackrate/cli@0.2.1
 ackrate --help
 ```
 
@@ -73,6 +73,12 @@ match the same official deployment and pass validation. The CLI rejects wrong-ne
 conflicting USDC identities, paused contracts, missing or reused actor accounts,
 insufficient balances, and invalid demo price/budget combinations.
 
+An interrupted reference demo keeps a durable run marker in the same atomic
+claim used by `pay`. A new demo or payment cannot replace it. Preserve the
+original receipts, outcomes, and delivery origin; `settlement reconcile` reports
+their retained context for manual exact-receipt recovery. Automatic demo resume
+is not implemented, and payment acknowledgment cannot clear a demo marker.
+
 ## Use a persistent project
 
 ```bash
@@ -102,7 +108,7 @@ preflight cannot replace the on-chain `execute_payment` path.
 ## Recover a pending payment
 
 Before broadcast, the CLI signs, derives the exact transaction hash and validity
-window, and fsyncs a private journal. An atomic local claim prevents concurrent
+window, and fsyncs a private journal and its parent directory. An atomic local claim prevents concurrent
 CLI processes using the same state from submitting a second payment.
 
 If confirmation is uncertain, do not retry as a new payment:
@@ -117,7 +123,8 @@ A confirmed success remains blocked until you explicitly acknowledge that exact
 transaction. A proven failure, or a provably expired transaction within retained
 RPC history, can be cleared without acknowledging a payment that never landed.
 Unknown results stay locked. Protect the journal and do not delete it to bypass
-an unresolved purchase.
+an unresolved purchase. Incomplete markers, interrupted journal operations, and
+invalid RPC history also remain locked for manual review.
 
 ## Commands
 

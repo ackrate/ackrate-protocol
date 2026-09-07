@@ -210,12 +210,20 @@ test("durable application outcome survives an acknowledgment crash and restart n
   }
 });
 
-test("resume and explicit acknowledgment reuse the exact receipt and have no payment path", async () => {
-  const key = Keypair.random();
+test("real recovery helpers share the exact receipt lock and acknowledgment releases it", async () => {
+  const publicKey = Keypair.random().publicKey();
+  let signs = 0;
+  const signer = {
+    publicKey,
+    signTransaction: async (): Promise<never> => {
+      signs += 1;
+      throw new Error("recovery must never sign");
+    },
+  };
   const mandate = ackrate.createIntentMandate({
-    user: key.publicKey(),
-    agent: key.publicKey(),
-    merchant: key.publicKey(),
+    user: publicKey,
+    agent: publicKey,
+    merchant: publicKey,
     asset: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
     maxAmount: "1.00",
     expiry: Math.floor(Date.now() / 1000) + 3600,
@@ -227,9 +235,8 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     mandateId: mandate.id,
     amount: "1.00",
   };
-  const receipt: SettlementReceipt = {
-    receiptId: "c".repeat(64),
-    proofVersion: 1,
+  const receiptWithoutId = {
+    proofVersion: 1 as const,
     url: "http://merchant.test/source/market",
     method: "GET",
     txHash: proof.txHash,
@@ -239,35 +246,41 @@ test("resume and explicit acknowledgment reuse the exact receipt and have no pay
     validUntil: 1_700_000_060,
     proof,
   };
-  const originalAgent = ackrate.agent;
-  let retried: Readonly<SettlementReceipt> | undefined;
-  let acknowledged: Readonly<SettlementReceipt> | undefined;
-  ackrate.agent = (() => ({
-    retryDelivery: async (candidate: Readonly<SettlementReceipt>) => {
-      retried = candidate;
-      return new Response("recovered", { status: 200 });
-    },
-    acknowledgeDelivery: async (candidate: Readonly<SettlementReceipt>) => {
-      acknowledged = candidate;
-    },
-  })) as unknown as typeof ackrate.agent;
+  const receipt: SettlementReceipt = {
+    ...receiptWithoutId,
+    receiptId: createSettlementReceiptId(receiptWithoutId),
+  };
+  const pending = new Map([[receipt.receiptId, receipt]]);
+  const receiptStore = {
+    async savePending(candidate: Readonly<SettlementReceipt>) { pending.set(candidate.receiptId, candidate); },
+    async clearPending(receiptId: string) { pending.delete(receiptId); },
+    async listPending() { return [...pending.values()]; },
+  };
+  const originalFetch = globalThis.fetch;
+  let requests = 0;
+  globalThis.fetch = async () => {
+    requests += 1;
+    return new Response("recovered", { status: 200 });
+  };
+  const original = ackrate.agent({ mandate, signer, receiptStore }, ackrate.testnet);
+  const opts = { mandate, agentSigner: signer, networkConfig: ackrate.testnet, receipt, receiptStore };
   try {
-    const response = await resumePendingDelivery({
-      mandate,
-      agentSecret: key.secret(),
-      receipt,
-      receiptStore: emptyReceiptStore,
-    });
+    await assert.rejects(() => original.fetch(receipt.url), DeliveryPendingError);
+    const response = await resumePendingDelivery(opts);
     assert.equal(response.status, 200);
-    assert.deepEqual(retried, receipt);
-    await acknowledgePendingDelivery({
-      mandate,
-      agentSecret: key.secret(),
-      receipt,
-      receiptStore: emptyReceiptStore,
-    });
-    assert.deepEqual(acknowledged, receipt);
+    assert.equal(pending.size, 1);
+    await acknowledgePendingDelivery(opts);
+    assert.equal(pending.size, 0);
+    assert.equal(original.getPendingSettlement(), undefined);
+    assert.equal((await original.fetch(receipt.url)).status, 200);
+    // A new helper-created Agent can acquire a later operation after the first
+    // helper's now-unreachable Agent has been acknowledged.
+    assert.equal((await resumePendingDelivery(opts)).status, 200);
+    await acknowledgePendingDelivery(opts);
+    assert.equal(requests, 3);
+    assert.equal(signs, 0);
   } finally {
-    ackrate.agent = originalAgent;
+    await acknowledgePendingDelivery(opts);
+    globalThis.fetch = originalFetch;
   }
 });

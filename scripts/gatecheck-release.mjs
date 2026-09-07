@@ -13,17 +13,19 @@ const MAINNET_WASM = "982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01fa
 
 const packages = [
   ["packages/stellar", "@ackrate/stellar", "0.3.0"],
-  ["packages/sdk", "@ackrate/core", "0.4.0"],
+  ["packages/sdk", "@ackrate/core", "0.4.1"],
   ["packages/ap2", "@ackrate/ap2", "0.4.0"],
   ["packages/express-middleware", "@ackrate/express-middleware", "0.3.0"],
-  ["packages/cli", "@ackrate/cli", "0.2.0"],
+  ["packages/cli", "@ackrate/cli", "0.2.1"],
 ];
 const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
 const candidateVersions = new Map(packages.map(([, name, version]) => [name, version]));
 const requiredInternalDependencies = {
-  "@ackrate/core": ["@ackrate/stellar"],
-  "@ackrate/ap2": ["@ackrate/core"],
-  "@ackrate/express-middleware": ["@ackrate/core", "@ackrate/stellar"],
+  "@ackrate/core": { "@ackrate/stellar": "^0.3.0" },
+  // Existing consumers accept the compatible core patch without an unrelated
+  // package release. The clean installs below resolve the candidate tarball.
+  "@ackrate/ap2": { "@ackrate/core": "^0.4.0" },
+  "@ackrate/express-middleware": { "@ackrate/core": "^0.4.0", "@ackrate/stellar": "^0.3.0" },
 };
 
 function fail(message) {
@@ -72,8 +74,8 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     || manifest.dependencies?.["@stellar/stellar-sdk"] !== "16.3.0") {
     fail(`${expectedName} must declare Node 22 and the verified Stellar SDK 16.3.0 dependency`);
   }
-  for (const dependency of requiredInternalDependencies[expectedName] ?? []) {
-    if (manifest.dependencies?.[dependency] !== `^${candidateVersions.get(dependency)}`) {
+  for (const [dependency, requiredRange] of Object.entries(requiredInternalDependencies[expectedName] ?? {})) {
+    if (manifest.dependencies?.[dependency] !== requiredRange) {
       fail(`${expectedName} is missing the required release floor for ${dependency}`);
     }
   }
@@ -248,7 +250,7 @@ console.log("runtime imports and fail-closed published deployment configuration 
   run(path.join(installRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], installRoot);
   run(process.execPath, ["runtime.mjs"], installRoot);
   const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "ackrate"), ["--version"], installRoot).trim();
-  if (cliVersion !== "0.2.0") fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
+  if (cliVersion !== candidateVersions.get("@ackrate/cli")) fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
 
   // Each consumer gets only its package and the unpublished candidate closure

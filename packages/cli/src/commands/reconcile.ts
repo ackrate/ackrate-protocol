@@ -4,8 +4,10 @@ import {
   acknowledgeCompletedSettlement,
   classifyMissingSettlement,
   clearPendingSettlement,
+  demoRecoveryDirectory,
   loadPendingSettlement,
   markSettlementCompleted,
+  settlementDirectory,
 } from "../settlement-store.js";
 
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
@@ -19,8 +21,37 @@ export async function runSettlementReconcile(): Promise<void> {
     return;
   }
   if (loaded.kind === "empty") {
-    await clearPendingSettlement();
-    log.ok("cleared an interrupted pre-broadcast claim; no transaction hash was ever made durable");
+    log.err("journal claim has incomplete metadata; it may still have a live owner and remains locked", { journal: settlementDirectory() });
+    log.info("manual evidence review is required; do not delete the claim or start a replacement payment/demo");
+    process.exitCode = 1;
+    return;
+  }
+  if (loaded.kind === "demo-run") {
+    const record = loaded.record;
+    log.err("reference demo remains locked; settlement alone does not prove accepted delivery", {
+      run: record.runId,
+      network: record.network,
+      contract: record.contractId,
+      journal: settlementDirectory(),
+      evidence: demoRecoveryDirectory(record.mandateId),
+    });
+    if (record.mandateId) log.info("registered mandate", { mandate: record.mandateId });
+    if (record.origin) log.info("original bound delivery origin", { origin: record.origin });
+    for (const hash of [record.registrationTx, record.allowanceTx]) {
+      if (hash) console.log(c.dim(`  ${explorer(record.network, hash)}`));
+    }
+    log.info("confirm the original process has stopped, then manually reconcile and recover the exact retained receipts and application outcomes; do not repay, retarget proofs, delete evidence, or use payment acknowledgment to unlock this demo; automatic resume is not implemented");
+    process.exitCode = 1;
+    return;
+  }
+  if (loaded.kind === "legacy-demo") {
+    log.err("legacy reference-demo evidence requires manual exact-receipt recovery");
+    for (const item of loaded.evidence) {
+      log.info(item.reason, { evidence: item.directory });
+      for (const hash of item.transactionHashes) log.info("retained transaction hash", { tx: hash });
+    }
+    log.info("preserve the original stores and delivery origin; do not start a replacement demo or clear these records with payment acknowledgment; automatic resume is not implemented");
+    process.exitCode = 1;
     return;
   }
 
@@ -76,7 +107,9 @@ export async function runSettlementReconcile(): Promise<void> {
     log.ok("transaction validity window expired with complete retained RPC history; no payment landed");
     return;
   }
-  if (decision === "history-pruned") {
+  if (decision === "invalid-history") {
+    log.err("RPC history bounds are missing or invalid; journal retained for manual evidence review");
+  } else if (decision === "history-pruned") {
     log.err("RPC history no longer covers the full transaction window; journal retained for manual evidence review");
   } else {
     log.warn("transaction is still within its validity/history window; journal retained");

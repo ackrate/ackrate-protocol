@@ -67,5 +67,8 @@ test("both Mainnet entry points await authorization before returning a spend-rea
     assert.ok(source.indexOf("await requireMainnetUsdcAuthorization(") < source.indexOf("await requireMainnetFunding("));
     assert.ok(source.indexOf("await requireMainnetFunding(") < source.indexOf("return Object.freeze("));
   }
-  assert.match(demo, /await executeDemo\(network === "mainnet" \? await mainnetRuntime\(options\)/);
+  const entry = demo.slice(demo.indexOf("export async function runDemo("));
+  assert.match(entry, /const runtime = network === "mainnet" \? await mainnetRuntime\(options\)/);
+  assert.ok(entry.indexOf("await mainnetRuntime(options)") < entry.indexOf("await claimDemoRun("));
+  assert.ok(entry.indexOf("await claimDemoRun(") < entry.indexOf("await executeDemo(runtime, claim)"));
 });

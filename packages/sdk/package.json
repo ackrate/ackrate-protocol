@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/core",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Mainnet SDK for ACKRATE mandates, USDC payments, and x402 delivery. The MandateRegistry enforces every payment.",
   "repository": {
     "type": "git",

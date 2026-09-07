@@ -1,4 +1,4 @@
-# @ackrate/core 0.4.0
+# @ackrate/core 0.4.1
 
 Give an agent a capped USDC budget on Stellar Mainnet. The MandateRegistry
 enforces the budget, merchant, agent, expiry, and payment sequence on-chain.
@@ -15,7 +15,7 @@ must still be checked when the implementation changes.
 ## Install
 
 ```bash
-npm install --save-exact @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
 ```
 
 Requires Node.js 22 or newer and the coordinated Stellar package `^0.3.0`.

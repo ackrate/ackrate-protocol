@@ -231,7 +231,12 @@ const I128_MAX = 2n ** 127n - 1n;
  *  number represents exactly, which is astronomically beyond any real timestamp
  *  yet well under u64 — so the value the SDK hashes and sends is never lossy. */
 const MAX_EXPIRY = Number.MAX_SAFE_INTEGER;
-const activeMandatePaymentClaims = new Map<string, symbol>();
+interface PaymentOperationClaim {
+  /** Undefined while the owner is still preparing or broadcasting a payment. */
+  settlement?: Readonly<PendingSettlement>;
+  released: boolean;
+}
+const activeMandatePaymentClaims = new Map<string, PaymentOperationClaim>();
 const FINALIZED_CONTRACT_ERROR_CODES = new Set([
   1, 2, 4, 5, 6, 7, 8, 9, 10,
   11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
@@ -283,8 +288,8 @@ const mandateUserSigner = (
  *  payment is enforced on-chain against the mandate. */
 export class Agent {
   private pendingSettlement?: Readonly<PendingSettlement>;
-  private readonly paymentClaimOwner = Symbol("ackrate-payment-claim");
   private paymentClaimKey?: string;
+  private paymentClaim?: PaymentOperationClaim;
 
   constructor(
     private readonly net: NetworkConfig,
@@ -294,26 +299,81 @@ export class Agent {
     private readonly receiptStore?: SettlementReceiptStore,
   ) {}
 
+  private synchronizePaymentClaim(): void {
+    if (this.paymentClaim?.released) {
+      this.pendingSettlement = undefined;
+      this.paymentClaimKey = undefined;
+      this.paymentClaim = undefined;
+    }
+  }
+
+  private mandatePaymentKey(): string {
+    return `${this.net.networkPassphrase}\n${this.net.mandateRegistryId}\n${this.mandate.id}`;
+  }
+
   private claimPaymentOperation(): void {
+    this.synchronizePaymentClaim();
     if (this.paymentClaimKey) throw new Error("another payment operation is already active on this agent");
-    const key = `${this.net.networkPassphrase}\n${this.net.mandateRegistryId}\n${this.mandate.id}`;
+    const key = this.mandatePaymentKey();
     if (activeMandatePaymentClaims.has(key)) {
       throw new Error("another payment operation for this mandate is already active");
     }
-    activeMandatePaymentClaims.set(key, this.paymentClaimOwner);
+    this.paymentClaim = { released: false };
+    activeMandatePaymentClaims.set(key, this.paymentClaim);
     this.paymentClaimKey = key;
+  }
+
+  /** Recovery may share the exact retained operation, never an active broadcast
+   * or a different receipt. All attached agents observe its eventual release. */
+  private claimRecoveryOperation(
+    settlement: Readonly<PendingSettlement>,
+    preparationClaim?: PaymentOperationClaim,
+  ): void {
+    this.synchronizePaymentClaim();
+    const key = this.mandatePaymentKey();
+    const existing = activeMandatePaymentClaims.get(key);
+    if (existing) {
+      const held = existing.settlement;
+      if (
+        (!held && (existing !== preparationClaim || existing !== this.paymentClaim || this.pendingSettlement !== undefined))
+        || (held !== undefined && (
+          held.txHash !== settlement.txHash
+          || held.mandateId !== settlement.mandateId
+          || held.amount !== settlement.amount
+          || held.submittedAt !== settlement.submittedAt
+          || held.validUntil !== settlement.validUntil
+          || held.receiptId !== settlement.receiptId
+        ))
+      ) {
+        throw new Error("another payment operation for this mandate is already active");
+      }
+      this.paymentClaim = existing;
+      this.paymentClaimKey = key;
+    } else if (!existing) {
+      this.claimPaymentOperation();
+    }
+    if (this.pendingSettlement && this.pendingSettlement.txHash !== settlement.txHash) {
+      throw new Error("a different pending settlement is already locked on this agent");
+    }
+    this.pendingSettlement = this.paymentClaim!.settlement ?? settlement;
+    this.paymentClaim!.settlement = this.pendingSettlement;
   }
 
   private releasePaymentOperation(): void {
     const key = this.paymentClaimKey;
     if (!key) return;
-    if (activeMandatePaymentClaims.get(key) === this.paymentClaimOwner) {
+    if (activeMandatePaymentClaims.get(key) === this.paymentClaim) {
       activeMandatePaymentClaims.delete(key);
+      this.paymentClaim!.released = true;
     }
     this.paymentClaimKey = undefined;
+    this.paymentClaim = undefined;
   }
 
-  private async hydratePendingReceipt(): Promise<Readonly<SettlementReceipt> | undefined> {
+  private async hydratePendingReceipt(
+    preparationClaim?: PaymentOperationClaim,
+  ): Promise<Readonly<SettlementReceipt> | undefined> {
+    this.synchronizePaymentClaim();
     if (this.pendingSettlement || !this.receiptStore) return undefined;
     const receipts = await this.receiptStore.listPending();
     const receipt = [...receipts]
@@ -342,8 +402,7 @@ export class Agent {
     ) {
       throw new Error("settlement receipt store returned invalid recovery evidence");
     }
-    if (!this.paymentClaimKey) this.claimPaymentOperation();
-    this.pendingSettlement = Object.freeze({
+    this.claimRecoveryOperation(Object.freeze({
       txHash: receipt.txHash,
       mandateId: receipt.mandateId,
       amount: receipt.amount,
@@ -351,7 +410,7 @@ export class Agent {
       submittedAt: receipt.submittedAt,
       validUntil: receipt.validUntil,
       receiptId: receipt.receiptId,
-    });
+    }), preparationClaim);
     return receipt;
   }
 
@@ -365,7 +424,7 @@ export class Agent {
     this.claimPaymentOperation();
     let retainClaim = false;
     try {
-      const outstandingReceipt = await this.hydratePendingReceipt();
+      const outstandingReceipt = await this.hydratePendingReceipt(this.paymentClaim);
       if (outstandingReceipt) {
         retainClaim = true;
         throw new DeliveryPendingError(
@@ -463,10 +522,12 @@ export class Agent {
       return txHash;
     } finally {
       if (!retainClaim) this.releasePaymentOperation();
+      else if (this.paymentClaim) this.paymentClaim.settlement = this.pendingSettlement;
     }
   }
 
   getPendingSettlement(): Readonly<PendingSettlement> | undefined {
+    this.synchronizePaymentClaim();
     return this.pendingSettlement;
   }
 
@@ -475,6 +536,7 @@ export class Agent {
   async reconcilePendingSettlement(
     restored?: Readonly<PendingSettlement>,
   ): Promise<SettlementReconciliation> {
+    this.synchronizePaymentClaim();
     if (restored) {
       if (
         restored.mandateId !== this.mandate.id
@@ -496,38 +558,58 @@ export class Agent {
       }
       this.pendingSettlement = Object.freeze({ ...restored });
     }
-    if (!this.paymentClaimKey) this.claimPaymentOperation();
-    try {
-      await this.hydratePendingReceipt();
-    } catch (error) {
-      if (!this.pendingSettlement) this.releasePaymentOperation();
-      throw error;
-    }
+    await this.hydratePendingReceipt();
     const settlement = this.pendingSettlement;
     if (!settlement) {
-      this.releasePaymentOperation();
+      if (activeMandatePaymentClaims.has(this.mandatePaymentKey())) {
+        throw new Error("another payment operation for this mandate is already active");
+      }
       return { kind: "none" };
     }
+    this.claimRecoveryOperation(settlement);
+    const recoveryClaim = this.paymentClaim!;
+    const requireCurrentRecovery = (): void => {
+      if (this.paymentClaim !== recoveryClaim || recoveryClaim.released) {
+        throw new Error("payment operation changed during settlement reconciliation; pending state was retained");
+      }
+    };
     const server = new rpc.Server(this.net.rpcUrl, { allowHttp: this.net.rpcUrl.startsWith("http://") });
+    const identity = await server.getNetwork();
+    if (identity.passphrase !== this.net.networkPassphrase) {
+      throw new Error("RPC network identity does not match the pending settlement network; pending state was retained");
+    }
+    requireCurrentRecovery();
     const response = await server.getTransaction(settlement.txHash);
+    requireCurrentRecovery();
     if (response.status === rpc.Api.GetTransactionStatus.NOT_FOUND) {
+      // Malformed history is not evidence of expiry. Retain the receipt and
+      // shared payment claim until the RPC supplies a valid coverage window.
+      if (
+        !Number.isSafeInteger(response.latestLedgerCloseTime) || response.latestLedgerCloseTime <= 0
+        || !Number.isSafeInteger(response.oldestLedgerCloseTime) || response.oldestLedgerCloseTime <= 0
+        || response.oldestLedgerCloseTime > response.latestLedgerCloseTime
+      ) return { kind: "pending", settlement };
       if (
         settlement.submittedAt > 0
         && settlement.validUntil > 0
         && response.latestLedgerCloseTime > settlement.validUntil
         && response.oldestLedgerCloseTime <= settlement.submittedAt
       ) {
-        this.pendingSettlement = undefined;
         if (settlement.receiptId) await this.receiptStore?.clearPending(settlement.receiptId);
-        this.releasePaymentOperation();
+        if (this.paymentClaim === recoveryClaim && !recoveryClaim.released) {
+          this.pendingSettlement = undefined;
+          this.releasePaymentOperation();
+        }
         return { kind: "expired", settlement };
       }
       return { kind: "pending", settlement };
     }
     if (response.status === rpc.Api.GetTransactionStatus.FAILED) {
-      this.pendingSettlement = undefined;
       if (settlement.receiptId) await this.receiptStore?.clearPending(settlement.receiptId);
-      this.releasePaymentOperation();
+      if (this.paymentClaim === recoveryClaim && !recoveryClaim.released) {
+        this.pendingSettlement = undefined;
+        this.releasePaymentOperation();
+      }
       return { kind: "failed", settlement };
     }
     if (response.status === rpc.Api.GetTransactionStatus.SUCCESS) {
@@ -545,6 +627,7 @@ export class Agent {
    * `pay`, never signs, and never creates another on-chain transaction.
    */
   async retryDelivery(receipt: Readonly<SettlementReceipt>, init?: RequestInit): Promise<Response> {
+    this.synchronizePaymentClaim();
     if (!this.receiptStore) throw new Error("a SettlementReceiptStore is required to retry delivery safely");
     if (receipt.mandateId !== this.mandate.id || receipt.proof.mandateId !== this.mandate.id) {
       throw new Error("x402: settlement receipt belongs to a different mandate");
@@ -597,7 +680,15 @@ export class Agent {
         throw new Error("x402: bound receipt does not match its delivery target");
       }
     }
-    if (!this.paymentClaimKey) this.claimPaymentOperation();
+    this.claimRecoveryOperation(Object.freeze({
+      txHash: receipt.txHash,
+      mandateId: receipt.mandateId,
+      amount: receipt.amount,
+      expectedSeq: "unknown",
+      submittedAt: receipt.submittedAt,
+      validUntil: receipt.validUntil,
+      receiptId: receipt.receiptId,
+    }));
     const headers = new Headers(init?.headers);
     headers.set(X_PAYMENT_HEADER, encodePaymentProof(proof));
     if (receipt.proofVersion === 2) {
@@ -633,6 +724,7 @@ export class Agent {
    * succeeds, the retained receipt keeps every new payment fail-closed.
    */
   async acknowledgeDelivery(receipt: Readonly<SettlementReceipt>): Promise<void> {
+    this.synchronizePaymentClaim();
     if (!this.receiptStore) throw new Error("a SettlementReceiptStore is required to acknowledge delivery");
     if (receipt.mandateId !== this.mandate.id || receipt.proof.mandateId !== this.mandate.id) {
       throw new Error("x402: cannot acknowledge a receipt for another mandate");
@@ -660,13 +752,25 @@ export class Agent {
     if (receipt.receiptId !== expectedId) {
       throw new Error("x402: cannot acknowledge a receipt with an invalid integrity id");
     }
+    this.claimRecoveryOperation(Object.freeze({
+      txHash: receipt.txHash,
+      mandateId: receipt.mandateId,
+      amount: receipt.amount,
+      expectedSeq: "unknown",
+      submittedAt: receipt.submittedAt,
+      validUntil: receipt.validUntil,
+      receiptId: receipt.receiptId,
+    }));
+    const acknowledgmentClaim = this.paymentClaim!;
     try {
       await this.receiptStore.clearPending(receipt.receiptId);
     } catch (cause) {
       throw new DeliveryPendingError(receipt, cause);
     }
-    if (this.pendingSettlement?.txHash === receipt.txHash) this.pendingSettlement = undefined;
-    this.releasePaymentOperation();
+    if (this.paymentClaim === acknowledgmentClaim && !acknowledgmentClaim.released) {
+      if (this.pendingSettlement?.txHash === receipt.txHash) this.pendingSettlement = undefined;
+      this.releasePaymentOperation();
+    }
   }
 
   /**

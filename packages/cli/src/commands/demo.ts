@@ -22,7 +22,15 @@ import { FileSettlementReceiptStore } from "../../../../apps/consumer-agent/src/
 import { FileBoundRedemptionStore } from "../../../../apps/fulfillment-agent/src/redemption-store.js";
 import { startServer } from "../../../../apps/fulfillment-agent/src/server.js";
 import { ackrateHome } from "../secrets.js";
-import { assertNoPendingSettlement } from "../settlement-store.js";
+import {
+  assertNoPendingSettlement,
+  claimDemoRun,
+  completeDemoRun,
+  demoRecoveryDirectory,
+  settlementDirectory,
+  updateDemoRun,
+  type DemoRunClaim,
+} from "../settlement-store.js";
 import { requireMainnetUsdcAuthorization } from "../mainnet-preflight.js";
 import { requireMainnetFunding } from "../mainnet-funding.js";
 import { stellarCliSigner } from "../stellar-cli-signer.js";
@@ -225,7 +233,7 @@ async function closeServer(server: import("node:http").Server): Promise<void> {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
-async function executeDemo(runtime: DemoRuntime): Promise<void> {
+async function executeDemo(runtime: DemoRuntime, claim: DemoRunClaim): Promise<void> {
   const merchantBefore = await token.balance(runtime.net, runtime.asset, runtime.merchant);
   const mandate = ackrate.createIntentMandate({
     user: runtime.userSigner.publicKey,
@@ -238,7 +246,9 @@ async function executeDemo(runtime: DemoRuntime): Promise<void> {
     nonce: `${Date.now()}:${randomBytes(12).toString("hex")}`,
   }, runtime.net);
   const registerTx = await ackrate.registerMandate(mandate, { signer: runtime.userSigner }, runtime.net);
+  await updateDemoRun(claim, { mandateId: mandate.id, registrationTx: registerTx });
   const approveTx = await ackrate.approveBudget(mandate, { signer: runtime.userSigner }, runtime.net);
+  await updateDemoRun(claim, { allowanceTx: approveTx });
   log.chain("mandate and contract allowance confirmed", {
     register: link(explorerTx(runtime.network, registerTx), short(registerTx)),
     allowance: link(explorerTx(runtime.network, approveTx), short(approveTx)),
@@ -265,6 +275,7 @@ async function executeDemo(runtime: DemoRuntime): Promise<void> {
 
   let results;
   try {
+    await updateDemoRun(claim, { origin: fulfillment.url });
     results = await buyResearch({
       serverUrl: fulfillment.url,
       sourceIds: [...SOURCE_IDS],
@@ -309,6 +320,7 @@ async function executeDemo(runtime: DemoRuntime): Promise<void> {
   if (Number(finalMandate.seq) !== 3 || finalMandate.spent !== expected || transferred !== expected) {
     throw new Error("contract state, merchant delta, and delivered receipts disagree");
   }
+  await completeDemoRun(claim); // Also requires all paid delivery receipts to be acknowledged.
 
   console.log(
     `\n${c.bold("Verified result")}\n`
@@ -335,5 +347,24 @@ export async function runDemo(target?: string, options: DemoOptions = {}): Promi
   }
   const network = options.network ?? "mainnet";
   console.log(`\n${banner(network === "mainnet" ? "stellar mainnet · real USDC" : "stellar testnet · XLM")}\n`);
-  await executeDemo(network === "mainnet" ? await mainnetRuntime(options) : await testnetRuntime());
+  const runtime = network === "mainnet" ? await mainnetRuntime(options) : await testnetRuntime();
+  const claim = await claimDemoRun({
+    network: runtime.network,
+    rpcUrl: runtime.net.rpcUrl,
+    contractId: runtime.net.mandateRegistryId,
+    assetId: runtime.asset,
+    user: runtime.userSigner.publicKey,
+    agent: runtime.agentSigner.publicKey,
+    merchant: runtime.merchant,
+  });
+  try {
+    await executeDemo(runtime, claim);
+  } catch (error) {
+    log.err("demo did not complete; its run claim and any delivery evidence remain locked", {
+      journal: settlementDirectory(),
+      evidence: demoRecoveryDirectory(null),
+    });
+    log.info("run `ackrate settlement reconcile` to inspect the retained context; manual exact-receipt recovery is required before another run; this command does not resume automatically");
+    throw error;
+  }
 }

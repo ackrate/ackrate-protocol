@@ -1,11 +1,12 @@
-# Mainnet research-agent USDC evidence
+# Historical Mainnet USDC evidence and current reference-agent acceptance
 
 Status: historical direct-payment check passed
 
 Executed: 2026-08-26 20:52 UTC
 
 The reference CLI completed its deliberately bounded Mainnet flow against the
-governed MandateRegistry. It registered a 0.03 USDC mandate, approved only the
+older governed MandateRegistry `CDBTG5ZKASFA7LOYUPBOTGKAVX5MJIM4U24BYGX7VX23IHYDAHLQPAGS`.
+It registered a 0.03 USDC mandate, approved only the
 registry as spender, executed three agent-signed 0.01 USDC payments, and
 observed the contract reject purchase four with `BudgetExceeded`.
 
@@ -15,12 +16,18 @@ HTTP 402 → `execute_payment` → bound proof → HTTP 200. The transactions be
 prove the earlier real-USDC transfers and budget rejection; they are not live
 delivery evidence for the later HTTP flow or the external Agent402 marketplace.
 
-Recheck the live 2-of-3 signer math, official Circle USDC trustline, and
-finalized Registry/token events without signing or submitting a transaction:
+Recheck the old canary actors' current public 2-of-3 account policy and Circle
+USDC trustline, plus the historical registry/token events, without signing or
+submitting a transaction:
 
 ```bash
 npm run verify:mainnet-evidence
 ```
+
+This verifier is deliberately pinned to the old registry and its recorded
+transactions. A passing result does not verify the official WR/V2 deployment,
+the current published CLI, or reference-agent HTTP delivery. The original
+receipts below retain their original identities.
 
 ## Exact actors and policy
 
@@ -54,16 +61,26 @@ The recipient's Circle USDC balance increased by exactly 0.03 USDC. Purchase
 four failed during contract simulation with `BudgetExceeded`, so it was not
 broadcast and did not move value or charge a transaction fee.
 
-## Reviewer command
+## Published checkpoint and prepared patch — live acceptance pending
 
-Build the current source candidate using the steps in [`cli.md`](cli.md).
-Registry check on 2026-09-06 found `@ackrate/cli@0.1.9` published and `0.1.10`
-unpublished; the following command deliberately runs the current local bundle:
+The September 7, 2026 publication checks verified `@ackrate/cli@0.2.0` with
+Stellar `0.3.0`, Core `0.4.0`, AP2 `0.4.0`, and middleware `0.3.0`.
+See the [dated public-install and integrity record](t3-step-1-gate-2026-09-07.md).
+The supported package is the scoped `@ackrate/cli`, with executable `ackrate`.
+The project owner approved the ACKRATE name and scoped command on September 7,
+2026; the earlier CLI roadmap name is superseded.
+
+Core `0.4.1` and CLI `0.2.1` are the prepared repair releases. They include
+exact-receipt recovery fixes, invalid RPC-evidence retention, and an atomic
+demo/payment journal claim that blocks replacement of an interrupted demo.
+The command below pins the new CLI candidate, not the older published baseline.
+Publication, public-archive verification, and release-specific live acceptance
+must still be recorded; none is asserted by this preparation update. Do not
+substitute a local bundle for proof that the public npm command works.
 
 ```bash
-node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent \
+npx --yes @ackrate/cli@0.2.1 demo research-agent \
   --network mainnet \
-  --manifest ./mainnet-deployment.json \
   --user-signer <funded-user-identity> \
   --agent-signer <funded-agent-identity> \
   --agent-secret-env ACKRATE_AGENT_SECRET \
@@ -73,19 +90,49 @@ node packages/cli/dist/ackrate-cli.bundle.mjs demo research-agent \
   --confirm-real-usdc
 ```
 
-Use the independently verified deployment manifest for the contract being
-reviewed; there is no implicit Mainnet contract default. A secret manager must
-inject the agent key matching `--agent-signer` into `ACKRATE_AGENT_SECRET`. The
-CLI needs it to sign the bound HTTP request proof; this flag accepts the variable
-name only, never the key. The user's transaction signatures remain with the
-named external Stellar identity.
+This release defaults to Mainnet and bundles the official manifest for
+[CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR).
+No separate manifest download is required. An optional `--manifest` must match
+that official deployment. A secret manager must inject the agent key matching
+`--agent-signer` into `ACKRATE_AGENT_SECRET`; the flag accepts the variable name
+only, never the key. The user's transaction signatures remain with the named
+external Stellar identity.
 
-The command fails closed unless the complete deployment manifest, Public
-Network identity, canonical Circle USDC mapping, funded distinct actors,
-unpaused registry, real-value confirmation, and exact three-price budget are
-all present.
+Use Node.js 22 or newer and three distinct existing G accounts. For the example
+above, the user needs at least 0.03 sendable canonical Circle USDC and the
+merchant needs at least 0.03 authorized USDC receiving capacity. The user and
+agent each need at least 0.50 spendable XLM above reserves, sponsorship
+obligations, and selling liabilities. The command checks Public Network identity,
+the USDC mapping and decimals, actor authorization/capacity, unpaused registry,
+price/budget bounds, and explicit real-value confirmation before the run.
+These unsigned snapshots do not reserve funds or guarantee later fees.
 
-Record the current command's three delivered source receipts, registration and
-allowance hashes, three payment hashes, final sequence/spent, recipient balance
-delta, and fourth-purchase rejection before marking the current reference-agent
-Mainnet acceptance check complete. No newer live run is asserted by this page.
+## Evidence required for a new Step 3 run
+
+- Record the UTC timestamp, exact public package version and archive integrity,
+  release source, confirmation that CLI `0.2.1` bundles the repaired Core `0.4.1`,
+  full WR contract and USDC identities, public actors, selected
+  price/budget, and registration-returned on-chain mandate ID.
+- Retain registration and contract-only allowance transaction hashes, then three
+  delivered source receipts and three distinct finalized payment hashes from
+  the consumer → HTTP 402 → `execute_payment` → bound proof → HTTP 200 flow.
+- Independently check each exact WR payment event and matching Circle USDC
+  transfer, including mandate, agent, merchant, asset, amount, sequence, ledger,
+  and transaction time. Transaction success alone does not establish delivery.
+- Record final `seq=3`, `spent=0.03 USDC`, and merchant balance delta `+0.03 USDC`
+  for the example. Capture purchase four's `BudgetExceeded`, no fourth payment,
+  and no protected output. State whether rejection occurred during contract
+  simulation or on a ledger; do not invent a hash for a non-broadcast rejection.
+- Preserve sanitized command output and delivered results separately from
+  protected local state. Do not publish secret keys, environment contents,
+  signed transaction envelopes, or secret-bearing receipt files.
+- After an interrupted run, preserve the original run marker, receipt, outcome,
+  and delivery origin, then reconcile the exact payment before another spending
+  action. The shared demo/payment claim blocks fresh-run replacement; generic
+  payment acknowledgment cannot remove a demo marker. Reconciliation reports
+  retained paths for manual exact-receipt recovery, not automatic demo resume.
+
+The reference server serves deterministic research content. Its acceptance is
+separate from the hosted wallet and external marketplace flow. This page asserts
+no newer live run; current Mainnet reference-agent acceptance remains open until
+the release-specific transaction and delivery evidence above is recorded.

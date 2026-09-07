@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Read-only Mainnet evidence verifier. This script cannot sign or submit a
- * transaction. It checks public HTTPS/RPC responses and decodes existing
- * finalized transaction events.
+ * Historical Mainnet canary evidence verifier for the old governed registry.
+ * This script cannot sign or submit a transaction. It checks current public
+ * account state for the old canary actors and historical finalized events.
+ * It does not verify current WR/V2 or reference-agent HTTP acceptance.
  */
 import assert from "node:assert/strict";
 import { Networks, StrKey, rpc, scValToNative } from "@stellar/stellar-sdk";
@@ -45,6 +46,8 @@ function decodedContractEvents(transaction) {
 }
 
 async function main() {
+  console.log(`Historical Mainnet canary only: old registry ${REGISTRY}`);
+  console.log("Scope excludes current WR/V2 and published-CLI reference-agent HTTP acceptance.");
   const [authority, wallet] = await Promise.all([
     json(`https://horizon.stellar.org/accounts/${AUTHORITY}`),
     json(`https://horizon.stellar.org/accounts/${WALLET}`),
@@ -90,9 +93,9 @@ async function main() {
     observed.push({ hash, ledger: transaction.ledger });
   }
 
-  console.log("Ackrate Mainnet evidence gate passed");
-  console.log("authority: 3 weight-1 signers, thresholds 2/2/2");
-  console.log("wallet: official Circle USDC trustline present");
+  console.log("Historical Mainnet direct-payment evidence check passed (old governed registry)");
+  console.log("old canary authority snapshot: 3 weight-1 signers, thresholds 2/2/2");
+  console.log("old canary wallet: official Circle USDC trustline present");
   for (const item of observed) {
     console.log(`payment: https://stellar.expert/explorer/public/tx/${item.hash} (ledger ${item.ledger})`);
   }

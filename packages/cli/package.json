@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ACKRATE Mainnet CLI for project setup, mandate registration, USDC payments, reference agents, and signature coordination.",
   "repository": {
     "type": "git",
