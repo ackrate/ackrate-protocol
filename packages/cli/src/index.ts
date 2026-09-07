@@ -107,6 +107,7 @@ program
   .option("--merchant <address>", "mainnet merchant G-account")
   .option("--budget <usdc>", "explicit real-USDC mandate budget")
   .option("--price <usdc>", "explicit real-USDC price per source")
+  .option("--resume-setup-registration <hash>", "reuse one exact unused Mainnet registration; never create another mandate")
   .option("--confirm-real-usdc", "acknowledge that mainnet payments are irreversible and spend real USDC")
   .action((target, options) => runDemo(target, options));
 

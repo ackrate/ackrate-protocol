@@ -3,7 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ackrate, toStroops } from "@ackrate/core";
+import { ackrate, toStroops, type IntentMandate } from "@ackrate/core";
 import {
   MAINNET,
   TESTNET,
@@ -33,6 +33,7 @@ import {
 } from "../settlement-store.js";
 import { requireMainnetUsdcAuthorization } from "../mainnet-preflight.js";
 import { requireMainnetFunding } from "../mainnet-funding.js";
+import { recoverSetupRegistration } from "../setup-resume.js";
 import { stellarCliSigner } from "../stellar-cli-signer.js";
 import { banner, c, link, log } from "../ui.js";
 
@@ -51,6 +52,7 @@ export interface DemoOptions {
   budget?: string;
   price?: string;
   confirmRealUsdc?: boolean;
+  resumeSetupRegistration?: string;
 }
 
 type DemoRuntime = Readonly<{
@@ -64,6 +66,7 @@ type DemoRuntime = Readonly<{
   budget: string;
   price: string;
   decimals: number;
+  recoveredSetup?: Readonly<{ mandate: IntentMandate; registrationTx: string }>;
 }>;
 
 const short = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
@@ -191,8 +194,16 @@ async function mainnetRuntime(options: DemoOptions): Promise<DemoRuntime> {
   await requireMainnetUsdcAuthorization(net, userSigner.publicKey, merchant);
   const chainDecimals = await token.decimals(net, net.settlementAsset.contractId, userSigner.publicKey);
   if (chainDecimals !== net.settlementAsset.decimals) throw new Error("manifest and chain USDC decimals differ");
+  const recoveredSetup = options.resumeSetupRegistration === undefined ? undefined : {
+    registrationTx: options.resumeSetupRegistration,
+    mandate: await recoverSetupRegistration(options.resumeSetupRegistration, {
+      user: userSigner.publicKey, agent: boundAgentSigner.publicKey, merchant,
+      asset: net.settlementAsset.contractId, maxAmount: budgetUnits, decimals: chainDecimals,
+    }, net, userSigner),
+  };
   await requireMainnetFunding(server, new Asset(net.settlementAsset.code, net.settlementAsset.issuer),
-    userSigner.publicKey, boundAgentSigner.publicKey, merchant, budgetUnits);
+    userSigner.publicKey, boundAgentSigner.publicKey, merchant, budgetUnits,
+    recoveredSetup ? 500_000n : undefined);
   if ((await registryClient(net, expectedAgentSigner).is_paused()).result) {
     throw new Error("mainnet MandateRegistry is paused");
   }
@@ -207,6 +218,7 @@ async function mainnetRuntime(options: DemoOptions): Promise<DemoRuntime> {
     budget,
     price,
     decimals: chainDecimals,
+    ...(recoveredSetup ? { recoveredSetup } : {}),
   });
 }
 
@@ -233,9 +245,14 @@ async function closeServer(server: import("node:http").Server): Promise<void> {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }
 
-async function executeDemo(runtime: DemoRuntime, claim: DemoRunClaim): Promise<void> {
+async function executeDemo(runtime: DemoRuntime, claim: DemoRunClaim,
+  recoveredSetup?: DemoRuntime["recoveredSetup"]): Promise<void> {
+  if (recoveredSetup) {
+    await updateDemoRun(claim, { mandateId: recoveredSetup.mandate.id, registrationTx: recoveredSetup.registrationTx });
+    log.info("resuming the exact confirmed registration; no new mandate will be registered");
+  }
   const merchantBefore = await token.balance(runtime.net, runtime.asset, runtime.merchant);
-  const mandate = ackrate.createIntentMandate({
+  const mandate = recoveredSetup?.mandate ?? ackrate.createIntentMandate({
     user: runtime.userSigner.publicKey,
     agent: runtime.agentSigner.publicKey,
     merchant: runtime.merchant,
@@ -245,7 +262,8 @@ async function executeDemo(runtime: DemoRuntime, claim: DemoRunClaim): Promise<v
     decimals: runtime.decimals,
     nonce: `${Date.now()}:${randomBytes(12).toString("hex")}`,
   }, runtime.net);
-  const registerTx = await ackrate.registerMandate(mandate, { signer: runtime.userSigner }, runtime.net);
+  const registerTx = recoveredSetup?.registrationTx
+    ?? await ackrate.registerMandate(mandate, { signer: runtime.userSigner }, runtime.net);
   await updateDemoRun(claim, { mandateId: mandate.id, registrationTx: registerTx });
   const approveTx = await ackrate.approveBudget(mandate, { signer: runtime.userSigner }, runtime.net);
   await updateDemoRun(claim, { allowanceTx: approveTx });
@@ -346,6 +364,9 @@ export async function runDemo(target?: string, options: DemoOptions = {}): Promi
     throw new Error("--network must be testnet or mainnet");
   }
   const network = options.network ?? "mainnet";
+  if (options.resumeSetupRegistration !== undefined && (network !== "mainnet" || !/^[a-f0-9]{64}$/.test(options.resumeSetupRegistration))) {
+    throw new Error("--resume-setup-registration requires Mainnet and an exact lowercase transaction hash");
+  }
   console.log(`\n${banner(network === "mainnet" ? "stellar mainnet · real USDC" : "stellar testnet · XLM")}\n`);
   const runtime = network === "mainnet" ? await mainnetRuntime(options) : await testnetRuntime();
   const claim = await claimDemoRun({
@@ -358,7 +379,7 @@ export async function runDemo(target?: string, options: DemoOptions = {}): Promi
     merchant: runtime.merchant,
   });
   try {
-    await executeDemo(runtime, claim);
+    await executeDemo(runtime, claim, runtime.recoveredSetup);
   } catch (error) {
     log.err("demo did not complete; its run claim and any delivery evidence remain locked", {
       journal: settlementDirectory(),

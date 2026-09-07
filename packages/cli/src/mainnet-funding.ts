@@ -79,8 +79,12 @@ export async function requireMainnetFunding(
   agent: string,
   merchant: string,
   requiredUsdc: bigint,
+  minimumUserSpendableXlm = MINIMUM_SPENDABLE_XLM,
 ) {
   if (requiredUsdc <= 0n || requiredUsdc > I64_MAX) throw new Error("required USDC must be a positive i64 amount");
+  if (minimumUserSpendableXlm !== MINIMUM_SPENDABLE_XLM && minimumUserSpendableXlm !== 500_000n) {
+    throw new Error("unsupported Mainnet payer fee floor");
+  }
   const [latest, userAccount, agentAccount, merchantAccount, userLine, merchantLine] = await Promise.all([
     server.getLatestLedger(), server.getAccountEntry(user), server.getAccountEntry(agent),
     server.getAccountEntry(merchant), server.getTrustline(user, asset), server.getTrustline(merchant, asset),
@@ -93,8 +97,10 @@ export async function requireMainnetFunding(
   const agentNative = nativeFunding(agentAccount, agent, latest.headerXdr.baseReserve());
   const userCredit = creditFunding(userLine, user, asset);
   const merchantCredit = creditFunding(merchantLine, merchant, asset);
-  if (userNative.spendable < MINIMUM_SPENDABLE_XLM || agentNative.spendable < MINIMUM_SPENDABLE_XLM) {
-    throw new Error("mainnet user and agent must each have at least 0.50 spendable XLM above reserves, sponsorship obligations, and selling liabilities for fees");
+  if (userNative.spendable < minimumUserSpendableXlm || agentNative.spendable < MINIMUM_SPENDABLE_XLM) {
+    throw new Error(minimumUserSpendableXlm === MINIMUM_SPENDABLE_XLM
+      ? "mainnet user and agent must each have at least 0.50 spendable XLM above reserves, sponsorship obligations, and selling liabilities for fees"
+      : "resumed Mainnet setup requires at least 0.05 payer and 0.50 agent spendable XLM above reserves and liabilities for fees");
   }
   if (userCredit.sendable < requiredUsdc) throw new Error("mainnet user spendable USDC is below the required amount after selling liabilities");
   if (merchantCredit.receivable < requiredUsdc) throw new Error("mainnet merchant USDC receive capacity is below the required amount after trustline limits and buying liabilities");

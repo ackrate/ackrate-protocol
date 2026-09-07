@@ -79,6 +79,19 @@ original receipts, outcomes, and delivery origin; `settlement reconcile` reports
 their retained context for manual exact-receipt recovery. Automatic demo resume
 is not implemented, and payment acknowledgment cannot clear a demo marker.
 
+For a registration that succeeded before allowance signing failed, an operator
+can preserve the old journal and explicitly recover **that same registration**
+in a separate, private `ACKRATE_HOME` by adding
+`--resume-setup-registration <confirmed-registration-transaction-hash>` to the
+command above. This is not general payment recovery: the confirmed Mainnet
+transaction, exact actors/asset/budget/credential, unchanged payer sequence,
+active unexpired mandate and zero spent/sequence must all match. Registration is
+not repeated and expiry is not extended. Real-USDC confirmation is still
+required. This narrow path needs at least 0.05 spendable payer XLM for allowance
+setup; the normal payer and agent fee floors remain 0.50 XLM. These floors are
+readiness checks, not guaranteed future transaction fees. Do not use this option
+after any payment or allowance has applied or while another process is active.
+
 ## Use a persistent project
 
 ```bash

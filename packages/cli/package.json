@@ -32,7 +32,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/version.test.ts src/config.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts src/mainnet-demo.test.ts src/registered-mandate.test.ts src/mainnet-preflight-authorization.test.ts src/mainnet-funding.test.ts",
+    "test": "node --import tsx --test src/version.test.ts src/config.test.ts src/settlement-store.test.ts src/payment-failure.test.ts src/ops-signing-request.test.ts src/mainnet-demo.test.ts src/registered-mandate.test.ts src/mainnet-preflight-authorization.test.ts src/mainnet-funding.test.ts src/setup-resume.test.ts",
     "start": "tsx src/index.ts",
     "prepack": "npm --prefix ../.. run cli:bundle"
   },

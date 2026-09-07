@@ -70,5 +70,7 @@ test("both Mainnet entry points await authorization before returning a spend-rea
   const entry = demo.slice(demo.indexOf("export async function runDemo("));
   assert.match(entry, /const runtime = network === "mainnet" \? await mainnetRuntime\(options\)/);
   assert.ok(entry.indexOf("await mainnetRuntime(options)") < entry.indexOf("await claimDemoRun("));
-  assert.ok(entry.indexOf("await claimDemoRun(") < entry.indexOf("await executeDemo(runtime, claim)"));
+  assert.match(entry, /await executeDemo\(runtime, claim, runtime\.recoveredSetup\)/);
+  assert.ok(entry.indexOf("await claimDemoRun(") < entry.indexOf("await executeDemo(runtime, claim, runtime.recoveredSetup)"));
+  assert.ok(mainnetDemo.indexOf("await recoverSetupRegistration(") < mainnetDemo.indexOf("await requireMainnetFunding("));
 });

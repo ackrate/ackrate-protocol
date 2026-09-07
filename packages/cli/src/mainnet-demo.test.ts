@@ -41,6 +41,13 @@ test("default demo is Mainnet and requires real-USDC confirmation before selecti
   await assert.rejects(runDemo("research-agent"), /--confirm-real-usdc/);
 });
 
+test("explicit setup resume still needs real-USDC confirmation and rejects Testnet or malformed hashes", async () => {
+  await isolatedHome();
+  await assert.rejects(runDemo("research-agent", { resumeSetupRegistration: "a".repeat(64) }), /--confirm-real-usdc/);
+  await assert.rejects(runDemo("research-agent", { network: "testnet", resumeSetupRegistration: "a".repeat(64), confirmRealUsdc: true }), /requires Mainnet/);
+  await assert.rejects(runDemo("research-agent", { resumeSetupRegistration: "not-a-hash", confirmRealUsdc: true }), /exact lowercase transaction hash/);
+});
+
 test("mainnet demo uses bundled deployment and asks for public actors, not a manifest", async () => {
   await isolatedHome();
   await assert.rejects(

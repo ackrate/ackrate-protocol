@@ -84,3 +84,16 @@ test("read-only funding preflight requires fee headroom and both USDC capacities
   await assert.rejects(requireMainnetFunding(server({ malformedLedger: true }), asset, user, agent, merchant, 3_000_000n), /invalid latest ledger/);
   await assert.rejects(requireMainnetFunding({ ...server(), getTrustline: async () => { throw new Error("missing trustline"); } }, asset, user, agent, merchant, 3_000_000n), /missing trustline/);
 });
+
+test("explicit setup resume lowers only payer fee floor; normal runs and agent headroom remain unchanged", async () => {
+  const partiallySpent = server({ userAccount: account(user, { balance: 19_686_928n }) });
+  await assert.rejects(requireMainnetFunding(partiallySpent, asset, user, agent, merchant, 300_000n), /0.50/);
+  assert.equal((await requireMainnetFunding(partiallySpent, asset, user, agent, merchant, 300_000n, 500_000n)).userSpendableXlm, 4_686_928n);
+  await assert.rejects(requireMainnetFunding(server({ userAccount: account(user, { balance: 15_499_999n }) }),
+    asset, user, agent, merchant, 300_000n, 500_000n), /0.05 payer/);
+  await assert.rejects(requireMainnetFunding(server({ agentAccount: account(agent, { balance: 19_999_999n }) }),
+    asset, user, agent, merchant, 300_000n, 500_000n), /0.50 agent/);
+  for (const floor of [0n, 1n, 499_999n, 10_000_000n]) {
+    await assert.rejects(requireMainnetFunding(server(), asset, user, agent, merchant, 300_000n, floor), /unsupported/);
+  }
+});

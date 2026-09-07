@@ -6,6 +6,19 @@ cannot replace the contract's `execute_payment` checks.
 
 ## Release matrix
 
+### September 7 setup-recovery patch
+
+Core 0.4.1 is published with shared payment-receipt ownership and fail-closed
+reconciliation fixes. CLI 0.2.1 is the associated patch candidate, adding an
+explicit Mainnet registration-only setup recovery option. It verifies the exact
+confirmed transaction and untouched on-chain mandate before reusing it; no
+registration, funding or previous purchase is repeated. See the
+[CLI recovery requirements](../packages/cli/README.md#run-the-reference-research-agent).
+The coordinated release record below is the earlier 04:25 baseline, not a claim
+that the new CLI patch has already completed live acceptance or publication.
+
+### Coordinated Mainnet baseline
+
 All five coordinated Mainnet-default versions are **published and verified**.
 Registry checks on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched
 their `latest` tags and downloaded archive SHA-512 integrity values. A fresh
