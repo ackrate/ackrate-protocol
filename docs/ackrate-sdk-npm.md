@@ -6,16 +6,50 @@ cannot replace the contract's `execute_payment` checks.
 
 ## Release matrix
 
-### September 7 setup-recovery patch
+### September 7 setup-recovery release
 
-Core 0.4.1 is published with shared payment-receipt ownership and fail-closed
-reconciliation fixes. CLI 0.2.1 is the associated patch candidate, adding an
-explicit Mainnet registration-only setup recovery option. It verifies the exact
-confirmed transaction and untouched on-chain mandate before reusing it; no
-registration, funding or previous purchase is repeated. See the
+**Core 0.4.1 and CLI 0.2.1 are published and verified.** A fresh public-registry
+install on Node.js 22.23.2 passed strict TypeScript with `skipLibCheck: false`,
+runtime ESM imports, the official Mainnet contract and full 18-function V2
+interface checks, CLI version/help, and confirmation/recovery-flag rejection
+checks. The complete dependency tree reported no dependency problems. Runtime
+probes blocked networking and child processes and recorded zero signer calls.
+The public verification record completed at **18:05:19 Bangkok on September 7,
+2026 (11:05:19 UTC)**. See the
+[public package verification](public-npm-release-verification-20260907T110304Z.json).
+
+The published CLI archive matches the verified archive, and its executable is
+byte-identical to the bundle exercised by the live run:
+`c2e6c113a6fdcad618927c59a304da525628041c7d10626d430712c2f7e2ce69`
+(SHA-256), built from
+[`8c74bef`](https://github.com/ackrate/ackrate-protocol/commit/8c74bef3af3ce7aee0ab2c8da6f126706a8a4e18).
+Stellar 0.3.0, AP2 0.4.0, and Express middleware 0.3.0 remain unchanged; their
+compatible dependency ranges resolve Core 0.4.1 in the verified fresh install.
+
+Core 0.4.1 adds shared payment-receipt ownership and fail-closed reconciliation
+fixes. CLI 0.2.1 adds explicit Mainnet registration-only setup recovery. It
+verifies the exact confirmed transaction and untouched on-chain mandate before
+reusing it; no registration, funding, expiry extension, or previous purchase is
+repeated. See the
 [CLI recovery requirements](../packages/cli/README.md#run-the-reference-research-agent).
-The coordinated release record below is the earlier 04:25 baseline, not a claim
-that the new CLI patch has already completed live acceptance or publication.
+
+The bounded Mainnet run completed at **17:59:29 Bangkok**. Independent public
+RPC and Horizon checks verified three distinct **0.01 USDC** payments and their
+matching Circle USDC transfers, mandate sequence **3**, spent amount **0.03
+USDC**, payer USDC balance **0**, and merchant USDC balance **0.03**. Public agent
+history contained exactly those three successful agent transactions and no
+fourth applied transaction. A separate read-only `validate_mandate` simulation
+for another 0.01 USDC returned contract error **6 (BudgetExceeded)**. The
+[independent receipt record](cli-mainnet-independent-receipts-2026-09-07.json)
+contains all hashes, identities, amounts, ledgers, and verification qualifications.
+
+These are bounded verification results, not a guarantee against every failure.
+Generic SDK/CLI expiry reconciliation retains its lock when RPC supplies
+decimal-string history timestamps. The hosted runner's periodic receipt copies
+can miss the last local write on an abrupt host failure; the run stays locked
+for manual reconciliation. Public-chain receipts corroborate transfers and
+budget enforcement; HTTP delivery also relies on retained consumer/fulfillment
+output. The earlier release records below remain historical evidence.
 
 ### Coordinated Mainnet baseline
 
@@ -24,12 +58,12 @@ Registry checks on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched
 their `latest` tags and downloaded archive SHA-512 integrity values. A fresh
 combined public install passed strict TypeScript, ESM imports, default-contract,
 full V2 interface, packed README, and CLI confirmation-guard checks at **04:25:11**,
-with zero dependency findings. See the [dated Step 1 release evidence](t3-step-1-gate-2026-09-07.md).
+with zero dependency findings. See the [dated baseline release evidence](t3-step-1-gate-2026-09-07.md).
 
 The earlier **03:33 Bangkok** registry checkpoint is retained below as history;
 older packages do not acquire the new defaults or APIs automatically.
 
-| Package | Current public version | Earlier 03:33 checkpoint | Purpose |
+| Package | Public version at 04:25 baseline | Earlier 03:33 checkpoint | Purpose |
 |---|---:|---:|---|
 | `@ackrate/core` | 0.4.0 | 0.3.4 | Mainnet-default mandates, returned V2 storage IDs, bound-v2 `agent.fetch`, receipts, recovery. |
 | `@ackrate/stellar` | 0.3.0 | 0.2.5 | Built-in official `MAINNET` and deployment manifest, signing and token helpers. |
@@ -39,9 +73,8 @@ older packages do not acquire the new defaults or APIs automatically.
 
 Release source is [`d0aee2127cc08e43f0c70868de46db75bda71ed7`](https://github.com/ackrate/ackrate-protocol/commit/d0aee2127cc08e43f0c70868de46db75bda71ed7).
 [CI run 34060795268](https://github.com/ackrate/ackrate-protocol/actions/runs/34060795268)
-was confirmed successful at **04:27 Bangkok**. These technical release results do
-not claim completion of all T3 deliverables or grant acceptance. Step 1 remains
-under user review; Steps 2–4 are paused.
+was confirmed successful at **04:27 Bangkok**. This records the earlier coordinated
+release; the later Core and CLI patch verification is documented above.
 
 The coordinated set requires **Node.js 22+** and pins **`@stellar/stellar-sdk@16.3.0`**.
 Core requires Stellar binding `^0.3.0`; AP2 requires core `^0.4.0`; middleware
@@ -68,7 +101,7 @@ The unrelated npm package `ackrate-cli` is owned by another publisher. Install
 the project's published CLI using its unambiguous package name:
 
 ```bash
-npm install -g @ackrate/cli@0.2.0
+npm install -g @ackrate/cli@0.2.1
 ackrate --help
 ```
 
@@ -81,7 +114,7 @@ same address; compatibility and deployment-evidence checks still apply.
 Use Node.js 22 or newer. Install the published application client:
 
 ```bash
-npm install --save-exact @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
 ```
 
 Add the other published libraries for the full pinned SDK set:
@@ -185,11 +218,11 @@ Registry proof is a separate external check. Reproduce the version and integrity
 checks for the published release with:
 
 ```bash
-npm view @ackrate/core@0.4.0 version dist.integrity
+npm view @ackrate/core@0.4.1 version dist.integrity
 npm view @ackrate/stellar@0.3.0 version dist.integrity
 npm view @ackrate/ap2@0.4.0 version dist.integrity
 npm view @ackrate/express-middleware@0.3.0 version dist.integrity
-npm view @ackrate/cli@0.2.0 version dist.integrity
+npm view @ackrate/cli@0.2.1 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,

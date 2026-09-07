@@ -1,0 +1,538 @@
+{
+  "startedAt": "2026-09-07T11:02:46.205Z",
+  "node": "v22.23.2",
+  "executable": "<node-runtime>/bin/node",
+  "consumer": "<fresh-consumer>",
+  "installation": "fresh public registry, empty npm user/global config, empty inherited environment, ignore-scripts",
+  "packages": [
+    {
+      "name": "@ackrate/stellar",
+      "version": "0.3.0",
+      "registryUrl": "https://registry.npmjs.org/@ackrate%2fstellar/0.3.0",
+      "tarball": "https://registry.npmjs.org/@ackrate/stellar/-/stellar-0.3.0.tgz",
+      "integrity": "sha512-XX8WFnwiNT/kBKRZ3e69CyM5HG7bL+BOyZOrBhg3mb491hJNBalpk4qBr28jU1DjGin2P4Wym+fDZlpsKB+FzQ==",
+      "sha256": "3031dccffa4122845959e35c222609fc9ba5c7cb916aebfe50ef53c19888065e",
+      "dependencies": {
+        "buffer": "6.0.3",
+        "@types/urijs": "^1.19.26",
+        "@types/json-schema": "^7.0.15",
+        "@stellar/stellar-sdk": "16.3.0"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      },
+      "lockMatches": true
+    },
+    {
+      "name": "@ackrate/core",
+      "version": "0.4.1",
+      "registryUrl": "https://registry.npmjs.org/@ackrate%2fcore/0.4.1",
+      "tarball": "https://registry.npmjs.org/@ackrate/core/-/core-0.4.1.tgz",
+      "integrity": "sha512-hSdluMJ9oSa1pFvcuCAlhFUPEvdNvCKiYA5jaZ3xeH8QuV4cZBld67fUFxDcctMl4Tv3BhvLE1jij7N++BwGSA==",
+      "sha256": "fa4591f3194f8bc2680427e05e8b41ed1dc72ec2696b6f63724e08c105277dce",
+      "dependencies": {
+        "buffer": "6.0.3",
+        "@ackrate/stellar": "^0.3.0",
+        "@stellar/stellar-sdk": "16.3.0"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      },
+      "lockMatches": true,
+      "approvedArchive": "<verified-archives>/ackrate-core-0.4.1.tgz",
+      "exactArchiveMatches": true
+    },
+    {
+      "name": "@ackrate/ap2",
+      "version": "0.4.0",
+      "registryUrl": "https://registry.npmjs.org/@ackrate%2fap2/0.4.0",
+      "tarball": "https://registry.npmjs.org/@ackrate/ap2/-/ap2-0.4.0.tgz",
+      "integrity": "sha512-NB2KZwacCcTY/wLPF/QagHkr7sW88RDCCrdgNKiA0ajBazbZRog9jgn1K7gqHMzAjiyQuPI1RUBTPDfS9OpTGg==",
+      "sha256": "3869096664952d4851d4f3943b94622c2144d19b52d01f6fd6822cba927ed150",
+      "dependencies": {
+        "buffer": "6.0.3",
+        "@ackrate/core": "^0.4.0",
+        "@stellar/stellar-sdk": "16.3.0"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      },
+      "lockMatches": true
+    },
+    {
+      "name": "@ackrate/express-middleware",
+      "version": "0.3.0",
+      "registryUrl": "https://registry.npmjs.org/@ackrate%2fexpress-middleware/0.3.0",
+      "tarball": "https://registry.npmjs.org/@ackrate/express-middleware/-/express-middleware-0.3.0.tgz",
+      "integrity": "sha512-mv2y8tAszijsqUtQ7evMPkX8BpnF0CdE34dKBu7u4A3VGQ53xv+rwlCY8pdy4iEl8K+kjNs7rIzSYJ9Vdp4NCw==",
+      "sha256": "f0839428e8d2cfdbe8b16506e3379b7b23b3de1038e3e489c7558c9f6cf47e71",
+      "dependencies": {
+        "buffer": "6.0.3",
+        "@ackrate/core": "^0.4.0",
+        "@types/express": "^5.0.6",
+        "@ackrate/stellar": "^0.3.0",
+        "@stellar/stellar-sdk": "16.3.0"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      },
+      "lockMatches": true
+    },
+    {
+      "name": "@ackrate/cli",
+      "version": "0.2.1",
+      "registryUrl": "https://registry.npmjs.org/@ackrate%2fcli/0.2.1",
+      "tarball": "https://registry.npmjs.org/@ackrate/cli/-/cli-0.2.1.tgz",
+      "integrity": "sha512-kVNd5oYGeXaipN3HXCyI1izktSkAbWxtbz+FUuiElpzVs5c73MG+DsXskb9bRocA5VcvQQXjh1AGFkNTzhxhfQ==",
+      "sha256": "0f9c92b32743ac9c017699b676ab4cddfe4ef40204c865365ac74e5086e2b655",
+      "dependencies": {
+        "@stellar/stellar-sdk": "16.3.0"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      },
+      "lockMatches": true,
+      "approvedArchive": "<verified-archives>/ackrate-cli-0.2.1.tgz",
+      "exactArchiveMatches": true,
+      "bundleSha256": "c2e6c113a6fdcad618927c59a304da525628041c7d10626d430712c2f7e2ce69",
+      "sourceCommit": "8c74bef"
+    }
+  ],
+  "commands": [
+    {
+      "startedAt": "2026-09-07T11:02:49.868Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:54.959Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "runtime.mjs"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "{\"contract\":\"CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR\",\"network\":\"Public Global Stellar Network ; September 2015\",\"usdc\":{\"code\":\"USDC\",\"issuer\":\"GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN\",\"contractId\":\"CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75\"},\"functionCount\":18,\"specHash\":\"4c5a232e101007aab8a9b3c717fec3720a65ceb454be2754f7deeb2f95737e6f\",\"coreDefault\":\"mainnet\",\"middlewareDefault\":\"stellar-mainnet\",\"malformedAp2\":\"rejected\",\"signingCalls\":0,\"fulfillmentCalls\":0}\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:55.696Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "--version"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "0.2.1\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:56.629Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate demo [options] [target]\n\nrun the reference research-agent payment flow on the official Mainnet registry\n\nArguments:\n  target                              which demo to run; omit to list available\n                                      demos\n\nOptions:\n  --network <network>                 network selection (default: \"mainnet\")\n  --manifest <path>                   optional verified manifest for the\n                                      official Mainnet registry\n  --user-signer <identity>            Stellar CLI identity for the mandate user\n  --agent-signer <identity>           Stellar CLI identity for the payment\n                                      agent\n  --agent-secret-env <name>           environment-variable name supplied by a\n                                      secret manager for bound-v2 proofs\n  --merchant <address>                mainnet merchant G-account\n  --budget <usdc>                     explicit real-USDC mandate budget\n  --price <usdc>                      explicit real-USDC price per source\n  --resume-setup-registration <hash>  reuse one exact unused Mainnet\n                                      registration; never create another\n                                      mandate\n  --confirm-real-usdc                 acknowledge that mainnet payments are\n                                      irreversible and spend real USDC\n  -h, --help                          display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:57.209Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate [options] [command]\n\nAgent payments on Stellar, enforced on-chain by the Ackrate MandateRegistry.\n\nOptions:\n  -V, --version            output the version number\n  -h, --help               display help for command\n\nCommands:\n  init [options]           scaffold a project in the current directory (writes\n                           ackrate.config.json)\n  setup [options]          prepare actors: testnet creates burners; Mainnet\n                           performs read-only readiness checks\n  mandate                  manage AP2 mandates\n  pay [options] [amount]   make an agent-signed payment against the active\n                           mandate (budget enforced on-chain)\n  settlement               inspect crash-safe payment state\n  ops                      coordinate exact 2-of-3 authority requests without\n                           handling secrets\n  demo [options] [target]  run the reference research-agent payment flow on the\n                           official Mainnet registry\n  help [command]           display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:57.961Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "init",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate init [options]\n\nscaffold a project in the current directory (writes ackrate.config.json)\n\nOptions:\n  --network <network>        network selection (default: \"mainnet\")\n  --manifest <path>          optional verified manifest for the official\n                             Mainnet registry\n  --user-signer <identity>   named Stellar CLI identity for the mandate user\n  --agent-signer <identity>  named Stellar CLI identity for direct payments\n  --merchant <address>       merchant Stellar G-account\n  --price <amount>           default price (Mainnet: USDC)\n  --budget <amount>          default mandate limit (Mainnet: USDC)\n  --agent-secret-env <name>  environment-variable name supplied by a secret\n                             manager for bound-v2 proofs\n  -f, --force                overwrite an existing ackrate.config.json\n  -h, --help                 display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:58.488Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "setup",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate setup [options]\n\nprepare actors: testnet creates burners; Mainnet performs read-only readiness\nchecks\n\nOptions:\n  -f, --force  regenerate fresh keys, overwriting existing credentials\n  -h, --help   display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:59.020Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "mandate",
+        "create",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate mandate create [options]\n\nregister an AP2 mandate on-chain and approve the SEP-41 allowance\n\nOptions:\n  -b, --budget <amount>   mandate cap (default: from ackrate.config.json)\n  -e, --expiry <seconds>  seconds until the mandate expires (default: \"3600\")\n  -f, --force             replace an existing stored mandate\n  --confirm-real-usdc     acknowledge irreversible Mainnet USDC authorization\n  -h, --help              display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:59.487Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "pay",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate pay [options] [amount]\n\nmake an agent-signed payment against the active mandate (budget enforced\non-chain)\n\nArguments:\n  amount               amount to pay (default: unlockPrice from\n                       ackrate.config.json)\n\nOptions:\n  --confirm-real-usdc  acknowledge an irreversible Mainnet USDC payment\n  -h, --help           display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:02:59.903Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "settlement",
+        "reconcile",
+        "--help"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "Usage: ackrate settlement reconcile [options]\n\nquery the exact prepared transaction hash before allowing another payment\n\nOptions:\n  -h, --help  display help for command\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:03:00.620Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 0,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · USDC\u001b[22m\n\n\u001b[38;5;48m⬢\u001b[39m \u001b[1m\u001b[38;5;245mSTEP \u001b[39m\u001b[22m research-agent \u001b[38;5;245mrun=\u001b[39m\u001b[38;5;231mackrate demo research-agent --help\u001b[39m\n",
+      "stderr": ""
+    },
+    {
+      "startedAt": "2026-09-07T11:03:01.117Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · real USDC\u001b[22m\n\n",
+      "stderr": "mainnet demo requires --confirm-real-usdc before reading configuration or opening a signer\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:01.480Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--network",
+        "mainnet"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · real USDC\u001b[22m\n\n",
+      "stderr": "mainnet demo requires --confirm-real-usdc before reading configuration or opening a signer\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:01.861Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--network",
+        "mainnet",
+        "--resume-setup-registration",
+        "a41fe8e9cbc237686ff535906caa0290e0c2468662a4e751ba251526d58a77e6"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · real USDC\u001b[22m\n\n",
+      "stderr": "mainnet demo requires --confirm-real-usdc before reading configuration or opening a signer\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:02.267Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--manifest",
+        "/must-not-read.json",
+        "--user-signer",
+        "no-user",
+        "--agent-signer",
+        "no-agent",
+        "--agent-secret-env",
+        "NO_SECRET"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · real USDC\u001b[22m\n\n",
+      "stderr": "mainnet demo requires --confirm-real-usdc before reading configuration or opening a signer\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:02.650Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--resume-setup-registration",
+        "../invalid"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "",
+      "stderr": "--resume-setup-registration requires Mainnet and an exact lowercase transaction hash\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:03.125Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "demo",
+        "research-agent",
+        "--network",
+        "testnet",
+        "--resume-setup-registration",
+        "a41fe8e9cbc237686ff535906caa0290e0c2468662a4e751ba251526d58a77e6"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "",
+      "stderr": "--resume-setup-registration requires Mainnet and an exact lowercase transaction hash\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:03.531Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "init"
+      ],
+      "cwd": "<fresh-consumer>",
+      "status": 1,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · USDC\u001b[22m\n\n",
+      "stderr": "mainnet init requires --user-signer <identity>\n"
+    },
+    {
+      "startedAt": "2026-09-07T11:03:03.998Z",
+      "command": "<node-runtime>/bin/node",
+      "args": [
+        "--import",
+        "<offline-verification>/offline-guard.mjs",
+        "<fresh-consumer>/node_modules/@ackrate/cli/dist/ackrate-cli.bundle.mjs",
+        "init",
+        "--user-signer",
+        "offline-user",
+        "--agent-signer",
+        "offline-agent",
+        "--merchant",
+        "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG",
+        "--price",
+        "0.01",
+        "--budget",
+        "0.03"
+      ],
+      "cwd": "<fresh-consumer>/cli-init",
+      "status": 0,
+      "stdout": "\n  \u001b[38;5;51m █████╗ \u001b[39m\u001b[38;5;121m ██████╗\u001b[39m\u001b[38;5;48m██╗  ██╗\u001b[39m\u001b[38;5;43m██████╗ \u001b[39m\u001b[38;5;42m █████╗ \u001b[39m\u001b[38;5;51m████████╗\u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m██╔══██╗\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\u001b[38;5;48m██║ ██╔╝\u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██╗\u001b[39m\u001b[38;5;51m╚══██╔══╝\u001b[39m\u001b[38;5;121m██╔════╝\u001b[39m\n  \u001b[38;5;51m███████║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m█████╔╝ \u001b[39m\u001b[38;5;43m██████╔╝\u001b[39m\u001b[38;5;42m███████║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m█████╗  \u001b[39m\n  \u001b[38;5;51m██╔══██║\u001b[39m\u001b[38;5;121m██║     \u001b[39m\u001b[38;5;48m██╔═██╗ \u001b[39m\u001b[38;5;43m██╔══██╗\u001b[39m\u001b[38;5;42m██╔══██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m██╔══╝  \u001b[39m\n  \u001b[38;5;51m██║  ██║\u001b[39m\u001b[38;5;121m╚██████╗\u001b[39m\u001b[38;5;48m██║  ██╗\u001b[39m\u001b[38;5;43m██║  ██║\u001b[39m\u001b[38;5;42m██║  ██║\u001b[39m\u001b[38;5;51m   ██║   \u001b[39m\u001b[38;5;121m███████╗\u001b[39m\n  \u001b[38;5;51m╚═╝  ╚═╝\u001b[39m\u001b[38;5;121m ╚═════╝\u001b[39m\u001b[38;5;48m╚═╝  ╚═╝\u001b[39m\u001b[38;5;43m╚═╝  ╚═╝\u001b[39m\u001b[38;5;42m╚═╝  ╚═╝\u001b[39m\u001b[38;5;51m   ╚═╝   \u001b[39m\u001b[38;5;121m╚══════╝\u001b[39m\n  \u001b[2magent payments\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2menforced on-chain\u001b[22m\u001b[38;5;48m · \u001b[39m\u001b[2mstellar mainnet · USDC\u001b[22m\n\n\u001b[38;5;48m⬢\u001b[39m \u001b[1m\u001b[38;5;42mOK   \u001b[39m\u001b[22m wrote ackrate.config.json \u001b[38;5;245mpath=\u001b[39m\u001b[38;5;231m<fresh-consumer>/cli-init/ackrate.config.json\u001b[39m\n\u001b[38;5;48m⬢\u001b[39m \u001b[1m\u001b[38;5;51mINFO \u001b[39m\u001b[22m config \u001b[38;5;245mnetwork=\u001b[39m\u001b[38;5;231mmainnet\u001b[39m \u001b[38;5;245mcontract=\u001b[39m\u001b[38;5;231mCCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR\u001b[39m \u001b[38;5;245mexplorer=\u001b[39m\u001b[38;5;231mhttps://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR\u001b[39m\n\n\u001b[1mNext steps\u001b[22m\n\u001b[38;5;245m  1. \u001b[39m\u001b[38;5;231mackrate setup\u001b[39m\u001b[38;5;245m   run read-only Mainnet readiness checks\u001b[39m\n\u001b[38;5;245m  2. \u001b[39m\u001b[38;5;231mackrate mandate create --confirm-real-usdc\u001b[39m\u001b[38;5;245m   register an AP2 mandate on-chain\u001b[39m\n\u001b[38;5;245m  3. \u001b[39m\u001b[38;5;231mackrate pay --confirm-real-usdc\u001b[39m\u001b[38;5;245m   make an agent-signed payment\u001b[39m\n\n",
+      "stderr": ""
+    }
+  ],
+  "runtime": {
+    "contract": "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR",
+    "network": "Public Global Stellar Network ; September 2015",
+    "usdc": {
+      "code": "USDC",
+      "issuer": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+      "contractId": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+    },
+    "functionCount": 18,
+    "specHash": "4c5a232e101007aab8a9b3c717fec3720a65ceb454be2754f7deeb2f95737e6f",
+    "coreDefault": "mainnet",
+    "middlewareDefault": "stellar-mainnet",
+    "malformedAp2": "rejected",
+    "signingCalls": 0,
+    "fulfillmentCalls": 0
+  },
+  "cliInit": {
+    "schemaVersion": 1,
+    "network": "mainnet",
+    "contractId": "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR",
+    "explorer": "https://stellar.expert/explorer/public",
+    "unlockPrice": "0.01",
+    "budget": "0.03",
+    "userSigner": "offline-user",
+    "agentSigner": "offline-agent",
+    "merchant": "GCREL554SPELMSCEIQQVYS2TPDWONZ6AVQXMUNBEGGZ2X5FNYHDC2RZG"
+  },
+  "lockSha256": "f6ad5d855c1b705dddfdd7842457050a002def44598e515524457e79939c101f",
+  "financialConfirmationSupplied": false,
+  "signingCalls": 0,
+  "unexpectedNetworkOrChildProcessAttempts": 0,
+  "finishedAt": "2026-09-07T11:03:04.523Z",
+  "status": "passed",
+  "latestTags": [
+    {
+      "url": "https://registry.npmjs.org/@ackrate%2fstellar/latest",
+      "name": "@ackrate/stellar",
+      "latest": "0.3.0"
+    },
+    {
+      "url": "https://registry.npmjs.org/@ackrate%2fcore/latest",
+      "name": "@ackrate/core",
+      "latest": "0.4.1"
+    },
+    {
+      "url": "https://registry.npmjs.org/@ackrate%2fap2/latest",
+      "name": "@ackrate/ap2",
+      "latest": "0.4.0"
+    },
+    {
+      "url": "https://registry.npmjs.org/@ackrate%2fexpress-middleware/latest",
+      "name": "@ackrate/express-middleware",
+      "latest": "0.3.0"
+    },
+    {
+      "url": "https://registry.npmjs.org/@ackrate%2fcli/latest",
+      "name": "@ackrate/cli",
+      "latest": "0.2.1"
+    }
+  ],
+  "dependencyClosure": {
+    "command": "npm ls --all --json --userconfig=/dev/null --globalconfig=<clean-npm-environment>/empty-global.npmrc --cache=<clean-npm-environment>/cache",
+    "exitCode": 0,
+    "problems": [],
+    "ackrateOccurrences": [
+      {
+        "name": "@ackrate/ap2",
+        "version": "0.4.0"
+      },
+      {
+        "name": "@ackrate/core",
+        "version": "0.4.1"
+      },
+      {
+        "name": "@ackrate/cli",
+        "version": "0.2.1"
+      },
+      {
+        "name": "@ackrate/core",
+        "version": "0.4.1"
+      },
+      {
+        "name": "@ackrate/stellar",
+        "version": "0.3.0"
+      },
+      {
+        "name": "@ackrate/express-middleware",
+        "version": "0.3.0"
+      },
+      {
+        "name": "@ackrate/core",
+        "version": "0.4.1"
+      },
+      {
+        "name": "@ackrate/stellar",
+        "version": "0.3.0"
+      },
+      {
+        "name": "@ackrate/stellar",
+        "version": "0.3.0"
+      }
+    ]
+  },
+  "publicCommandCheck": {
+    "command": "npm exec --offline --package=@ackrate/cli@0.2.1 --userconfig=/dev/null --globalconfig=<clean-npm-environment>/empty-global.npmrc --cache=<clean-npm-environment>/cache -- ackrate --version",
+    "exitCode": 0,
+    "stdout": "0.2.1\n"
+  },
+  "installCommand": "env -i PATH=<node-runtime>/bin:/usr/bin:/bin npm install --ignore-scripts --registry=https://registry.npmjs.org --userconfig=/dev/null --globalconfig=<clean-npm-environment>/empty-global.npmrc --cache=<clean-npm-environment>/cache --no-audit --no-fund",
+  "installResult": {
+    "exitCode": 0,
+    "addedPackages": 116
+  },
+  "typeCheck": {
+    "strict": true,
+    "skipLibCheck": false,
+    "status": "passed"
+  },
+  "limitations": [
+    "This is public-package and offline consumer verification, not a live payment test.",
+    "No real-USDC confirmation, signer invocation, signing operation, network mutation, authentication read, or secret read was performed.",
+    "Public network reads were restricted to registry metadata and tarballs; runtime probes blocked outbound networking and subprocess creation."
+  ],
+  "evidenceCompletedAt": "2026-09-07T11:05:19.332Z",
+  "publicCopy": {
+    "normalization": "Local machine and temporary directory paths replaced by descriptive placeholders; all package integrity values, timestamps, checks and command results are retained.",
+    "sourceEvidenceSha256": "d39c28d305113b3fe6b8d7f8672c1cf4425efedcf4f3f2ef78ad9b057a46ccb6"
+  }
+}

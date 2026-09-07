@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "review": "Independent read-only verification of the bounded CLI Mainnet run",
+  "verdict": "PASS for the bounded live payment and budget-rejection checks; not an external organization approval",
+  "observedAt": "2026-09-07T11:03:03.437Z",
+  "network": {
+    "passphrase": "Public Global Stellar Network ; September 2015",
+    "rpc": "https://mainnet.sorobanrpc.com",
+    "horizon": "https://horizon.stellar.org",
+    "verifiedRpcProtocolVersion": 27,
+    "registry": "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR",
+    "asset": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+    "assetCode": "USDC",
+    "issuer": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+    "decimals": 7
+  },
+  "artifacts": {
+    "protocolSourceCommit": "8c74bef3af3ce7aee0ab2c8da6f126706a8a4e18",
+    "hostedDemoSourceCommitPrefixReportedByRunner": "9a61503",
+    "cliVersion": "0.2.1",
+    "cliBundleSha256": "c2e6c113a6fdcad618927c59a304da525628041c7d10626d430712c2f7e2ce69",
+    "publication": "The run exercised a source-built bundle. The separate fresh public-registry verification subsequently confirmed that published @ackrate/cli@0.2.1 contains the exact same executable bytes.",
+    "publicPackageEvidence": "public-npm-release-verification-20260907T110304Z.json",
+    "publishedCliTarballSha256": "0f9c92b32743ac9c017699b676ab4cddfe4ef40204c865365ac74e5086e2b655",
+    "publishedCliIntegrity": "sha512-kVNd5oYGeXaipN3HXCyI1izktSkAbWxtbz+FUuiElpzVs5c73MG+DsXskb9bRocA5VcvQQXjh1AGFkNTzhxhfQ==",
+    "publicVerificationCompletedAt": "2026-09-07T11:05:19.332Z"
+  },
+  "actors": {
+    "payer": "GCBIGMQO27L3M4GXYTX2TMK7OLIKDBC4S63QBMEXDZNKIADXE33H7LW6",
+    "agent": "GBIXDXX5HHZUL4UL74UY6FUNZEZOEQIHVXJ7I5WMKV2HFWYB2BAIGFHM",
+    "merchant": "GD4FKEYFKMTSO23OLU2LTIUXW6JLLXDMF7TF27K6J4G5FIONTYKZUCVX"
+  },
+  "runTimesFromReportedUnixSeconds": {
+    "startedAt": 1788778720,
+    "finishedAt": 1788778769,
+    "startedUtc": "2026-09-07T10:58:40Z",
+    "finishedUtc": "2026-09-07T10:59:29Z",
+    "startedBangkok": "2026-09-07T17:58:40+07:00",
+    "finishedBangkok": "2026-09-07T17:59:29+07:00"
+  },
+  "allowance": {
+    "hash": "3e3085f26e3e0ae1d8ccf57cf7f34c28babd663e27f94431bb5a22ec46a99a9e",
+    "status": "SUCCESS",
+    "ledger": 64315219,
+    "createdAt": 1788778735,
+    "amountStroops": "300000",
+    "expirationLedger": 64332497,
+    "checks": ["exact Mainnet envelope hash", "payer source", "one canonical USDC approve invocation", "spender is the official registry", "matching USDC approve event"]
+  },
+  "payments": [
+    {
+      "sourceLabelReportedByRunner": "market",
+      "hash": "927d9598efff4620bb1f2ba0c54d58e31b375352d2b9360b5c57bc38ae99caa9",
+      "status": "SUCCESS",
+      "ledger": 64315220,
+      "createdAt": 1788778741,
+      "amountStroops": "100000",
+      "consumedSequence": 0
+    },
+    {
+      "sourceLabelReportedByRunner": "academic",
+      "hash": "3c00983561ca4febdc59f32c25da73ea941fc44ff0046b1eb63692dbd9636a75",
+      "status": "SUCCESS",
+      "ledger": 64315222,
+      "createdAt": 1788778752,
+      "amountStroops": "100000",
+      "consumedSequence": 1
+    },
+    {
+      "sourceLabelReportedByRunner": "news",
+      "hash": "ccbaaf76964a57c89b6a033d1a8484385add35d846c246aa9ccb2370b6c1febc",
+      "status": "SUCCESS",
+      "ledger": 64315224,
+      "createdAt": 1788778763,
+      "amountStroops": "100000",
+      "consumedSequence": 2
+    }
+  ],
+  "checksAppliedToEveryPayment": [
+    "RPC network identity is Mainnet",
+    "RPC requested hash equals returned hash and recomputed Mainnet envelope hash",
+    "successful transaction has the configured agent as source",
+    "one invocation of official registry execute_payment with exact mandate ID, amount 100000 and expected sequence 0/1/2",
+    "one unambiguous typed WR payment event bound to the same mandate, merchant, canonical USDC and consumed sequence",
+    "one matching canonical Circle USDC transfer event from the configured payer to merchant for 100000 stroops"
+  ],
+  "mandate": {
+    "id": "e877982ed256d1cf610212a72881cfbd17f536cac2316c3863e38bfc0f12b53b",
+    "maxAmountStroops": "300000",
+    "spentStroops": "300000",
+    "sequence": 3,
+    "status": "Exhausted",
+    "expiry": 1788780669,
+    "credentialHash": "49c106b62e8e8686ab8197f480619180423bbf4511385bdc2e428253af76ab27",
+    "allActorAndAssetFieldsMatch": true
+  },
+  "readOnlySacBalances": {
+    "payerStroops": "0",
+    "merchantStroops": "300000"
+  },
+  "publicAgentHistory": {
+    "url": "https://horizon.stellar.org/accounts/GBIXDXX5HHZUL4UL74UY6FUNZEZOEQIHVXJ7I5WMKV2HFWYB2BAIGFHM/transactions?include_failed=true&order=asc&limit=200",
+    "returnedRecordCount": 4,
+    "pageLimit": 200,
+    "accountFundingHash": "39196eaa6c7b20257da4dcf011ac24e984da1e50a0f308d072ca43cdf27b9c55",
+    "fundingLedger": 64312307,
+    "agentSourceTransactionCount": 3,
+    "failedAgentSourceTransactionCount": 0,
+    "agentSourceHashesExactlyMatchPayments": true,
+    "currentAgentSequence": "276219255295311875",
+    "currentSequenceEqualsLastPaymentSequence": true,
+    "noFourthAppliedAgentTransactionAtObservation": true
+  },
+  "additionalReadOnlyFourthPaymentCheck": {
+    "method": "validate_mandate",
+    "amountStroops": "100000",
+    "expectedSequence": 3,
+    "rawSimulationError": "HostError: Error(Contract, #6)",
+    "meaning": "BudgetExceeded",
+    "signaturesProduced": 0,
+    "transactionsSubmitted": 0,
+    "qualification": "Independent read-only simulation corroborates budget rejection; public history cannot itself prove the CLI attempted the fourth HTTP request."
+  },
+  "limitations": [
+    "This is independent trusted-provider verification through pinned public RPC and Horizon, not a cryptographic ledger-state attestation.",
+    "HTTP resource labels and delivery completion require the retained runner/consumer/fulfillment output in addition to these public-chain receipts.",
+    "Publication provenance is established by the linked separate public-package record; the on-chain receipts alone do not establish npm provenance.",
+    "Abrupt host failure can leave a locked run and an incomplete most-recent local receipt snapshot; no crash-safe exact-delivery guarantee is made.",
+    "Generic SDK/CLI expired-settlement classification still rejects decimal-string RPC history timestamps and remains locked rather than clearing.",
+    "No seeds, private keys, capabilities, private funding envelopes, or secret environment values were accessed. Public transaction envelopes were decoded read-only. No signing or transaction submission occurred; saved evidence contains only public receipts and metadata."
+  ]
+}
