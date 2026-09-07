@@ -20,24 +20,25 @@ native 2-of-3 governance profile.
 | Coordinated package | Configuration mapping |
 |---|---|
 | [@ackrate/stellar 0.3.0](https://www.npmjs.com/package/@ackrate/stellar) | Exports `MAINNET`, `MAINNET_DEPLOYMENT_MANIFEST`, and the canonical `DEPLOYMENTS.mainnet.mandateRegistryId`. The complete bundled profile supplies network, registry, USDC, and deployment evidence. |
-| [@ackrate/core 0.4.0](https://www.npmjs.com/package/@ackrate/core) | Requires Stellar `^0.3.0`. Defaults its mandate and payment APIs to the official profile exposed as `ackrate.mainnet`. |
+| [@ackrate/core 0.4.1](https://www.npmjs.com/package/@ackrate/core) | Requires Stellar `^0.3.0`. Defaults its mandate and payment APIs to the official profile exposed as `ackrate.mainnet`. |
 | [@ackrate/ap2 0.4.0](https://www.npmjs.com/package/@ackrate/ap2) | Requires Core `^0.4.0`. Validates and bridges signed intents into the Core Mainnet flow; AP2 has no independent network configuration or money-moving route. |
 | [@ackrate/express-middleware 0.3.0](https://www.npmjs.com/package/@ackrate/express-middleware) | Requires Core `^0.4.0` and Stellar `^0.3.0`. The merchant verifier uses the same official registry and canonical Mainnet USDC; examples pass `networkConfig: MAINNET` explicitly. |
-| [@ackrate/cli 0.2.0](https://www.npmjs.com/package/@ackrate/cli) | Bundles the updated implementation and official manifest. Mainnet is the default; `--manifest` is an optional validated override for the same official deployment. Signers and real-USDC confirmation remain required. |
+| [@ackrate/cli 0.2.1](https://www.npmjs.com/package/@ackrate/cli) | Bundles the updated implementation and official manifest. Mainnet is the default; `--manifest` is an optional validated override for the same official deployment. Signers and real-USDC confirmation remain required. |
 
-All five versions above are **published and verified**. A fresh public install
-passed at **2026-09-07 04:25:11 Bangkok (UTC+7)**; registry `latest` tags and
-downloaded archive SHA-512 identities matched at **04:25:38–04:25:45**. See the
-[Step 1 release evidence](t3-step-1-gate-2026-09-07.md) and
-[npm release matrix](ackrate-sdk-npm.md#release-matrix). Older releases remain
-historical versions, not interchangeable evidence for these defaults or exports.
+All five versions above are **published and verified**. The current public
+install and archive identities were verified at **2026-09-07 18:05:19 Bangkok
+(UTC+7)**. See the [public npm integrity evidence](public-npm-release-verification-20260907T110304Z.json)
+and [npm release matrix](ackrate-sdk-npm.md#release-matrix). The dated
+[Step 1 release evidence](t3-step-1-gate-2026-09-07.md) records the historical
+04:25 baseline with Core 0.4.0 and CLI 0.2.0, not the current patch releases.
+Older releases are not interchangeable evidence for these defaults or exports.
 
 ## Use the official configuration
 
 Install the published packages with Node.js 22 or newer:
 
 ```bash
-npm install --save-exact @ackrate/stellar@0.3.0 @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/stellar@0.3.0 @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
 ```
 
 Read the shared configuration:
