@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "review": "Independent read-only verification of the user-reported Freighter-funded CLI Mainnet run",
+  "verdict": "PASS for the bounded funding, registration, allowance, three payments and exhausted-budget checks; not an external organization approval",
+  "observedAt": "2026-09-07T12:27:10.527Z",
+  "setupAndSequenceRecheckedAt": "2026-09-07T12:28:19.186Z",
+  "network": {
+    "passphrase": "Public Global Stellar Network ; September 2015",
+    "rpc": "https://mainnet.sorobanrpc.com",
+    "horizon": "https://horizon.stellar.org",
+    "verifiedRpcProtocolVersion": 27,
+    "registry": "CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR",
+    "asset": "CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75",
+    "assetCode": "USDC",
+    "issuer": "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+    "decimals": 7
+  },
+  "artifacts": {
+    "cliVersionReportedByRun": "0.2.1",
+    "protocolSourceCommitReportedByRun": "8c74bef3af3ce7aee0ab2c8da6f126706a8a4e18",
+    "separatePublicPackageEvidence": "public-npm-release-verification-20260907T110304Z.json",
+    "qualification": "The supplied CLI output identifies the version and source. Separate public-registry verification records published package provenance; transaction receipts alone do not prove client executable identity."
+  },
+  "actors": {
+    "fundingOwner": "GCHNDR6APAMBLIAYTQRCKDHQRBI3E2V5GE6KIRUBXROLHRS46NF5YDVV",
+    "payer": "GAYHVELMUVUNYJGX5Q2YTDSHEOLIRONKCJQHYZH7RFD6WDHVVK6XJU3M",
+    "agent": "GCIB3UV6R4DU3Y4HHGU3Y22WOSR66J5FPZQ2JEJN37EQBJFSFIW6FUGZ",
+    "merchant": "GCY36L2H237SJVBQVOISN3X7SUCFJMK7PJQLX2UE55CV2APQJ7HIYUTF"
+  },
+  "funding": {
+    "hash": "179655ca44c2a9836b5a155f9c399d8e9f826382cb843c36a34ef4439d80839a",
+    "status": "SUCCESS",
+    "ledger": 64316036,
+    "createdAt": 1788783280,
+    "utc": "2026-09-07T12:14:40Z",
+    "bangkok": "2026-09-07T19:14:40+07:00",
+    "feeStroops": "600",
+    "exactOperations": [
+      "Owner creates payer with 2.1 XLM",
+      "Owner creates agent with 2.1 XLM",
+      "Owner creates merchant with 1.8 XLM",
+      "Payer creates canonical Circle USDC trustline with limit 0.03",
+      "Merchant creates canonical Circle USDC trustline with limit 0.03",
+      "Owner pays payer exactly 0.03 canonical Circle USDC"
+    ],
+    "totalNativeAccountFundingXlm": "6.0",
+    "totalUsdcFunding": "0.03"
+  },
+  "registration": {
+    "hash": "89e2df4f2b0844bfda5de30c89dc689443fb4956b5478723e8db56fc39b734fd",
+    "status": "SUCCESS",
+    "ledger": 64316056,
+    "createdAt": 1788783393,
+    "utc": "2026-09-07T12:16:33Z",
+    "checks": [
+      "Payer is the transaction source",
+      "Exactly one official registry register_mandate invocation",
+      "Exact payer, agent, merchant, canonical USDC, budget 300000, expiry and credential hash",
+      "RPC return value equals the mandate ID below"
+    ]
+  },
+  "allowance": {
+    "hash": "f903ada5f14cfeed78738f309d6f5aae0b341af8a239323e31a3d8dfa1c0afb5",
+    "status": "SUCCESS",
+    "ledger": 64316058,
+    "createdAt": 1788783404,
+    "utc": "2026-09-07T12:16:44Z",
+    "amountStroops": "300000",
+    "expirationLedger": 64333336,
+    "checks": [
+      "Payer is the transaction source",
+      "Exactly one canonical USDC approve invocation",
+      "Spender is the official registry, never the agent",
+      "Matching canonical USDC approve event"
+    ]
+  },
+  "payments": [
+    {
+      "sourceLabelReportedByRun": "market",
+      "hash": "a9b86bc4136cd353eafb5901ecf958127beae2861f174d2257858d2ba8be04b2",
+      "status": "SUCCESS",
+      "ledger": 64316060,
+      "createdAt": 1788783415,
+      "utc": "2026-09-07T12:16:55Z",
+      "bangkok": "2026-09-07T19:16:55+07:00",
+      "sourceAccountSequence": "276235271228358657",
+      "consumedSequence": 0,
+      "amountStroops": "100000"
+    },
+    {
+      "sourceLabelReportedByRun": "academic",
+      "hash": "a998a68251b148d89c7487b3d3aacb4b6f43cbfc81515aa444b4da19235c9fa1",
+      "status": "SUCCESS",
+      "ledger": 64316062,
+      "createdAt": 1788783426,
+      "utc": "2026-09-07T12:17:06Z",
+      "bangkok": "2026-09-07T19:17:06+07:00",
+      "sourceAccountSequence": "276235271228358658",
+      "consumedSequence": 1,
+      "amountStroops": "100000"
+    },
+    {
+      "sourceLabelReportedByRun": "news",
+      "hash": "c27d20b9b6167b25c9ffb30b42b44b275de70b08e7f67b066a259fa14c0a6f5d",
+      "status": "SUCCESS",
+      "ledger": 64316064,
+      "createdAt": 1788783437,
+      "utc": "2026-09-07T12:17:17Z",
+      "bangkok": "2026-09-07T19:17:17+07:00",
+      "sourceAccountSequence": "276235271228358659",
+      "consumedSequence": 2,
+      "amountStroops": "100000"
+    }
+  ],
+  "checksAppliedToEveryTransaction": [
+    "Pinned RPC reports the Mainnet network passphrase",
+    "Requested hash equals the returned hash and the recomputed Mainnet envelope hash",
+    "RPC transaction status is SUCCESS"
+  ],
+  "additionalChecksAppliedToEveryPayment": [
+    "Configured agent is the transaction source",
+    "Exactly one official registry execute_payment invocation with the exact mandate ID, amount 100000 and sequence 0/1/2",
+    "One unambiguous typed official registry payment event matches the mandate, merchant, canonical USDC and consumed sequence",
+    "One matching canonical Circle USDC transfer event moves 100000 stroops from the payer to the merchant"
+  ],
+  "mandate": {
+    "id": "34728c41d8e79ff531d3a1635d4505272ce763a722625902c7e71ee7cf8ec844",
+    "maxAmountStroops": "300000",
+    "spentStroops": "300000",
+    "sequence": 3,
+    "status": "Exhausted",
+    "expiry": 1788786987,
+    "credentialHash": "9b151b66d286433dbf5f260256ed5ead0b549ad198c912b96e484adfc25677f6",
+    "allActorAndAssetFieldsMatch": true
+  },
+  "readOnlySacBalances": {
+    "payerStroops": "0",
+    "merchantStroops": "300000"
+  },
+  "publicAgentHistory": {
+    "url": "https://horizon.stellar.org/accounts/GCIB3UV6R4DU3Y4HHGU3Y22WOSR66J5FPZQ2JEJN37EQBJFSFIW6FUGZ/transactions?include_failed=true&order=asc&limit=200",
+    "returnedRecordCount": 4,
+    "pageLimit": 200,
+    "accountFundingHash": "179655ca44c2a9836b5a155f9c399d8e9f826382cb843c36a34ef4439d80839a",
+    "fundingLedger": 64316036,
+    "agentSourceTransactionCount": 3,
+    "failedAgentSourceTransactionCount": 0,
+    "agentSourceHashesExactlyMatchPayments": true,
+    "currentAgentSequence": "276235271228358659",
+    "currentSequenceEqualsLastPaymentSequence": true,
+    "noFourthAppliedAgentTransactionAtObservation": true
+  },
+  "additionalReadOnlyFourthPaymentCheck": {
+    "method": "validate_mandate",
+    "amountStroops": "100000",
+    "expectedSequence": 3,
+    "rawSimulationError": "HostError: Error(Contract, #6)",
+    "meaning": "BudgetExceeded",
+    "latestLedger": 64316169,
+    "signaturesProduced": 0,
+    "transactionsSubmitted": 0
+  },
+  "suppliedCliOutput": {
+    "reportedProtectedSourcesDelivered": 3,
+    "reportedTotalTransferredUsdc": "0.03",
+    "reportedFourthSource": "patents",
+    "reportedFourthResult": "blocked reason=budget exceeded"
+  },
+  "limitations": [
+    "Verification uses trusted pinned public RPC and Horizon, not a cryptographic ledger-state attestation.",
+    "The user reports the Freighter interaction. Public chain data verifies the resulting funding and payment transactions, not which wallet application displayed or approved them.",
+    "HTTP resource labels, delivery completion and the actual fourth HTTP attempt rely on the supplied CLI output. Independent read-only simulation corroborates budget rejection; history confirms there was no fourth applied agent transaction at observation.",
+    "The result covers this bounded run, not every retry, outage, host-crash or adversarial scenario. Hosted crash recovery remains fail-closed and does not promise crash-safe exact receipt snapshots or exact delivery.",
+    "No private keys, seed phrases, capabilities, signed envelopes or reusable payment-proof signatures are included. Public transaction envelopes were decoded read-only; the verifier neither signed nor submitted a transaction."
+  ]
+}
