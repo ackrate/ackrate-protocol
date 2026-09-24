@@ -123,7 +123,7 @@ only enforcement boundary.
 - `security/` holds the contract, SDK, and x402 gatecheck records; the release docs
   `docs/mandate-registry-contract.md`, `docs/ackrate-sdk-npm.md`, and `docs/x402-roundtrip.md`
   document each shipped step. Update them when the matching surface changes.
-- Testnet remains the default. Hot burner keys are testnet-only, never reused on
+- The published SDK and CLI default to the verified Mainnet registry. Select Testnet explicitly for development scripts. Hot burner keys are testnet-only, never reused on
   mainnet, and never committed. Mainnet paths require the complete verified
   deployment manifest, canonical USDC, explicit real-value confirmation, and
   external or secret-manager-backed signing; they must never fall back to testnet.

@@ -1,11 +1,11 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "strict": false,
-    "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
   "include": [
     "packages/stellar/src/**/*",
@@ -14,5 +14,7 @@
     "packages/express-middleware/src/**/*",
     "packages/cli/src/**/*"
   ],
-  "exclude": ["**/*.test.ts"]
+  "exclude": [
+    "**/*.test.ts"
+  ]
 }
