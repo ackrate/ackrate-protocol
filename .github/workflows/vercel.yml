@@ -1,66 +1,90 @@
 name: Vercel Deployments
-
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch: null
   push:
-    branches: [main, prod]
-
+    branches:
+      - main
+      - prod
 permissions:
   contents: read
-
 concurrency:
   group: vercel-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
 env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-
+  DEPLOYMENT_URL: ${{ github.ref == 'refs/heads/prod' && 'https://ackrate-ackrate-protocol-e56a218.vercel.app' || 'https://ackrate-ackrate-protocol-staging-54c60f4b.vercel.app' }}
 jobs:
   deploy:
-    if: >-
-      github.event_name == 'push' ||
-      (github.event.pull_request.head.repo.full_name == github.repository &&
-      github.actor != 'dependabot[bot]')
+    if: "!github.event.pull_request.draft && (github.actor != 'dependabot[bot]' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/prod'))))"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Require isolated staging services
+        if: github.ref != 'refs/heads/prod'
+        env:
+          STAGING_SERVICES_READY: ${{ vars.STAGING_SERVICES_READY }}
+        run: if [ "$STAGING_SERVICES_READY" != true ]; then echo "::error::Staging is blocked until isolated service credentials and runtime checks are complete."; exit 1; fi
+      - name: Check deployment credentials
+        run: test -n "$VERCEL_TOKEN" && test -n "$VERCEL_ORG_ID" && test -n "$VERCEL_PROJECT_ID"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
-
       - name: Install Vercel CLI
         run: npm install --global vercel@59.11.7
-
       - name: Pull preview environment
         if: github.event_name == 'pull_request'
-        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
-
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN" || node scripts/pull-vercel-project.mjs preview
       - name: Pull production environment
-        if: github.event_name == 'push'
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-
+        if: github.event_name != 'pull_request'
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN" || node scripts/pull-vercel-project.mjs production
       - name: Build preview
         if: github.event_name == 'pull_request'
         run: vercel build --token="$VERCEL_TOKEN"
-
       - name: Build production
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: vercel build --prod --token="$VERCEL_TOKEN"
-
+      - name: Record deployed revision
+        if: github.event_name == 'pull_request'
+        run: node scripts/write-deployment-marker.mjs
       - name: Deploy preview
         if: github.event_name == 'pull_request'
         run: |
           preview_url="$(vercel deploy --prebuilt --archive=tgz --token="$VERCEL_TOKEN")"
           echo "### Vercel preview" >> "$GITHUB_STEP_SUMMARY"
           echo "[$preview_url]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
-
+      - name: Record deployed revision
+        if: github.event_name != 'pull_request'
+        run: node scripts/write-deployment-marker.mjs
       - name: Deploy production
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         run: |
           production_url="$(vercel deploy --prebuilt --archive=tgz --prod --token="$VERCEL_TOKEN")"
           echo "### Vercel production" >> "$GITHUB_STEP_SUMMARY"
           echo "[$production_url]($production_url)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify stable project URL
+        if: github.event_name != 'pull_request'
+        run: curl --fail --silent --show-error --retry 4 --retry-delay 5 "$DEPLOYMENT_URL/" -o /dev/null
+      - name: Verify stable URL serves this revision
+        if: github.event_name != 'pull_request'
+        run: |-
+          node --input-type=module <<'NODE'
+          const url=process.env.DEPLOYMENT_URL+'/__deployment.json';
+          let matched=false;
+          for(let attempt=0;attempt<6;attempt++){
+           const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(15000)});
+           if(response.ok){try{matched=(await response.json()).sha===process.env.GITHUB_SHA;}catch{}}
+           if(matched)break;
+           await new Promise(resolve=>setTimeout(resolve,5000));
+          }
+          if(!matched)throw Error('Stable URL does not serve this workflow revision');
+          console.log('Stable URL serves the expected revision.');
+          NODE
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets[github.ref == 'refs/heads/prod' && 'VERCEL_PRODUCTION_PROJECT_ID' || 'VERCEL_STAGING_PROJECT_ID'] }}
+      VERCEL_TOKEN: ${{ secrets[github.ref == 'refs/heads/prod' && 'VERCEL_PRODUCTION_TOKEN' || 'VERCEL_STAGING_TOKEN'] }}

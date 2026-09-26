@@ -22,3 +22,6 @@ proofs/
 
 # personal, machine-local Claude Code settings (not team-wide)
 .claude/settings.local.json
+
+# Vercel local configuration, pulled secrets and generated output
+.vercel/
