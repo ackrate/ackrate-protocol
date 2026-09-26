@@ -41,7 +41,7 @@ program
 program
   .command("setup")
   .description("prepare actors: testnet creates burners; Mainnet performs read-only readiness checks")
-  .option("-f, --force", "regenerate fresh keys, overwriting existing credentials")
+  .option("-f, --force", "Testnet only: regenerate keys, overwriting existing burner credentials")
   .action((opts) => runSetup(opts));
 
 const mandate = program.command("mandate").description("manage AP2 mandates");

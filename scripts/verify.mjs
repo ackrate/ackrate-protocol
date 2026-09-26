@@ -62,6 +62,7 @@ for (const workspace of [
 }
 rmSync(path.join(ROOT, "apps", "wallet-chat", ".next"), { recursive: true, force: true });
 run("npm run build (clean)", "npm", ["run", "build"], ROOT);
+run("strict root typecheck", "npm", ["run", "typecheck"], ROOT);
 run("brand check", process.execPath, ["scripts/check-branding.mjs"], ROOT);
 run("npm test", "npm", ["test"], ROOT);
 run("npm audit (high/critical release stop)", "npm", ["audit", "--audit-level=high"], ROOT);
