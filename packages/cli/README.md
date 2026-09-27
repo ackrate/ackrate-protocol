@@ -104,8 +104,6 @@ ackrate init \
 ackrate setup
 ackrate mandate create --confirm-real-usdc
 ackrate pay --confirm-real-usdc
-ackrate settlement reconcile
-ackrate settlement acknowledge <TX_HASH>
 ```
 
 `init` writes the public project configuration. `setup` performs read-only
@@ -113,6 +111,9 @@ account, balance, asset, RPC, and registry checks. Mandate creation has two
 distinct user-authorized operations: register the mandate, then approve the
 registry's token allowance. The allowance goes to the **contract**, never the
 agent or CLI. A budget is a cap, not an upfront deposit.
+
+Complete the exact-hash acknowledgment in [Recover a pending payment](#recover-a-pending-payment)
+after durably accepting the payment result.
 
 `pay` is agent-signed. The contract checks the stored mandate and atomically
 consumes its budget/sequence with the USDC transfer. A cached mandate or an SDK

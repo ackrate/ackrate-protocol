@@ -1,6 +1,12 @@
-# Ackrate testnet release playbook — contract to SDK
+# Historical Testnet contract release playbook
 
-This is the linear operating procedure for a contract, deployment, typed SDK,
+This page records the earlier simple/composite contract release process and its
+dated package baseline. It is not the current npm validation procedure. Use
+[Testnet package workflows](testnet-workflows.md) and the
+[release matrix](ackrate-sdk-npm.md) for current SDK/CLI commands. Governance and
+contract replacement require their own approved deployment workstream.
+
+The historical procedure below is the linear operating procedure for a contract, deployment, typed SDK,
 npm, CLI, reference-agent, and hosted-demo release. Do not skip ahead: every
 stage consumes the verified evidence from the prior stage.
 

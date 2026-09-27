@@ -1,18 +1,14 @@
 # Ackrate documentation index
 
-Current testnet facts:
-
-- Default simple contract: [`CCHQ5G4Y…CZRM`](https://stellar.expert/explorer/testnet/contract/CCHQ5G4Y4YBMY6D3TYYJSVJVCKUM22Q6TMKCCHVAHY4X7K6QELQACZRM), release `simple-v0.2.3`, WASM `ba370a80…76e87`, source verified.
-- Composite contract: [`CCYRF7FK…HEYW`](https://stellar.expert/explorer/testnet/contract/CCYRF7FKYGSNWX5I7WLYXZ6LNUNVCSPE4BOTQFVWVTABOHAP52DYHEYW), release `composites-v0.3.0`, WASM `b3368d7f…f0a1`.
-- Historical deployments remain explorer-visible but are not SDK defaults.
+Package status is maintained in the [release matrix](ackrate-sdk-npm.md); live
+workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27.md).
 
 ## Start here
 
 | Document | Purpose |
 |---|---|
-| [`hackathon-quickstart.md`](hackathon-quickstart.md) | Clean-clone, CLI, SDK, and reference-agent testnet setup. |
-| [`express-vscode-quickstart.md`](express-vscode-quickstart.md) | Build a clean VS Code consumer against the `/express` companion. |
-| [`playbook-testnet.md`](playbook-testnet.md) | Linear contract-to-SDK release and operating procedure. |
+| [`testnet-workflows.md`](testnet-workflows.md) | Installed CLI, SDK/AP2, local Express, recovery, canonical x402 and offline signing. |
+| [`playbook-testnet.md`](playbook-testnet.md) | Historical contract release and operating procedure. |
 | [`mainnet-roadmap.md`](mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
 | [`mainnet-mandate-registry-plan.md`](mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
 

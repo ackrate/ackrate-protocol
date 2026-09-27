@@ -28,8 +28,10 @@ node scripts/adversarial/a3-bypass-attempts.mjs
 The scripts import the workspace packages (`@ackrate/core`,
 `@ackrate/stellar`, `@ackrate/ap2`, `@ackrate/express-middleware`), so they
 exercise the code in this repository. To attack the **published** packages
-instead, copy a script into an empty directory and
-`npm install @ackrate/core@0.3.3 @ackrate/stellar@0.2.4 @ackrate/ap2@0.3.2 @ackrate/express-middleware@0.2.4 @stellar/stellar-sdk@14.5.0 express@5.2.1`.
+instead, copy the scripts into an empty directory and install the exact versions
+from the [release matrix](../../docs/ackrate-sdk-npm.md), plus Stellar SDK and
+Express. For unpublished candidates, install their verified tarballs in that
+consumer; workspace imports are not equivalent evidence.
 
 ## What each script proves
 

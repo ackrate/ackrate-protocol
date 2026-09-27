@@ -1,31 +1,17 @@
 # Reference consumer and fulfillment agents
 
-The consumer uses `agent.fetch()` with `proofPolicy: "bound-v2-only"`, an atomic
-purchase claim, a durable pre-broadcast receipt store, an immutable
-application-outcome store, restart hydration, and explicit application
-acknowledgment. The fulfillment agent uses `createBoundAckratePaidJsonRoute` with an
-exact public origin, independent Stellar verification, an agent-signed GET proof, and
-one atomic claim/result `BoundRedemptionStore`.
+The consumer uses `agent.fetch()` with `proofPolicy: "bound-v2-only"`, a durable
+pre-broadcast receipt store, an immutable outcome store and explicit delivery
+acknowledgment. The fulfillment agent uses `createBoundAckratePaidJsonRoute`, an
+exact public origin, independent chain verification and atomic claim/result
+storage. Both accept an explicit network configuration.
 
-Both references accept an injected `NetworkConfig`. The consumer also accepts a
-secret-free `StellarSigner`, and the fulfillment route accepts the manifest's
-USDC SAC, `stellar-mainnet` label, and low-value price. No source edit or testnet
-fallback is required when the completed mainnet deployment manifest arrives.
+- Run locally with the [Testnet reference workflow](testnet-workflows.md#local-express-and-reference-agents).
+- Run the installed CLI with the [package instructions](../packages/cli/README.md#run-the-reference-research-agent).
+- Understand the [HTTP challenge and settlement sequence](x402-roundtrip.md).
+- Inspect [live recovery drills](live-failure-drills.md) and [current validation evidence](npm-workflow-evidence-2026-09-27.md).
 
-## Evidence
-
-```bash
-npm ci
-npm run agents:testnet
-```
-
-The run creates fresh testnet actors and a 3 XLM mandate, serves three paid resources,
-proves the fourth contract rejection, retains exact settlement receipts, and rejects a
-settled transaction re-signed for a new request with HTTP `409`.
-
-The CLI now runs these same reference agents on testnet or in explicitly confirmed
-Mainnet mode. Mainnet is derived only from the verified deployment manifest, uses
-chain-read USDC decimals, keeps user authorization in a named Stellar CLI identity,
-and accepts the bound-proof agent key only through a named secret-manager environment
-variable. Transaction receipts, delivered responses, contract state, merchant delta,
-and the fourth no-payment budget rejection must all agree before success is reported.
+The Mainnet CLI demo requires three distinct accounts and detached agent signing
+from its configured secret manager. The direct Core payment API also supports
+the hosted relay topology in which the agent is the merchant. These are different
+workflows; a direct transfer does not prove hosted resource delivery.

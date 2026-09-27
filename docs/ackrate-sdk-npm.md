@@ -153,76 +153,15 @@ Add the other published libraries for the full pinned SDK set:
 npm install --save-exact @ackrate/stellar@0.3.0 @ackrate/ap2@0.4.0 @ackrate/express-middleware@0.3.0 @stellar/stellar-sdk@16.3.0
 ```
 
-## Bound-v2 client API
+## API guides
 
-```ts
-const agent = ackrate.agent({
-  mandate,
-  signer: agentKey,
-  proofPolicy: "bound-v2-only",
-  receiptStore,
-});
-
-const response = await agent.fetch(url);
-const receipt = getSettlementReceipt(response);
-const result = await response.json();
-await persistAcceptedResult(result, receipt);
-if (receipt) await agent.acknowledgeDelivery(receipt);
-```
-
-Important exports:
-
-| Export | Purpose |
-|---|---|
-| `MAINNET` / `ackrate.mainnet` | Official default registry, network, and canonical USDC configuration. |
-| `MAINNET_DEPLOYMENT_MANIFEST` | Bundled complete public deployment evidence. |
-| `ackrate.createIntentMandate` | Canonical local mandate construction. |
-| `registerMandate` / `approveBudget` | User-authorized on-chain setup. |
-| `Agent.pay` | Agent-authorized `execute_payment`. |
-| `Agent.fetch` | Bound-v2 capability, challenge validation, payment, signed proof, and delivery. |
-| `SettlementReceiptStore` | Durable pre-broadcast save, restart enumeration, and explicit clear interface. |
-| `getSettlementReceipt` | Exact receipt from a successful paid response. |
-| `DeliveryPendingError` | Typed post-submission settlement/delivery uncertainty. |
-| `SettlementUncertainError` | Direct-pay hash was prepared and broadcast was attempted, but final state is unknown. |
-| `PendingSettlement` / `SettlementReconciliation` | Exact hash, validity window, and reconciliation result. |
-| `Agent.getPendingSettlement` / `reconcilePendingSettlement` | Restore/query one hash without submitting another transaction. |
-| `Agent.retryDelivery` | Exact-proof delivery retry with no payment or signature. |
-| `Agent.acknowledgeDelivery` | Clears the durable receipt only after application commit. |
-
-`proofPolicy: "bound-v2-only"` is required for new paid endpoints. The
-`"legacy-compatible"` default exists only for migration. Paid fetch requires a
-receipt store with `savePending`, `listPending`, and `clearPending`; the signed
-hash is durable before broadcast, and restart blocks every new payment until the
-same receipt is reconciled/recovered and explicitly acknowledged.
-
-Direct `Agent.pay` also fails before network unless its required `onPrepared`
-hook durably journals the signed hash and validity window. The CLI demonstrates
-that contract with `ackrate settlement reconcile` plus explicit exact-hash
-`ackrate settlement acknowledge <TX_HASH>` for a successful result.
-
-## Express API
-
-Use `createBoundAckratePaidJsonRoute`, a stable private challenge secret, an exact
-configured public HTTP(S) origin, and a required `BoundRedemptionStore`. GET is
-the only paid method. The route verifies the exact challenge, chain-derived
-agent signature, MandateRegistry event, current identities, and matching SEP-41
-transfer; then it atomically claims fulfillment once and commits bounded JSON
-bytes before sending them.
-
-The exact completed proof replays those stored bytes without verifier or
-callback execution. The same transaction with another proof returns `409`; an
-executing claim or infrastructure outage returns `503`. In-memory state is
-demo-only; multi-worker production requires a shared durable linearizable
-claim/result store and a transactional outbox for external side effects. Only a
-trusted operator/outbox, after proving the execution owner is dead, may call
-`resolveBoundAckrateInterruptedDelivery` to commit one terminal result.
-
-## AP2 API
-
-`createAp2ComplianceValidator` checks strict schema and versions, Stellar
-Ed25519 signature, separately trusted user, merchant scope, amount, expiry,
-binding hash, and atomic replay admission. Its 59-test suite covers valid and
-adversarial cases. Cumulative spending and payment replay remain contract checks.
+Runnable examples and recovery requirements live in the package READMEs:
+[Core](../packages/sdk/README.md), [Stellar](../packages/stellar/README.md),
+[AP2](../packages/ap2/README.md), [Express](../packages/express-middleware/README.md)
+and [CLI](../packages/cli/README.md). Use [Testnet workflows](testnet-workflows.md)
+for explicit network adaptations and [dated workflow evidence](npm-workflow-evidence-2026-09-27.md)
+for live validation results. Historical release receipts above do not certify
+unpublished candidate tarballs.
 
 ## Clean-package gate check
 
