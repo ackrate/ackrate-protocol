@@ -60,7 +60,6 @@ for (const workspace of [
 ]) {
   rmSync(path.join(ROOT, workspace, "dist"), { recursive: true, force: true });
 }
-rmSync(path.join(ROOT, "apps", "wallet-chat", ".next"), { recursive: true, force: true });
 run("npm run build (clean)", "npm", ["run", "build"], ROOT);
 run("strict root typecheck", "npm", ["run", "typecheck"], ROOT);
 run("brand check", process.execPath, ["scripts/check-branding.mjs"], ROOT);
