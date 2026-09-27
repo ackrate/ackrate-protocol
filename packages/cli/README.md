@@ -24,6 +24,11 @@ Requires Node.js 22 or newer. The installed command is `ackrate`. Check the
 [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
 for publication and clean-install verification.
 
+## Testnet development
+
+For disposable funded accounts, follow the [Testnet workflow guide](https://github.com/ackrate/ackrate-protocol/blob/main/docs/testnet-workflows.md).
+Select `--network testnet` for CLI `init` and `demo`; Mainnet remains the default.
+
 ## Before you spend
 
 Mainnet operations use real USDC and XLM transaction fees. The CLI never creates

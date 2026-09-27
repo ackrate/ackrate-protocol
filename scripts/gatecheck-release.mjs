@@ -151,7 +151,9 @@ for (const [directory, expectedName, expectedVersion] of packages) {
       if (!body.includes(`https://stellar.expert/explorer/public/contract/${MAINNET_REGISTRY}`)) {
         fail(`${expectedName} README is missing the official Mainnet explorer link`);
       }
-      if (/testnet|time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current Mainnet product only`);
+      // Mainnet identity is required above and verified at runtime below.
+      // Explicit Testnet onboarding is supported and must remain discoverable.
+      if (/time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current registry, not retired timelock controls`);
     }
     if (OBSOLETE_BRAND.test(body)) {
       fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);

@@ -22,7 +22,7 @@ results do not claim the candidates have been published.
 | Reference consumer and merchant | Live 402 → registry payment → bound proof → delivered JSON; fourth purchase and retargeted replay rejected. |
 | Recovery/failure drills | All 3 passed: revoke, merchant outage with receipt recovery and zero second payment, and expiry before payment. |
 | Adversarial suite | All 6 scripts / 52 checks passed, including a transaction included in a ledger and reverted for stale sequence. |
-| Standalone AP2 documentation example | Offline valid admission, overspend rejection and wrong-merchant rejection passed. |
+| Historical standalone AP2 documentation example | The now-consolidated offline example passed valid admission, overspend rejection and wrong-merchant rejection. |
 | Packed SD-JWT helper | All 14 cryptographic tests passed against the installed subpath. |
 | Canonical Stellar x402 | Real local HTTP facilitator used upstream 2.27.0 verification/settlement, a signed Testnet authorization and actual token transfer; decoded receipt, independent chain success and exact balance delta agreed. |
 
@@ -38,7 +38,7 @@ Representative Testnet payments:
 - [Core README payment](https://stellar.expert/explorer/testnet/tx/74139fb950378cb5e57b6d95db6ce0d6470d5d56b8d0679604d8460c77744103).
 - [AP2 admitted payment](https://stellar.expert/explorer/testnet/tx/79e6c067ba8aa37c0dd2aa5a16918400d78e22240a862ce6400cf5cf41c0df60).
 - [Recovered delivery, no second payment](https://stellar.expert/explorer/testnet/tx/465267c8556142acf002730c70518a1900471da75bb1beac78e01fa86d9e02fc).
-- [Canonical x402 transfer](https://stellar.expert/explorer/testnet/tx/662aa7bffa7de1fd6fd2f23f25b253333473c5a51a08dc208e9055643449ec96).
+- [Canonical x402 transfer](https://stellar.expert/explorer/testnet/tx/88e6fbf0a61a9658d528f6a0a9ce8d1111c96d24b050b1e637f1f805028a22df).
 
 ## One Mainnet workflow
 
@@ -61,8 +61,12 @@ rejected before signing. Total charged transaction fees were 0.1365008 XLM.
 
 The test harness initially refused registration before signing because its
 fee ceiling was below the required resource fee. The run proceeded only after
-confirming no transaction had been signed. A final assertion then used an
-incorrect status field; this was corrected and verified read-only against the
+confirming no transaction had been signed: the empty transaction record and absence
+of any signed-intent file were checked, then the marker was manually archived as
+`unsigned-preflight-stopped.json` before the first actual registration. A final assertion then used an
+incorrect status field (`final.revoked`); the one-line correction uses
+`final.status.tag === "Revoked"`. The retained `verify-mainnet.mjs` recheck and its
+log verified the result read-only against the
 already completed transactions. No payment was repeated.
 
 ## Remaining limits

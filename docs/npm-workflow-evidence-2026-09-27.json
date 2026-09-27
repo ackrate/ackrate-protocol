@@ -36,7 +36,7 @@
       "workflow": "Stellar explicit network and token balance",
       "network": "testnet",
       "status": "passed",
-      "localEvidence": "docs-testnet.log",
+      "localEvidence": "stellar-readme.log",
       "transactions": {}
     },
     {
@@ -103,7 +103,7 @@
     },
     {
       "id": "ap2-offline",
-      "workflow": "Original standalone documentation admission/overspend/merchant example",
+      "workflow": "Historical now-consolidated standalone documentation admission/overspend/merchant example",
       "network": "offline",
       "status": "passed",
       "localEvidence": "ap2-offline-doc.log",
@@ -124,8 +124,9 @@
       "status": "passed",
       "localEvidence": "canonical-testnet.log",
       "transactions": {
-        "pay": "662aa7bffa7de1fd6fd2f23f25b253333473c5a51a08dc208e9055643449ec96"
-      }
+        "pay": "88e6fbf0a61a9658d528f6a0a9ce8d1111c96d24b050b1e637f1f805028a22df"
+      },
+      "negative": "Fresh changed-requirement payload refused before the valid payload settled; zero balance delta for rejection."
     },
     {
       "id": "mainnet-core",
@@ -241,7 +242,8 @@
       "minimumReserveXlm": "1.5000000",
       "spendableXlm": "0.9037046",
       "usdc": "0.0900000"
-    }
+    },
+    "reverifiedAt": "2026-09-27T17:47:33.348Z"
   },
   "limitations": [
     "Mainnet-only interrupted registration recovery has deterministic tests, not a new live success proof.",
@@ -249,5 +251,9 @@
     "Mainnet run is a direct SDK payment to the configured staging relay; it does not prove hosted content delivery, native wallet/device flows, or the three-distinct-account CLI Mainnet demo.",
     "Contract deployment, upgrade and custody rotation belong to separate contract operations; none were performed.",
     "Candidates are not published; registry install of final versions must be verified after publication."
-  ]
+  ],
+  "executionEnvironment": {
+    "node": "v22.23.3",
+    "cliVersion": "0.2.2"
+  }
 }

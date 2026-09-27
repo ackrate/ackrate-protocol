@@ -22,6 +22,11 @@ Requires Node.js 22 or newer and the coordinated Stellar package `^0.3.0`.
 See the [release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
 for publication and clean-install verification.
 
+## Testnet development
+
+For disposable funded accounts, follow the [Testnet workflow guide](https://github.com/ackrate/ackrate-protocol/blob/main/docs/testnet-workflows.md).
+Pass `ackrate.testnet` explicitly to SDK operations; Mainnet remains the default.
+
 ## Authorize a budget and pay
 
 This example authorizes real USDC. Obtain the user's approval of the merchant,

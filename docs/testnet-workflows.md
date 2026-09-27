@@ -96,9 +96,18 @@ fulfillment; see the [Core recovery API](../packages/sdk/README.md#recover-the-o
 Follow the separate [canonical middleware example](../packages/express-middleware/README.md#canonical-stellar-x402-resource-server)
 with `stellar:testnet`, `TESTNET.nativeSac`, and an explicitly configured
 facilitator that supports that network. Prices are atomic strings, not display
-amounts. Use an upstream canonical payer for this workflow: Ackrate's mandate
-payer intentionally refuses canonical exact offers. A real Testnet facilitator
-was verified in the [dated evidence](npm-workflow-evidence-2026-09-27.md); a fake
+amounts. Install the payer/facilitator dependencies explicitly alongside the candidates:
+
+```bash
+npm install --save-exact @x402/core@2.27.0 @x402/stellar@2.27.0
+```
+
+The upstream `@x402/stellar/exact/client` and `/exact/facilitator` entrypoints
+provide the payer and facilitator; `@x402/core/facilitator` coordinates the latter.
+Use an upstream canonical payer for this workflow: Ackrate's mandate
+payer intentionally refuses canonical exact offers. The upstream facilitator code
+was run locally with a disposable funded sponsor and real Testnet settlement, as
+recorded in the [dated evidence](npm-workflow-evidence-2026-09-27.md); a fake
 facilitator fixture or parsed response header alone does not prove settlement.
 
 ## Offline signing coordination and cryptography
