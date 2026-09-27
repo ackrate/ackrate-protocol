@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/ap2",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Signed AP2 intent validation and mandate bridge for ACKRATE contract-enforced USDC payments on Stellar Mainnet.",
   "repository": {
     "type": "git",
@@ -27,6 +27,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./sd-jwt": {
+      "types": "./dist/sd-jwt.d.ts",
+      "default": "./dist/sd-jwt.js"
     }
   },
   "files": [
@@ -34,7 +38,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/index.test.ts src/validator.test.ts"
+    "test": "node --import tsx --test src/index.test.ts src/validator.test.ts src/sd-jwt.test.ts"
   },
   "dependencies": {
     "@ackrate/core": "^0.4.0",

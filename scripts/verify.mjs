@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CONTRACT = path.join(ROOT, "contracts", "mandate-registry");
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
-const ENV = { ...process.env, PATH: `${CARGO_BIN}:/opt/homebrew/bin:${process.env.PATH ?? ""}` };
+const ENV = { ...process.env, PATH: `${path.dirname(process.execPath)}:${CARGO_BIN}:${process.env.PATH ?? ""}:/opt/homebrew/bin` };
 
 for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
   if (!name.endsWith(".yml") && !name.endsWith(".yaml")) continue;

@@ -1,4 +1,4 @@
-# @ackrate/ap2 0.4.0
+# @ackrate/ap2 0.4.1
 
 Signed AP2 v0.1 intent admission for contract-enforced USDC payments on Stellar Mainnet.
 
@@ -25,14 +25,14 @@ evidence must still be checked when the implementation changes.
 
 ## Installation
 
-Version **0.4.0** requires
-**Node.js 22+**, core **0.4.0**, and exact `@stellar/stellar-sdk@16.3.0`.
+Version **0.4.1** requires
+**Node.js 22+**, core **0.4.1**, and exact `@stellar/stellar-sdk@16.3.0`.
 The AP2 protocol profile remains v0.1; this package update does not change it.
 
 Install the pinned set with:
 
 ```bash
-npm install --save-exact @ackrate/ap2@0.4.0 @ackrate/core@0.4.0 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/ap2@0.4.1 @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
 ```
 
 See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
@@ -231,3 +231,22 @@ hash and reconcile it with Core. Do not sign a new intent or pay again to recove
 an existing purchase. See the [Core recovery workflow](https://github.com/ackrate/ackrate-protocol/blob/main/packages/sdk/README.md#recover-the-original-purchase).
 
 Apache-2.0.
+
+### Isolated SD-JWT cryptography
+
+`@ackrate/ap2/sd-jwt` exposes the cryptographic helper selected from the unmerged
+AP2 v0.2 work. It signs/verifies ES256 with P-256 and EdDSA with Ed25519, rejects
+unsupported critical and unencoded-payload headers, checks JWK algorithm/use/key
+operations, and verifies disclosure and delegation-chain signatures and bindings.
+Callers must resolve the root key from an independently trusted source.
+
+This entry point does not admit mandates, enforce delegated business constraints,
+implement replay storage, or execute token transfers. Audience/nonce checks must
+be supplied by the caller where required, together with application policy and
+replay protection. The existing root API remains the AP2 v0.1.0 supported subset;
+this is not a full AP2 v0.2 compliance claim or a merge of that branch.
+
+ES256 signatures use canonical low-S form. The returned presentation hashes are
+integrity bindings, **not replay identifiers**: disclosure ordering and other
+valid encodings can change them. Use a verified terminal nonce or `jti` with
+atomic durable replay admission. `hashAp2Text` hashes UTF-8 bytes.

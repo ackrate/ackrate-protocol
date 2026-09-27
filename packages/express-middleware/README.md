@@ -1,4 +1,4 @@
-# @ackrate/express-middleware 0.3.0
+# @ackrate/express-middleware 0.3.1
 
 Paid JSON routes for Express 4/5, settled in USDC on Stellar Mainnet.
 
@@ -19,14 +19,14 @@ address. Re-check implementation compatibility and release evidence after upgrad
 
 ## Installation
 
-Version **0.3.0** requires
-**Node.js 22+**, core **0.4.0**, Stellar binding **0.3.0**, and exact
+Version **0.3.1** requires
+**Node.js 22+**, core **0.4.2**, Stellar binding **0.3.0**, and exact
 `@stellar/stellar-sdk@16.3.0`.
 
 Install with:
 
 ```bash
-npm install --save-exact @ackrate/express-middleware@0.3.0 @ackrate/stellar@0.3.0 @stellar/stellar-sdk@16.3.0 express@5.2.1
+npm install --save-exact @ackrate/express-middleware@0.3.1 @ackrate/stellar@0.3.0 @stellar/stellar-sdk@16.3.0 express@5.2.1
 ```
 
 See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
@@ -189,3 +189,39 @@ change without changing contract storage or weakening `execute_payment`.
 - [Consumer payment and recovery workflow](https://github.com/ackrate/ackrate-protocol/blob/main/packages/sdk/README.md).
 
 Apache-2.0.
+
+### Canonical Stellar x402 resource server
+
+Use the separate `@ackrate/express-middleware/canonical` entry point for upstream
+x402 v2 `exact` acceptance. Existing Ackrate registry-proof middleware is unchanged.
+
+```ts
+import {
+  canonicalStellarPaymentMiddleware,
+  HTTPFacilitatorClient,
+} from "@ackrate/express-middleware/canonical";
+
+const facilitator = new HTTPFacilitatorClient({ url: process.env.FACILITATOR_URL! });
+app.use(canonicalStellarPaymentMiddleware({
+  "GET /data": {
+    accepts: [{
+      scheme: "exact", network: "stellar:pubnet", payTo: merchantAddress,
+      price: { asset: tokenContract, amount: "10000000" },
+    }],
+    mimeType: "application/json",
+  },
+}, facilitator));
+app.get("/data", (_req, res) => res.json(cachedData));
+```
+
+Amounts in asset-price objects are atomic units. Configure a trusted facilitator
+explicitly, including its authentication through the upstream client when needed.
+Upstream x402 2.27.0 handles capability discovery, challenges, verification,
+settlement and response headers. This adapter neither holds keys nor registers
+Ackrate mandates. Facilitator settlement is a separate trust boundary.
+
+Protected handlers must be read-only or idempotent: upstream runs them before
+settlement and buffers delivery until settlement succeeds. Do not put an
+irreversible action in a handler or treat its execution as payment confirmation.
+This release has local HTTP interoperability coverage, not live provider or
+production settlement certification.

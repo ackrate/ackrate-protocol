@@ -1,5 +1,7 @@
 # Bound-v2 402 round trip
 
+September 27 candidate: [contract-independent x402 changes](x402-sdk-compatibility-2026-09-27.md). Package publication status is recorded separately from test results.
+
 Ackrate isolates the evolving HTTP payment wire format from the MandateRegistry.
 The contract owns spending authorization; the HTTP layer decides whether a
 merchant may release one exact resource after independently proving settlement.

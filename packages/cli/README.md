@@ -1,4 +1,4 @@
-# @ackrate/cli 0.2.1
+# @ackrate/cli 0.2.2
 
 Run Ackrate's contract-enforced USDC payment workflow on Stellar Mainnet from
 your terminal: configure signers, register a mandate, approve its budget, pay a
@@ -16,7 +16,7 @@ still be checked when that implementation changes.
 ## Install
 
 ```bash
-npm install -g @ackrate/cli@0.2.1
+npm install -g @ackrate/cli@0.2.2
 ackrate --help
 ```
 

@@ -118,19 +118,17 @@ test("parse402 parses a full challenge", async () => {
   });
 });
 
-test("parse402 applies defaults for a minimal challenge", async () => {
-  const req = await parse402(res402({ accepts: [{ maxAmountRequired: "2.50", payTo: "GMERCHANT" }] }));
-  assert.equal(req.scheme, "ackrate-soroban");
-  assert.equal(req.network, "stellar-testnet");
-  assert.equal(req.amount, "2.50");
-  assert.equal(req.asset, "");
-  assert.equal(req.resource, "");
-  assert.equal(req.contract, undefined);
+const legacyOffer = { scheme: "ackrate-soroban", network: "stellar-testnet", asset: "CASSET", payTo: "GMERCHANT", amount: "3.00" };
+
+test("parse402 rejects missing protocol identity instead of applying defaults", async () => {
+  await assert.rejects(parse402(res402({ accepts: [{ maxAmountRequired: "2.50", payTo: "GMERCHANT" }] })), /version/);
+  for (const key of ["scheme", "network", "asset", "payTo"]) {
+    await assert.rejects(parse402(res402({ x402Version: 1, accepts: [{ ...legacyOffer, [key]: undefined }] })));
+  }
 });
 
-test("parse402 accepts `amount` as an alias for maxAmountRequired", async () => {
-  const req = await parse402(res402({ accepts: [{ amount: "3.00", payTo: "GMERCHANT" }] }));
-  assert.equal(req.amount, "3.00");
+test("parse402 accepts display amount alias only for explicit Ackrate schemes", async () => {
+  assert.equal((await parse402(res402({ x402Version: 1, accepts: [legacyOffer] }))).amount, "3.00");
 });
 
 test("parse402 rejects a non-JSON body", async () => {
@@ -143,11 +141,11 @@ test("parse402 rejects a body with no `accepts` requirement", async () => {
 });
 
 test("parse402 rejects a requirement missing an amount", async () => {
-  await assert.rejects(() => parse402(res402({ accepts: [{ payTo: "GMERCHANT" }] })), /missing an amount/);
+  await assert.rejects(() => parse402(res402({ x402Version: 1, accepts: [{ ...legacyOffer, amount: undefined }] })), /missing an amount/);
 });
 
 test("parse402 rejects a requirement missing payTo (the merchant)", async () => {
-  await assert.rejects(() => parse402(res402({ accepts: [{ maxAmountRequired: "1.00" }] })), /payTo/);
+  await assert.rejects(() => parse402(res402({ x402Version: 1, accepts: [{ ...legacyOffer, payTo: undefined }] })), /payTo/);
 });
 
 const BOUND_CHALLENGE: BoundPaymentChallengeV2 = {
@@ -312,7 +310,10 @@ test("bound-v2 decoder rejects unknown fields and noncanonical encodings", () =>
 test("parse402 rejects unsupported advertised Ackrate proof versions", async () => {
   await assert.rejects(
     () => parse402(res402({
+      x402Version: 1,
       accepts: [{
+        ...legacyOffer,
+        amount: undefined,
         maxAmountRequired: "1.00",
         payTo: "GMERCHANT",
         extra: { ackrateProofVersion: 3, challenge: {} },
@@ -342,4 +343,23 @@ test("parse402 exposes a strict bound-v2 challenge without changing legacy outpu
   assert.equal(requirement.proofVersion, 2);
   assert.deepEqual(requirement.challenge, BOUND_CHALLENGE);
   assert.equal(requirement.scheme, BOUND_PAYMENT_SCHEME);
+});
+
+test("parse402 selects a supported matching offer after foreign offers", async () => {
+  const req = await parse402(res402({ x402Version: 1, accepts: [
+    { ...legacyOffer, scheme: "exact", amount: "10000000" },
+    { ...legacyOffer, network: "stellar-mainnet" },
+    legacyOffer,
+  ] }), { network: "stellar-testnet", asset: "CASSET", payTo: "GMERCHANT" });
+  assert.equal(req.amount, "3.00");
+});
+
+test("parse402 rejects ambiguous amounts and unknown protocols", async () => {
+  for (const over of [{ amount: 3 }, { amount: "1e7" }, { amount: "0" }, { amount: " 1 " }, { amount: "1.0", maxAmountRequired: "1" }, { scheme: "exact" }, { network: "stellar:testnet" }, { extra: { ackrateProofVersion: 2 } }]) {
+    await assert.rejects(parse402(res402({ x402Version: 1, accepts: [{ ...legacyOffer, ...over }] })));
+  }
+  await assert.rejects(parse402(res402({ x402Version: 2, accepts: [legacyOffer] })), /version/);
+  const canonical = res402({ x402Version: 1, accepts: [legacyOffer] });
+  canonical.headers.set("payment-required", "malformed");
+  await assert.rejects(parse402(canonical), /canonical/);
 });

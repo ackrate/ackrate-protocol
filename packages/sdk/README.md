@@ -1,4 +1,4 @@
-# @ackrate/core 0.4.1
+# @ackrate/core 0.4.2
 
 Give an agent a capped USDC budget on Stellar Mainnet. The MandateRegistry
 enforces the budget, merchant, agent, expiry, and payment sequence on-chain.
@@ -15,7 +15,7 @@ must still be checked when the implementation changes.
 ## Install
 
 ```bash
-npm install --save-exact @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/core@0.4.2 @stellar/stellar-sdk@16.3.0
 ```
 
 Requires Node.js 22 or newer and the coordinated Stellar package `^0.3.0`.
@@ -195,3 +195,18 @@ and [Mainnet deployment record](https://github.com/ackrate/ackrate-protocol-cont
 show how the coordinated packages map to the contract above.
 
 Apache-2.0.
+
+### Canonical x402 wire inspection
+
+`@ackrate/core/x402` exports `parseCanonical402`,
+`selectStellarExactRequirement`, `stellarAtomicAmount`, and
+`parseStellarPaymentResponse`. These parse canonical v2 headers and preserve
+amounts as atomic-unit strings. They do not sign or pay. A decoded settlement
+header is merchant metadata, not independently verified chain evidence.
+
+`Agent.fetch` still pays only explicit `ackrate-soroban` and
+`ackrate-soroban-bound` offers using display-unit decimal amounts. It rejects
+canonical challenges, unknown schemes, missing identities, mismatched networks
+and ambiguous amount aliases before payment. It selects a supported offer matching
+the mandate rather than assuming the first offer is usable. Bound-only policy
+remains available and unchanged.

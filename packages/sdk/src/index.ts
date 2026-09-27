@@ -13,7 +13,7 @@
  *   await agent.pay("1.00", { onPrepared: (pending) => paymentJournal.save(pending) });
  */
 import { Buffer } from "buffer";
-import { Keypair, hash, rpc } from "@stellar/stellar-sdk";
+import { Keypair, Networks, hash, rpc } from "@stellar/stellar-sdk";
 import {
   MAINNET,
   TESTNET,
@@ -813,7 +813,13 @@ export class Agent {
     }
     if (first.status !== 402) return first;
 
-    const required = await parse402(first);
+    const network = this.net.networkPassphrase === Networks.PUBLIC ? "stellar-mainnet"
+      : this.net.networkPassphrase === Networks.TESTNET ? "stellar-testnet" : undefined;
+    if (!network) throw new Error("x402: unsupported mandate network");
+    const required = await parse402(first, {
+      network, asset: this.mandate.asset, payTo: this.mandate.merchant, contract: this.net.mandateRegistryId,
+      boundOnly: this.proofPolicy === "bound-v2-only",
+    });
     const receiptStore = this.receiptStore;
     if (!receiptStore) {
       throw new Error("x402: a SettlementReceiptStore is required before submitting a paid request");
@@ -826,7 +832,7 @@ export class Agent {
         `x402: the 402 names merchant ${required.payTo}, not this mandate's merchant ${this.mandate.merchant}`,
       );
     }
-    if (required.asset && required.asset !== this.mandate.asset) {
+    if (required.asset !== this.mandate.asset) {
       throw new Error(`x402: the 402 names a different asset than this mandate's`);
     }
     if (this.proofPolicy === "bound-v2-only" && (!required.challenge || required.proofVersion !== 2)) {

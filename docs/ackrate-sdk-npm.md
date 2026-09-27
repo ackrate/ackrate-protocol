@@ -1,5 +1,7 @@
 # Ackrate npm packages
 
+September 27 candidate: [contract-independent x402 changes](x402-sdk-compatibility-2026-09-27.md). Package publication status is recorded separately from test results.
+
 Ackrate publishes typed ESM packages with packed API documentation and examples.
 The SDK is untrusted infrastructure: it never receives the user allowance and
 cannot replace the contract's `execute_payment` checks.

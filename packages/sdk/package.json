@@ -1,6 +1,6 @@
 {
   "name": "@ackrate/core",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Mainnet SDK for ACKRATE mandates, USDC payments, and x402 delivery. The MandateRegistry enforces every payment.",
   "repository": {
     "type": "git",
@@ -30,6 +30,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./x402": {
+      "types": "./dist/canonical-x402.d.ts",
+      "default": "./dist/canonical-x402.js"
     }
   },
   "files": [
@@ -37,11 +41,12 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/x402.test.ts src/payment-sequence.test.ts src/registered-id.test.ts src/fetch.test.ts test/index.test.mjs"
+    "test": "node --import tsx --test src/x402.test.ts src/payment-sequence.test.ts src/registered-id.test.ts src/fetch.test.ts test/index.test.mjs src/canonical-x402.test.ts"
   },
   "dependencies": {
     "@ackrate/stellar": "^0.3.0",
     "@stellar/stellar-sdk": "16.3.0",
+    "@x402/core": "2.27.0",
     "buffer": "6.0.3"
   },
   "license": "Apache-2.0",
