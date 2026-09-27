@@ -303,3 +303,23 @@ code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Deployment profile selector (network card). Every rule is scoped under .profile-switch. */
+.profile-switch { margin-top: 12px; }
+.profile-switch .profile-switch-label { display: block; margin-bottom: 4px; color: #71857d; font-size: 9px; font-weight: 800; letter-spacing: .14em; }
+.profile-switch ul { margin: 0; padding: 0; list-style: none; }
+.profile-switch .profile-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 40px; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.05); transition: color .2s, border-color .2s; }
+.profile-switch .profile-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.profile-switch .profile-name strong { color: #c8d5d0; font-size: 11px; font-weight: 700; }
+.profile-switch .profile-name small { color: #8ea29a; font-size: 10px; overflow-wrap: anywhere; }
+.profile-switch .profile-action { display: inline-flex; align-items: center; gap: 4px; color: #7de7bd; font-size: 10px; font-weight: 700; white-space: nowrap; transition: color .2s; }
+.profile-switch .profile-chip { padding: 4px 7px; border-radius: 999px; background: rgba(52,211,153,.11); color: #71eab8; font-size: 9px; letter-spacing: .12em; }
+.profile-switch .is-current .profile-name strong { color: var(--text); }
+.profile-switch a.profile-row[href]:hover { border-top-color: var(--line-strong); }
+.profile-switch a.profile-row[href]:hover .profile-name strong, .profile-switch a.profile-row[href]:hover .profile-action { color: #b8f7dc; }
+.profile-switch a.profile-row[href]:focus-visible { outline: 2px solid var(--emerald); outline-offset: 2px; border-radius: 6px; }
+.profile-switch .is-paused { cursor: not-allowed; }
+.profile-switch .is-paused .profile-name strong, .profile-switch .is-unavailable .profile-name strong,
+.profile-switch .is-paused .profile-action, .profile-switch .is-unavailable .profile-action { color: var(--muted); }
+.profile-switch .profile-switch-reason, .profile-switch .profile-switch-note { display: flex; align-items: flex-start; gap: 6px; margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.profile-switch .profile-switch-note > svg { flex: 0 0 auto; margin-top: 2px; color: #6fba9b; }

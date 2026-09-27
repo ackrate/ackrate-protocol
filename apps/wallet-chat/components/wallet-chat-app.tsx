@@ -26,8 +26,10 @@ import {
 import type { IntentMandate } from "@ackrate/core";
 import { approveWithLobstr, buildMandate, registerWithLobstr, revokeWithLobstr } from "@/lib/mandate-client";
 import type { MandateView, SafeAppConfig, SessionView } from "@/lib/types";
+import { mandateStorageKey } from "@/lib/environment-profiles";
 import { connectLobstr, signLobstrTransaction } from "@/lib/wallet/lobstr";
 import { AssistantThread } from "./assistant-thread";
+import { EnvironmentSelector } from "./environment-selector";
 
 type Phase = "idle" | "authenticating" | "registering" | "approving" | "active" | "revoking";
 
@@ -112,7 +114,7 @@ export function WalletChatApp() {
 
   useEffect(() => {
     if (!config || !session.authenticated || !session.address) return;
-    const key = `ackrate:mandate:${config.network}:${session.address}`;
+    const key = mandateStorageKey(config.profile.fingerprint, session.address);
     const raw = localStorage.getItem(key);
     if (!raw) return;
     try {
@@ -127,7 +129,7 @@ export function WalletChatApp() {
 
   const saveStored = useCallback((value: StoredMandate) => {
     if (!config) return;
-    localStorage.setItem(`ackrate:mandate:${config.network}:${value.user}`, JSON.stringify(value));
+    localStorage.setItem(mandateStorageKey(config.profile.fingerprint, value.user), JSON.stringify(value));
     setStored(value);
   }, [config]);
 
@@ -290,6 +292,7 @@ export function WalletChatApp() {
           <strong>{config?.networkLabel ?? "Loading network…"}</strong>
           <code>{short(config?.mandateRegistryId, 9)}</code>
           <div className="network-meta"><ShieldCheck size={14} /> Manifest-bound configuration</div>
+          {config && <EnvironmentSelector current={config.profile.id} destinations={config.environments} pending={phase === "authenticating" || phase === "registering" || phase === "approving" || phase === "revoking"} />}
         </div>
       </section>
 

@@ -1,3 +1,5 @@
+import type { EnvironmentDestination, EnvironmentProfileId } from "./environment-profiles";
+
 export type NetworkName = "testnet" | "mainnet";
 
 export interface CatalogItem {
@@ -9,6 +11,9 @@ export interface CatalogItem {
 }
 
 export interface SafeAppConfig {
+  profile: { id: EnvironmentProfileId; deployment: "staging" | "production"; fingerprint: string };
+  environments: EnvironmentDestination[];
+  environmentWarnings: string[];
   network: NetworkName;
   networkLabel: "Stellar Testnet" | "Stellar Mainnet";
   releaseState: "configuration-required" | "testnet-ready" | "mainnet-ready";

@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const config = loadAppConfig();
     const session = config.sessionSecret
-      ? await readSession(config.sessionSecret, config.public.network)
+      ? await readSession(config.sessionSecret, { network: config.public.network, profileFingerprint: config.public.profile.fingerprint })
       : { authenticated: false, address: null, network: null, expiresAt: null };
     return NextResponse.json({ ok: true, session }, { headers: NO_STORE_HEADERS });
   } catch (error) {

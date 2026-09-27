@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
-import { Asset, Keypair, Networks, StrKey } from "@stellar/stellar-sdk";
-import { TESTNET, mainnetNetworkFromDeploymentManifest, type NetworkConfig } from "@ackrate/stellar";
+import { Keypair, StrKey } from "@stellar/stellar-sdk";
+import { MAINNET, TESTNET, publishedMainnetNetworkFromDeploymentManifest, type NetworkConfig } from "@ackrate/stellar";
 import type { CatalogItem, NetworkName, SafeAppConfig } from "./types";
+import { environmentDestinations, environmentProfile } from "./environment-profiles";
 
 export const MAINNET_CONFIRMATION = "ACTIVATE_VERIFIED_ACKRATE_MAINNET";
 
@@ -79,47 +80,36 @@ function safeMerchantUrl(raw: string | null): string | null {
 }
 
 export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const requested = present(env.ACKRATE_WALLET_NETWORK) ?? "testnet";
-  if (requested !== "testnet" && requested !== "mainnet") {
-    throw new Error("ACKRATE_WALLET_NETWORK must be testnet or mainnet");
-  }
-  const networkName = requested as NetworkName;
+  const profileId = environmentProfile(env);
+  const networkName: NetworkName = profileId === "staging" ? "testnet" : "mainnet";
+  const { destinations: environments, warnings: environmentWarnings } = environmentDestinations(env);
   let network: NetworkConfig = TESTNET;
   let asset = { code: "XLM", contractId: TESTNET.nativeSac, decimals: 7 };
   let releaseFingerprint: string | null = null;
   const blockers: string[] = [];
 
   if (networkName === "mainnet") {
-    network = {
-      rpcUrl: "",
-      networkPassphrase: Networks.PUBLIC,
-      mandateRegistryId: "",
-      nativeSac: Asset.native().contractId(Networks.PUBLIC),
-    };
-    asset = { code: "USDC", contractId: "", decimals: 7 };
+    network = MAINNET;
+    asset = MAINNET.settlementAsset;
     if (env.ACKRATE_ENABLE_MAINNET !== MAINNET_CONFIRMATION) {
       blockers.push(`ACKRATE_ENABLE_MAINNET must equal ${MAINNET_CONFIRMATION}`);
     }
     const manifestJson = present(env.ACKRATE_MAINNET_DEPLOYMENT_MANIFEST_JSON);
-    if (!manifestJson) {
-      blockers.push("completed mainnet deployment manifest is missing");
-    } else {
-      try {
-        const release = mainnetNetworkFromDeploymentManifest(JSON.parse(manifestJson));
-        network = release;
-        asset = release.settlementAsset;
-        releaseFingerprint = createHash("sha256")
-          .update(JSON.stringify({
-            registry: release.mandateRegistryId,
-            asset: release.settlementAsset.contractId,
-            commit: release.release.sourceCommit,
-            registryWasm: release.release.registryWasmSha256,
-            deploymentLedger: release.release.deploymentLedger,
-          }))
-          .digest("hex");
-      } catch (error) {
-        blockers.push(`mainnet deployment manifest rejected: ${error instanceof Error ? error.message : String(error)}`);
-      }
+    try {
+      const release = manifestJson ? publishedMainnetNetworkFromDeploymentManifest(JSON.parse(manifestJson)) : MAINNET;
+      network = release;
+      asset = release.settlementAsset;
+      releaseFingerprint = createHash("sha256")
+        .update(JSON.stringify({
+          registry: release.mandateRegistryId,
+          asset: release.settlementAsset.contractId,
+          commit: release.release.sourceCommit,
+          registryWasm: release.release.registryWasmSha256,
+          deploymentLedger: release.release.deploymentLedger,
+        }))
+        .digest("hex");
+    } catch {
+      blockers.push("mainnet deployment manifest does not match the published release");
     }
   }
 
@@ -183,7 +173,21 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
 
   const ready = blockers.length === 0;
+  for (const destination of environments) {
+    if (destination.id !== profileId && destination.origin && destination.origin === appOrigin) {
+      destination.origin = null;
+      environmentWarnings.push("another profile cannot point to this deployment origin");
+    }
+  }
+  const profileFingerprint = createHash("sha256").update(JSON.stringify({
+    profileId, origin: appOrigin, networkPassphrase: network.networkPassphrase,
+    registry: network.mandateRegistryId, asset: asset.contractId, releaseFingerprint,
+    agentAddress, merchantAddress, merchantUrl, catalog,
+  })).digest("hex");
   const publicConfig: SafeAppConfig = {
+    profile: { id: profileId, deployment: profileId === "staging" ? "staging" : "production", fingerprint: profileFingerprint },
+    environments,
+    environmentWarnings,
     network: networkName,
     networkLabel: networkName === "mainnet" ? "Stellar Mainnet" : "Stellar Testnet",
     releaseState: ready ? (networkName === "mainnet" ? "mainnet-ready" : "testnet-ready") : "configuration-required",

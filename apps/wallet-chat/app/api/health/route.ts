@@ -11,6 +11,7 @@ export async function GET() {
       ok: config.ready,
       releaseState: config.releaseState,
       network: config.network,
+      profile: config.profile,
       sourceCommit: config.sourceCommit,
       releaseFingerprint: config.releaseFingerprint,
       durableState: config.durableState,

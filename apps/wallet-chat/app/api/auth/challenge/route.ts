@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       .build();
     const challenge = createChallengeToken(
       address,
-      config.public.network,
+      { network: config.public.network, profileFingerprint: config.public.profile.fingerprint },
       transaction.hash().toString("hex"),
       config.sessionSecret,
       now,

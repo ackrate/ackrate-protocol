@@ -1,5 +1,10 @@
 # Ackrate wallet and consumer chat
 
+The SDK app has separate **Staging · Testnet · test XLM** and
+**Mainnet · real USDC** deployment profiles. The environment links navigate to
+independently configured origins; they never change this server's network.
+See [profile configuration and isolation](../../docs/sdk-environment-profiles.md).
+
 Next.js application for the complete user-facing Ackrate flow:
 
 1. connect a Stellar G-account without creating, signing, or broadcasting a
@@ -66,14 +71,15 @@ application refuses to issue a second payment.
 
 ## Mainnet activation
 
-There is no built-in mainnet contract ID. Mainnet configuration is constructed
-only from the completed deployment manifest and fails closed unless all of the
-following are present:
+The SDK bundles the verified official Mainnet deployment identity. An optional
+manifest override must match that published identity; it cannot select another
+registry. Mainnet activation still fails closed unless all of the following are
+present:
 
 - exact activation confirmation;
 - canonical clean contracts source commit;
 - matching local and observed WASM hashes;
-- verified governance and timelock roles;
+- verified native 2-of-3 governance for the current V2 deployment;
 - independently verified official Circle Stellar USDC issuer and SAC;
 - deployment transaction evidence and independent verification timestamps;
 - matching agent signer and public identity;

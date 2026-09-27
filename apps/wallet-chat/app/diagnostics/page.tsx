@@ -20,6 +20,8 @@ export default function DiagnosticsPage() {
     );
   }
   const fields = [
+    ["SDK profile", `${config.profile.id} · ${config.profile.deployment}`],
+    ["Profile fingerprint", config.profile.fingerprint],
     ["Release state", config.releaseState],
     ["Network", config.networkLabel],
     ["Registry", config.mandateRegistryId],
@@ -50,6 +52,12 @@ export default function DiagnosticsPage() {
             <strong>Activation blockers</strong>
             <ul>{config.blockers.map((blocker) => <li key={blocker}>{blocker}</li>)}</ul>
           </div>
+        )}
+        {config.environmentWarnings.length > 0 && (
+          <section aria-label="Environment navigation configuration">
+            <h2>Environment links</h2>
+            <ul>{config.environmentWarnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
+          </section>
         )}
       </section>
     </main>

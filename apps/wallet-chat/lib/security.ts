@@ -3,15 +3,19 @@ import { Keypair, Transaction, TransactionBuilder } from "@stellar/stellar-sdk";
 import { cookies, headers } from "next/headers";
 import type { NetworkName, SessionView } from "./types";
 
-const TOKEN_VERSION = 1;
+const TOKEN_VERSION = 2;
 export const CHALLENGE_TTL_SECONDS = 5 * 60;
 export const SESSION_TTL_SECONDS = 60 * 60;
 
-interface TokenEnvelope {
-  v: 1;
+export interface SessionBinding {
+  network: NetworkName;
+  profileFingerprint: string;
+}
+
+interface TokenEnvelope extends SessionBinding {
+  v: 2;
   kind: "challenge" | "session";
   address: string;
-  network: NetworkName;
   iat: number;
   exp: number;
   jti: string;
@@ -30,6 +34,7 @@ export function openToken(
   token: string | undefined,
   secret: string,
   expectedKind: TokenEnvelope["kind"],
+  binding: SessionBinding,
   now = Math.floor(Date.now() / 1_000),
 ): TokenEnvelope | null {
   if (!token) return null;
@@ -50,6 +55,9 @@ export function openToken(
       || payload.kind !== expectedKind
       || typeof payload.address !== "string"
       || (payload.network !== "testnet" && payload.network !== "mainnet")
+      || payload.network !== binding.network
+      || !/^[0-9a-f]{64}$/.test(payload.profileFingerprint)
+      || payload.profileFingerprint !== binding.profileFingerprint
       || !Number.isSafeInteger(payload.iat)
       || !Number.isSafeInteger(payload.exp)
       || payload.iat > now + 30
@@ -65,7 +73,7 @@ export function openToken(
 
 export function createChallengeToken(
   address: string,
-  network: NetworkName,
+  binding: SessionBinding,
   txHash: string,
   secret: string,
   now = Math.floor(Date.now() / 1_000),
@@ -74,7 +82,7 @@ export function createChallengeToken(
     v: TOKEN_VERSION,
     kind: "challenge",
     address,
-    network,
+    ...binding,
     iat: now,
     exp: now + CHALLENGE_TTL_SECONDS,
     jti: randomBytes(16).toString("hex"),
@@ -85,7 +93,7 @@ export function createChallengeToken(
 
 export function createSessionToken(
   address: string,
-  network: NetworkName,
+  binding: SessionBinding,
   secret: string,
   now = Math.floor(Date.now() / 1_000),
 ): { token: string; payload: TokenEnvelope } {
@@ -93,7 +101,7 @@ export function createSessionToken(
     v: TOKEN_VERSION,
     kind: "session",
     address,
-    network,
+    ...binding,
     iat: now,
     exp: now + SESSION_TTL_SECONDS,
     jti: randomBytes(16).toString("hex"),
@@ -148,17 +156,17 @@ export async function requireSameOrigin(): Promise<void> {
   }
 }
 
-export async function readSession(secret: string, network?: NetworkName): Promise<SessionView> {
+export async function readSession(secret: string, binding: SessionBinding): Promise<SessionView> {
   const jar = await cookies();
-  const payload = openToken(jar.get(sessionCookieName())?.value, secret, "session");
-  if (!payload || (network && payload.network !== network)) {
+  const payload = openToken(jar.get(sessionCookieName())?.value, secret, "session", binding);
+  if (!payload) {
     return { authenticated: false, address: null, network: null, expiresAt: null };
   }
   return { authenticated: true, address: payload.address, network: payload.network, expiresAt: payload.exp };
 }
 
-export async function requireSession(secret: string, network: NetworkName): Promise<Required<SessionView>> {
-  const session = await readSession(secret, network);
+export async function requireSession(secret: string, binding: SessionBinding): Promise<Required<SessionView>> {
+  const session = await readSession(secret, binding);
   if (!session.authenticated || !session.address || !session.network || !session.expiresAt) {
     throw new Error("wallet-authenticated session required");
   }

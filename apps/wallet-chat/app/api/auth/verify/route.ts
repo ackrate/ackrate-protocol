@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       jar.get(challengeCookieName())?.value,
       config.sessionSecret,
       "challenge",
+      { network: config.public.network, profileFingerprint: config.public.profile.fingerprint },
     );
     if (!challenge || !challenge.txHash || challenge.network !== config.public.network) {
       throw new Error("authentication challenge is missing, invalid, or expired");
@@ -41,7 +42,7 @@ export async function POST(request: Request) {
     if (!(await consumeChallenge(challenge.jti, challenge.exp))) {
       throw new Error("authentication challenge was already consumed");
     }
-    const session = createSessionToken(challenge.address, challenge.network, config.sessionSecret);
+    const session = createSessionToken(challenge.address, { network: config.public.network, profileFingerprint: config.public.profile.fingerprint }, config.sessionSecret);
     const response = NextResponse.json({
       ok: true,
       session: {

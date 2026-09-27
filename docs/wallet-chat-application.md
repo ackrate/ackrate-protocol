@@ -65,3 +65,8 @@ Mainnet hosting is blocked until the deployment manifest passes the SDK parser,
 the exact application source commit is pinned, durable state is configured,
 and the full contract, package, reference-agent, failure-drill, dependency, and
 hosted-flow evidence passes from a clean checkout.
+
+The [SDK environment profiles](sdk-environment-profiles.md) use separate origins,
+services and profile-bound sessions. Mainnet uses the bundled official manifest;
+optional overrides must match its published identity. Profile navigation does
+not activate services, change this server's network, or revoke an existing mandate.

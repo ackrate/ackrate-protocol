@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     await requireSameOrigin();
     const config = requireReadyConfig();
     if (!config.sessionSecret || !config.openAiKey) throw new Error("chat execution is not configured");
-    const session = await requireSession(config.sessionSecret, config.public.network);
+    const session = await requireSession(config.sessionSecret, { network: config.public.network, profileFingerprint: config.public.profile.fingerprint });
     if (!session.address) throw new Error("wallet-authenticated session required");
     const sessionAddress = session.address;
     const { messages, mandateId } = Body.parse(await boundedJson(request));

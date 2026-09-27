@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     await requireSameOrigin();
     const config = loadAppConfig();
     if (!config.sessionSecret) throw new Error("wallet authentication is not configured");
-    const session = await requireSession(config.sessionSecret, config.public.network);
+    const session = await requireSession(config.sessionSecret, { network: config.public.network, profileFingerprint: config.public.profile.fingerprint });
     if (!session.address) throw new Error("wallet-authenticated session required");
     const { mandateId } = Body.parse(await boundedJson(request, 4_096));
     const mandate = await readMandate(config.network, session.address, mandateId);

@@ -1,29 +1,42 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Account, Keypair, Networks, Operation, TransactionBuilder } from "@stellar/stellar-sdk";
-import { createChallengeToken, createSessionToken, openToken, verifySignedChallengeTransaction } from "../lib/security";
+import { createChallengeToken, createSessionToken, openToken, sealToken, verifySignedChallengeTransaction } from "../lib/security";
 
+const binding = { network: "testnet" as const, profileFingerprint: "a".repeat(64) };
 const secret = "test-session-secret-with-at-least-32-bytes";
 
 test("signed session tokens verify only for the requested kind", () => {
-  const { token, payload } = createSessionToken("GTEST", "testnet", secret, 1_000);
-  assert.equal(openToken(token, secret, "session", 1_001)?.jti, payload.jti);
-  assert.equal(openToken(token, secret, "challenge", 1_001), null);
+  const { token, payload } = createSessionToken("GTEST", binding, secret, 1_000);
+  assert.equal(openToken(token, secret, "session", binding, 1_001)?.jti, payload.jti);
+  assert.equal(openToken(token, secret, "challenge", binding, 1_001), null);
 });
 
 test("token tampering and expiry fail closed", () => {
-  const { token } = createSessionToken("GTEST", "testnet", secret, 1_000);
+  const { token } = createSessionToken("GTEST", binding, secret, 1_000);
   const [body, signature] = token.split(".");
   const replacement = body[0] === "A" ? "B" : "A";
-  assert.equal(openToken(`${replacement}${body.slice(1)}.${signature}`, secret, "session", 1_001), null);
-  assert.equal(openToken(token, `${secret}!`, "session", 1_001), null);
-  assert.equal(openToken(token, secret, "session", 4_601), null);
+  assert.equal(openToken(`${replacement}${body.slice(1)}.${signature}`, secret, "session", binding, 1_001), null);
+  assert.equal(openToken(token, `${secret}!`, "session", binding, 1_001), null);
+  assert.equal(openToken(token, secret, "session", binding, 4_601), null);
+});
+
+test("sessions and challenges cannot cross profile fingerprints or networks, even with a shared test secret", () => {
+  for (const kind of ["session", "challenge"] as const) {
+    const issued = kind === "session" ? createSessionToken("GTEST", binding, secret, 1_000)
+      : createChallengeToken("GTEST", binding, "b".repeat(64), secret, 1_000);
+    assert.ok(openToken(issued.token, secret, kind, binding, 1_001));
+    assert.equal(openToken(issued.token, secret, kind, { ...binding, network: "mainnet" }, 1_001), null);
+    assert.equal(openToken(issued.token, secret, kind, { ...binding, profileFingerprint: "c".repeat(64) }, 1_001), null);
+    const legacy = { ...issued.payload, v: 1 } as unknown as Parameters<typeof sealToken>[0];
+    assert.equal(openToken(sealToken(legacy, secret), secret, kind, binding, 1_001), null);
+  }
 });
 
 test("challenge binds the account, network, and exact transaction hash", () => {
   const txHash = "a".repeat(64);
-  const { token } = createChallengeToken("GTEST", "mainnet", txHash, secret, 2_000);
-  const opened = openToken(token, secret, "challenge", 2_001);
+  const { token } = createChallengeToken("GTEST", { ...binding, network: "mainnet" }, txHash, secret, 2_000);
+  const opened = openToken(token, secret, "challenge", { ...binding, network: "mainnet" }, 2_001);
   assert.equal(opened?.address, "GTEST");
   assert.equal(opened?.network, "mainnet");
   assert.equal(opened?.txHash, txHash);
