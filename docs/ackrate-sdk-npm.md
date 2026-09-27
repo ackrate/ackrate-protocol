@@ -8,6 +8,33 @@ cannot replace the contract's `execute_payment` checks.
 
 ## Release matrix
 
+### September 27 candidate — not yet published
+
+| Package | Published latest checked September 27 | Candidate |
+|---|---:|---:|
+| `@ackrate/core` | 0.4.1 | 0.4.2 |
+| `@ackrate/ap2` | 0.4.0 | 0.4.1 |
+| `@ackrate/express-middleware` | 0.3.0 | 0.3.1 |
+| `@ackrate/cli` | 0.2.1 | 0.2.2 |
+| `@ackrate/stellar` | 0.3.0 | Unchanged; do not republish |
+
+The candidate requires Node.js 22+ and Stellar SDK 16.3.0. Core requires
+Stellar `^0.3.0`, AP2 accepts core `^0.4.0`, and middleware requires core
+`^0.4.2` plus Stellar `^0.3.0`. The CLI bundles the candidate core implementation.
+The [compatibility notes](x402-sdk-compatibility-2026-09-27.md) describe the
+stricter legacy challenge selection and the separate canonical adapters.
+Local verification does not establish npm availability or live settlement.
+
+After publication and registry integrity verification, install the candidate set:
+
+```bash
+npm install --save-exact @ackrate/core@0.4.2 @ackrate/stellar@0.3.0 @ackrate/ap2@0.4.1 @ackrate/express-middleware@0.3.1 @stellar/stellar-sdk@16.3.0
+npm install -g @ackrate/cli@0.2.2
+```
+
+Until those versions are published, the published installation commands below
+continue to refer to the September 7 release. Historical evidence is retained.
+
 ### September 7 setup-recovery release
 
 **Core 0.4.1 and CLI 0.2.1 are published and verified.** A fresh public-registry
@@ -78,9 +105,10 @@ Release source is [`d0aee2127cc08e43f0c70868de46db75bda71ed7`](https://github.co
 was confirmed successful at **04:27 Bangkok**. This records the earlier coordinated
 release; the later Core and CLI patch verification is documented above.
 
-The coordinated set requires **Node.js 22+** and pins **`@stellar/stellar-sdk@16.3.0`**.
+The September 7 coordinated set requires **Node.js 22+** and pins **`@stellar/stellar-sdk@16.3.0`**.
 Core requires Stellar binding `^0.3.0`; AP2 requires core `^0.4.0`; middleware
-requires core `^0.4.0` and Stellar binding `^0.3.0`. These dependency floors
+0.3.0 requires core `^0.4.0` and Stellar binding `^0.3.0`. Candidate middleware
+0.3.1 raises its core floor to `^0.4.2`. These dependency floors
 prevent a new install from silently retaining older Mainnet-default-incompatible
 packages. Historical package versions and receipts are unchanged.
 
@@ -217,7 +245,7 @@ The gate check:
 - checks public terminology.
 
 Registry proof is a separate external check. Reproduce the version and integrity
-checks for the published release with:
+checks for the September 7 published release with:
 
 ```bash
 npm view @ackrate/core@0.4.1 version dist.integrity
@@ -225,6 +253,16 @@ npm view @ackrate/stellar@0.3.0 version dist.integrity
 npm view @ackrate/ap2@0.4.0 version dist.integrity
 npm view @ackrate/express-middleware@0.3.0 version dist.integrity
 npm view @ackrate/cli@0.2.1 version dist.integrity
+```
+
+After candidate publication, verify each new version separately before changing
+its status to published:
+
+```bash
+npm view @ackrate/core@0.4.2 version dist.integrity
+npm view @ackrate/ap2@0.4.1 version dist.integrity
+npm view @ackrate/express-middleware@0.3.1 version dist.integrity
+npm view @ackrate/cli@0.2.2 version dist.integrity
 ```
 
 Then install into an empty temporary project, compile strict TypeScript imports,

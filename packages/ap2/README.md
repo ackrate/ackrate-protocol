@@ -9,9 +9,9 @@ checks the signature, trusted user, merchant scope, amount, expiry, binding
 hash, and one-time admission replay state.
 
 This is deliberately a narrow **Ackrate profile for AP2 v0.1**, not a universal
-verifier for every upstream AP2 VC or JWS format. It has no HTTP or x402
-dependency, so later AP2 or x402 wire changes can be handled by adapters without
-redesigning `MandateRegistry`.
+verifier for every upstream AP2 VC or JWS format. Its admission API is independent of the HTTP payment wire format, so later AP2
+or x402 wire changes can be handled by adapters without redesigning
+`MandateRegistry`. The core dependency also installs canonical x402 helpers.
 
 ## Mainnet contract
 
@@ -26,13 +26,14 @@ evidence must still be checked when the implementation changes.
 ## Installation
 
 Version **0.4.1** requires
-**Node.js 22+**, core **0.4.1**, and exact `@stellar/stellar-sdk@16.3.0`.
-The AP2 protocol profile remains v0.1; this package update does not change it.
+**Node.js 22+** and exact `@stellar/stellar-sdk@16.3.0`.
+The dependency range accepts core `^0.4.0`; this coordinated release uses core
+**0.4.2**. The AP2 protocol profile remains v0.1; this package update does not change it.
 
 Install the pinned set with:
 
 ```bash
-npm install --save-exact @ackrate/ap2@0.4.1 @ackrate/core@0.4.1 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/ap2@0.4.1 @ackrate/core@0.4.2 @stellar/stellar-sdk@16.3.0
 ```
 
 See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)

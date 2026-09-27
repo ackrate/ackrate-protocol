@@ -27,6 +27,15 @@ wallet/device workflow changes. Implementation lives on `v2-dev`.
 
 ## Compatibility and limits
 
+Core 0.4.2 deliberately tightens challenge acceptance in a patch release.
+Custom scheme/network labels, non-public/non-testnet network passphrases,
+missing version-1 identity fields, and dual-stack responses carrying a canonical
+`payment-required` header alongside a legacy body are refused before spending.
+Merchants using middleware custom scheme/network options must switch to the
+supported Ackrate labels. Standard Ackrate middleware already emits the complete
+version-1 envelope. Existing integrations relying on implicit defaults must be
+updated before adopting this candidate.
+
 The legacy Ackrate proof and canonical exact scheme remain distinct. The existing
 registry spends through `execute_payment` and SEP-41 `transfer_from`; the
 [canonical Stellar spec](https://github.com/x402-foundation/x402/blob/main/specs/schemes/exact/scheme_exact_stellar.md)
