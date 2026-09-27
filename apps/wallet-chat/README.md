@@ -71,21 +71,17 @@ application refuses to issue a second payment.
 
 ## Mainnet activation
 
-The SDK bundles the verified official Mainnet deployment identity. An optional
-manifest override must match that published identity; it cannot select another
-registry. Mainnet activation still fails closed unless all of the following are
-present:
+The SDK validates its bundled official Mainnet manifest at import. This public
+release evidence records source/artifact identity, native 2-of-3 governance,
+canonical Circle USDC and deployment verification. An optional manifest override
+must match that published identity; it cannot select another registry.
 
-- exact activation confirmation;
-- canonical clean contracts source commit;
-- matching local and observed WASM hashes;
-- verified native 2-of-3 governance for the current V2 deployment;
-- independently verified official Circle Stellar USDC issuer and SAC;
-- deployment transaction evidence and independent verification timestamps;
-- matching agent signer and public identity;
-- fixed HTTPS fulfillment origin and server allowlist;
-- strong session secret, OpenAI key, and durable database; and
-- exact application source commit.
+Application activation additionally requires explicit Mainnet confirmation, a
+matching agent signer and public identity, fixed HTTPS fulfillment origin and
+catalog, strong session secret, model access, durable database, exact application
+source commit and hosted origin. The app does not reverify live WASM, governance,
+balances or database connectivity merely by loading configuration. Complete those
+independent checks before funded acceptance.
 
 `/diagnostics` exposes only safe public fingerprints and blockers. It never
 returns signer material, provider keys, database credentials, or session

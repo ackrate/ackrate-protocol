@@ -159,7 +159,7 @@ export function WalletChatApp() {
         method: "POST",
         body: JSON.stringify({ address: walletAddress }),
       });
-      setNotice("Verify this wallet with a non-broadcast challenge. Nothing will be sent to Mainnet.");
+      setNotice("Verify this wallet with a non-broadcast sign-in request.");
       const signedTransactionXdr = await signLobstrTransaction(challenge.transactionXdr);
       const verified = await api<{ session: SessionView }>("/api/auth/verify", {
         method: "POST",
@@ -322,7 +322,7 @@ export function WalletChatApp() {
             ) : walletAddress ? (
               <div className="connected-state">
                 <div className="identity-line"><span className="wallet-led" /><div><small>Connected account</small><code>{short(walletAddress, 9)}</code></div><WalletCards size={18} /></div>
-                <p><ShieldCheck size={13} /> Connection is read-only. No Mainnet transaction was signed or broadcast.</p>
+                <p><ShieldCheck size={13} /> Connection is read-only. No transaction is signed or broadcast.</p>
                 <button className="primary-button" onClick={authenticate} disabled={phase === "authenticating"}><LockKeyhole size={16} /> {phase === "authenticating" ? "Waiting for LOBSTR…" : "Verify wallet—no broadcast"}</button>
               </div>
             ) : (

@@ -88,6 +88,12 @@ test("destination links are opt-in and restricted to the approved HTTPS origins"
   }
   const self = loadAppConfig({ ...env, ACKRATE_APP_ORIGIN: ENVIRONMENT_ORIGINS.mainnet, ACKRATE_MAINNET_APP_ORIGIN: ENVIRONMENT_ORIGINS.mainnet });
   assert.equal(self.public.environments[1].origin, null);
+  assert.equal(self.public.ready, false);
+  assert(self.public.blockers.includes("hosted application origin belongs to a different SDK profile"));
+  const misplacedMainnet = loadAppConfig({ ...env, ACKRATE_WALLET_NETWORK: "mainnet", ACKRATE_ENABLE_MAINNET: MAINNET_CONFIRMATION,
+    ACKRATE_APP_SOURCE_COMMIT: "a".repeat(40), ACKRATE_APP_ORIGIN: ENVIRONMENT_ORIGINS.staging, DATABASE_URL: "postgres://fixture.invalid/sdk" });
+  assert.equal(misplacedMainnet.public.ready, false);
+  assert(misplacedMainnet.public.blockers.includes("hosted application origin belongs to a different SDK profile"));
 });
 
 test("profile fingerprints isolate sessions and caches across authority and origin changes", () => {

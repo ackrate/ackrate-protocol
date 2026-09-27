@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Keypair, StrKey } from "@stellar/stellar-sdk";
 import { MAINNET, TESTNET, publishedMainnetNetworkFromDeploymentManifest, type NetworkConfig } from "@ackrate/stellar";
 import type { CatalogItem, NetworkName, SafeAppConfig } from "./types";
-import { environmentDestinations, environmentProfile } from "./environment-profiles";
+import { ENVIRONMENT_ORIGINS, environmentDestinations, environmentProfile } from "./environment-profiles";
 
 export const MAINNET_CONFIRMATION = "ACTIVATE_VERIFIED_ACKRATE_MAINNET";
 
@@ -170,6 +170,9 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
   } else if (networkName === "mainnet") {
     blockers.push("exact hosted application origin is required on mainnet");
+  }
+  if (appOrigin === ENVIRONMENT_ORIGINS[profileId === "staging" ? "mainnet" : "staging"]) {
+    blockers.push("hosted application origin belongs to a different SDK profile");
   }
 
   const ready = blockers.length === 0;

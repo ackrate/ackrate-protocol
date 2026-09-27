@@ -17,7 +17,8 @@ use Mainnet in its staging deployment; a staging hostname never proves Testnet.
 Set `ACKRATE_APP_PROFILE` to `staging` or `mainnet`. The default is staging.
 For compatibility, `ACKRATE_WALLET_NETWORK=mainnet` selects the mainnet profile
 when no profile is given. If both values are present they must agree; invalid or
-conflicting values fail closed. Configuration is deployment-owned, never a
+conflicting values fail closed. A deployment configured at the other SDK
+profile's approved origin is also blocked. Configuration is deployment-owned, never a
 query parameter, request body field, or browser preference.
 
 Mainnet uses the SDK's bundled official `MAINNET` configuration. An optional
@@ -49,6 +50,10 @@ its own sign-in and action approvals. A configured link is not a readiness claim
 Keep database, agent signer, merchant service and session credentials separate
 for each deployment. Do not copy production services to staging. This change
 does not activate deployment routing or satisfy isolated-service release gates.
+Draft pull requests skip Vercel deployment. Non-production deployment attempts
+also require `STAGING_SERVICES_READY=true` before any Vercel command. Keep that
+variable unset until the separate-project routing change and isolated runtime
+checks are accepted; this guard does not replace deployment routing.
 
 Version 2 authentication tokens bind the wallet and Stellar network to a profile
 fingerprint covering deployment identity, origin, registry, asset, release,
