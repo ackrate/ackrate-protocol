@@ -233,6 +233,3 @@ Operational evidence and boundaries are in the [live drill record](docs/live-fai
 *The SDK is untrusted. The contract enforces the limit.*
 
 The former wallet-chat frontend is retired. The maintained consumer app lives in [ackrate-protocol-demo](https://github.com/ackrate/ackrate-protocol-demo). This repository contains protocol packages and reference agents; it has no Vercel frontend.
-
-Contract ownership and verified Mainnet provenance are documented in
-[Contract source of truth](docs/contract-source-of-truth.md).

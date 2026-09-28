@@ -180,7 +180,7 @@ async function main() {
   log(RULE(c.magenta));
 
   if (!MANIFEST || !existsSync(MANIFEST)) {
-    die("Set ACKRATE_CONTRACTS_ROOT to an ackrate-protocol-contracts checkout containing contracts/legacy-protocol/mandate-registry (see docs/contract-source-of-truth.md)");
+    die("Set ACKRATE_CONTRACTS_ROOT to an ackrate-protocol-contracts checkout containing contracts/legacy-protocol/mandate-registry");
   }
   step("Environment");
   debug("repo root", c.dim(ROOT));

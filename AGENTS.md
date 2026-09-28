@@ -31,7 +31,7 @@ contract tests, builds, and releases belong to `ackrate-protocol-contracts`.
 - `npm test` — runs every workspace's tests.
 - `npm run typecheck` — root `tsc` (project references).
 
-Contract source and commands: see [source of truth](docs/contract-source-of-truth.md).
+Contract source and commands: see [contracts repository](https://github.com/ackrate/ackrate-protocol-contracts).
 The contract repository owns Rust formatting, linting, tests and release gates.
 
 SDK / app tests use the Node test runner via tsx, e.g.
@@ -60,7 +60,7 @@ validates+consumes, then does the SEP-41 `transfer_from(user → merchant)`.
 Mainnet V2 source is `ackrate-protocol-contracts/contracts/mainnet-v2/mandate-registry`.
 The former local development contract is preserved in that repository under
 `contracts/legacy-protocol/mandate-registry`; it is not the Mainnet source.
-See [deployment provenance and migration](docs/contract-source-of-truth.md).
+See [Mainnet V2 deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md).
 
 ### `packages/stellar/` — `@ackrate/stellar` (typed Soroban layer)
 Network config (`TESTNET`), the generated/typed `registryClient` contract bindings,

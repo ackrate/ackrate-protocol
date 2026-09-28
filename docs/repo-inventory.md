@@ -26,7 +26,7 @@ All Rust contract source, tests, builds, and releases live in
 [`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts).
 The Mainnet V2 source is `contracts/mainnet-v2/mandate-registry`. The former local
 contract is preserved there as `contracts/legacy-protocol/mandate-registry` for
-historical Testnet reproduction. See [source of truth](contract-source-of-truth.md)
+historical Testnet reproduction. See [Mainnet V2 deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
 for exact deployment and artifact evidence.
 
 ## Release and evidence scripts

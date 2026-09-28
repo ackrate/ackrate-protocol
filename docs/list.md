@@ -56,5 +56,3 @@ versions. They are retained for traceability and are not current release proof.
 Internal work logs and superseded review records are archived outside this
 public product repository. Current package manifests, contract release READMEs,
 and the pinned release map are authoritative.
-
-- [Contract source of truth](contract-source-of-truth.md): repository ownership, exact Mainnet provenance, and historical Testnet migration.
