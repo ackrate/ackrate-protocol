@@ -104,7 +104,7 @@ and [signature-coordination commands](packages/cli/README.md#two-signature-coord
 |---|---|
 | Mainnet V2 MandateRegistry | [`CCLZEBJX…4HWR`](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR) — the official default registry, native 2-of-3 administration, and same-address upgrades |
 | Hosted wallet workflow | [Wallet demo project](https://github.com/ackrate/ackrate-protocol-demo) — user-signed setup, mandate-validated payments, and service results |
-| Contract releases and hashes | [`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts) |
+| Contract source, tests, releases and hashes | [`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts) |
 | High-level SDK | [`@ackrate/core`](https://www.npmjs.com/package/@ackrate/core) — mandates, payments, and `agent.fetch()` |
 | Stellar binding | [`@ackrate/stellar`](https://www.npmjs.com/package/@ackrate/stellar) — typed contract client, network config, signers, and SEP-41 helpers |
 | AP2 profile | [`@ackrate/ap2`](https://www.npmjs.com/package/@ackrate/ap2) — signed, version-pinned AP2 v0.1 validation plus fail-closed binding into the contract mandate |
@@ -156,7 +156,7 @@ The contract is authoritative. SDK-side checks only fail fast; they never replac
 | [`apps/consumer-agent`](apps/consumer-agent) | Reference ResearchAgent that buys data through `agent.fetch()` |
 | [`apps/fulfillment-agent`](apps/fulfillment-agent) | Reference 402-gated API that verifies settlement before serving |
 | [`scripts`](scripts) | Testnet demos, live flows, deployment, and gate check tooling |
-| [`security`](security) | Threat model, data flows, upgrade custody, and contract/SDK/x402 gate check records |
+| [`docs/security`](docs/security) | Threat model, data flows, upgrade custody, and contract/SDK/x402 gate check records |
 
 ---
 
@@ -227,9 +227,12 @@ npm run drills:testnet
 Use the public browser companion at [ackrate.live/express](https://ackrate.live/express),
 or follow the verified [clean VS Code project guide](docs/express-vscode-quickstart.md).
 Operational evidence and boundaries are in the [live drill record](docs/live-failure-drills.md),
-[threat model](security/threat-model.md), [data flow](security/data-flow.md), and
-[upgrade authority runbook](security/upgrade-authority.md).
+[threat model](docs/security/threat-model.md), [data flow](docs/security/data-flow.md), and
+[upgrade authority runbook](docs/security/upgrade-authority.md).
 
 *The SDK is untrusted. The contract enforces the limit.*
 
-The former wallet-chat frontend is retired. The maintained consumer app lives in [ackrate-protocol-demo](https://github.com/ackrate/ackrate-protocol-demo). This repository contains protocol packages, contracts and reference agents; it has no Vercel frontend.
+The former wallet-chat frontend is retired. The maintained consumer app lives in [ackrate-protocol-demo](https://github.com/ackrate/ackrate-protocol-demo). This repository contains protocol packages and reference agents; it has no Vercel frontend.
+
+Contract ownership and verified Mainnet provenance are documented in
+[Contract source of truth](docs/contract-source-of-truth.md).

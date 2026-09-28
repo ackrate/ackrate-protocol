@@ -11,34 +11,28 @@ agent pays for a 402-gated resource via **x402**; the Soroban **MandateRegistry*
 contract enforces scope, budget, expiry, and replay at consume time. A compromised
 agent or SDK cannot exceed the mandate.
 
-**The core invariant:** money moves only through `MandateRegistry.execute_payment`
-(solo payments) and `clear_pool` (composite capture of a pooled schedule each member
-pre-authorized at registration), each of which validates-and-consumes the mandate
-atomically *before* it transfers. The user approves the SEP-41 allowance for the
-**contract**, never for the agent or SDK. The SDK is untrusted; the contract is the
-source of truth. When changing anything, preserve this: never let a spend path bypass
-the two validated capture points, and never move the allowance or enforcement into
-TypeScript.
+**The core invariant:** Mainnet money moves only through
+`MandateRegistry.execute_payment`, which validates and consumes the mandate
+atomically before transfer. The user approves the SEP-41 allowance for the
+contract, never the agent or SDK. Historical composite variants have a separate
+`clear_pool` interface; they are not the Mainnet V2 implementation.
 
 ## Commands
 
-This is an npm workspaces monorepo (`packages/*`, `apps/*`) plus a Rust/Soroban
-contract that is **not** part of the npm workspace.
+This is an npm workspaces monorepo (`packages/*`, `apps/*`). Rust contracts,
+contract tests, builds, and releases belong to `ackrate-protocol-contracts`.
 
 - `npm run verify` — the local CI-equivalent gate; **run this before every push.**
-  Runs rustfmt, clippy (`-D warnings`), `cargo test`, then a *clean* workspace
-  build + `npm test`. Mirrors `.github/workflows/ci.yml`. Wired as a git pre-push
+  Runs a clean workspace build, strict typecheck, branding checks, tests, and dependency checks. Mirrors the TypeScript job in `.github/workflows/ci.yml`; the separate Rust
+  job checks a pinned contracts-repo revision. Wired as a git pre-push
   hook via `git config core.hooksPath .githooks` (one-time, per clone).
 - `npm run build` — builds `@ackrate/stellar` first (the others depend on it),
   then all workspaces.
 - `npm test` — runs every workspace's tests.
 - `npm run typecheck` — root `tsc` (project references).
 
-Contract (run inside `contracts/mandate-registry/`):
-- `cargo test` — full suite: the §10 negative suite (18 tests in `test.rs` + snapshots),
-  the pool suite (34 in `pool_test.rs`), and a reentrancy probe.
-- `cargo test <name>` — a single test, e.g. `cargo test overspend_cumulative_rejected`.
-- `cargo fmt --all -- --check` and `cargo clippy --all-targets -- -D warnings`.
+Contract source and commands: see [source of truth](docs/contract-source-of-truth.md).
+The contract repository owns Rust formatting, linting, tests and release gates.
 
 SDK / app tests use the Node test runner via tsx, e.g.
 `node --import tsx --test packages/sdk/src/x402.test.ts`.
@@ -50,7 +44,8 @@ On-chain scripts (need a funded testnet burner in `.env` — copy `.env.example`
   merchant via `agent.fetch`; three settle on-chain, the fourth is budget-rejected.
 - `npm run e2e:testnet`, `npm run e2e:sdk` — lower-level on-chain e2e.
 - `npm run gatecheck` — independent on-chain mandate gatecheck tool.
-- `npm run deploy:testnet` — deploy the contract; fill the resulting ids into `.env`.
+- `npm run deploy:testnet` — deploy the historical Testnet variant from an external contracts checkout;
+  set `ACKRATE_CONTRACTS_ROOT` and fill the resulting ids into `.env`.
 - `npm run keys:derive-freighter` — scan BIP39 indexes to match a Freighter pubkey
   (seed typed at runtime, never stored).
 
@@ -60,25 +55,12 @@ Data/trust flow: **user** signs a mandate → SDK registers it + approves the
 allowance *for the contract* → **agent** calls `execute_payment` → contract
 validates+consumes, then does the SEP-41 `transfer_from(user → merchant)`.
 
-### `contracts/mandate-registry/` — Rust / soroban-sdk (the enforcement layer)
-The entire protocol; small by design (small interface = reviewable). Modules have a
-strictly one-way dependency graph (no cycles), documented at the top of `src/lib.rs`:
-`lib → {registry, payment, pool} → storage → {mandate, pooltypes, error}`, with
-`pool → clearing → {mandate, pooltypes}` (pure) and `events` as a leaf.
-- `lib.rs` — contract entry points only (thin dispatch, no logic).
-- `storage.rs` — the **only** module that touches `env.storage`; `DataKey` + TTL.
-- `registry.rs` — `register_mandate` / `revoke_mandate` (allowance funding model).
-- `payment.rs` — `validate_mandate` (read-only preflight) + `execute_payment` (the
-  solo money path: `require_auth(agent)` → replay guard on `expected_seq` → re-validate
-  → advance `spent`+`seq` → transfer; reverts on any failure).
-- `pool.rs` — pool lifecycle: register / commit / evict / simulate + `clear_pool`
-  (the composite money path: permissionless deadline-auction capture of a pooled
-  schedule each member pre-authorized at registration; re-checks pause, budget,
-  and eligibility per member before its `transfer_from`).
-- `clearing.rs` (pure clearing math), `pooltypes.rs` (pure pool data).
-- `mandate.rs` (pure data), `error.rs` (typed errors), `events.rs`.
-- `test.rs` + `pool_test.rs` + `test_snapshots/` — the negative suite (§10), which
-  CI runs from commit one. `reentry_probe.rs` is a reentrancy guard test.
+### Contract ownership
+
+Mainnet V2 source is `ackrate-protocol-contracts/contracts/mainnet-v2/mandate-registry`.
+The former local development contract is preserved in that repository under
+`contracts/legacy-protocol/mandate-registry`; it is not the Mainnet source.
+See [deployment provenance and migration](docs/contract-source-of-truth.md).
 
 ### `packages/stellar/` — `@ackrate/stellar` (typed Soroban layer)
 Network config (`TESTNET`), the generated/typed `registryClient` contract bindings,
@@ -120,7 +102,7 @@ only enforcement boundary.
   never reintroduce the prohibited T1 review term.
 - The contract is gatechecked and live on testnet; treat its interface as a published
   contract. The negative/§10 suite is not optional and must stay green from commit one.
-- `security/` holds the contract, SDK, and x402 gatecheck records; the release docs
+- `docs/security/` holds the contract, SDK, and x402 gatecheck records; the release docs
   `docs/mandate-registry-contract.md`, `docs/ackrate-sdk-npm.md`, and `docs/x402-roundtrip.md`
   document each shipped step. Update them when the matching surface changes.
 - The published SDK and CLI default to the verified Mainnet registry. Select Testnet explicitly for development scripts. Hot burner keys are testnet-only, never reused on
