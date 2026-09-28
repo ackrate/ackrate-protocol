@@ -622,7 +622,7 @@ conventions:
   `clear_pool` observe `PoolNotOpen` (I10).
 - Resource ceiling: construct the full 8-member, 8-point, fee-on pool, clear
   it, assert within the Soroban test budget via `env.budget()`; the testnet
-  `simulateTransaction` report goes to `security/` before
+  `simulateTransaction` report goes to `docs/security/` before
   `MAX_POOL_MEMBERS` may ever be raised (v2 §9.5, unchanged).
 
 ## 12. Refinements vs composites-design-v2.md (the only deltas; everything else is inherited)

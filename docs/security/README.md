@@ -8,7 +8,7 @@ Current artifacts:
   abuse cases, and named production gates for the bound-v2 release.
 - [`data-flow.md`](data-flow.md): contract, SDK, receipt, challenge, fulfillment,
   chain verification, and exact-proof recovery sequence.
-- [`../docs/enforcement-evidence.md`](../docs/enforcement-evidence.md): per-deliverable implementation and evidence.
+- [`../enforcement-evidence.md`](../enforcement-evidence.md): per-deliverable implementation and evidence.
 
 Historical point-in-time reviews:
 

@@ -1,23 +1,20 @@
 #!/usr/bin/env node
 /**
- * Local CI-equivalent gate. Run before every push (also wired as a git
+ * Local TypeScript CI gate. Run before every push (also wired as a git
  * pre-push hook) so no commit that would fail CI ever reaches the remote.
  *
  *   npm run verify
  *
- * Mirrors .github/workflows/ci.yml (plus clippy and a CLEAN workspace build,
+ * Mirrors the TypeScript job in .github/workflows/ci.yml (with a CLEAN workspace build,
  * since CI runs from a fresh checkout where each package's dist is absent).
  */
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, rmSync } from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const CONTRACT = path.join(ROOT, "contracts", "mandate-registry");
-const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
-const ENV = { ...process.env, PATH: `${path.dirname(process.execPath)}:${CARGO_BIN}:${process.env.PATH ?? ""}:/opt/homebrew/bin` };
+const ENV = { ...process.env, PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? ""}:/opt/homebrew/bin` };
 
 for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
   if (!name.endsWith(".yml") && !name.endsWith(".yaml")) continue;
@@ -40,11 +37,7 @@ function run(label, cmd, args, cwd) {
   }
 }
 
-// Contract (mirrors CI's Rust job + clippy)
-run("rustfmt --check", "cargo", ["fmt", "--all", "--", "--check"], CONTRACT);
-run("clippy (deny warnings)", "cargo", ["clippy", "--all-targets", "--", "-D", "warnings"], CONTRACT);
-run("cargo test", "cargo", ["test"], CONTRACT);
-
+// Rust source and contract gates live in ackrate-protocol-contracts.
 // Workspaces (mirrors CI's TypeScript job — from a CLEAN build)
 for (const workspace of [
   "packages/sdk",
@@ -60,7 +53,6 @@ for (const workspace of [
 ]) {
   rmSync(path.join(ROOT, workspace, "dist"), { recursive: true, force: true });
 }
-rmSync(path.join(ROOT, "apps", "wallet-chat", ".next"), { recursive: true, force: true });
 run("npm run build (clean)", "npm", ["run", "build"], ROOT);
 run("strict root typecheck", "npm", ["run", "typecheck"], ROOT);
 run("brand check", process.execPath, ["scripts/check-branding.mjs"], ROOT);

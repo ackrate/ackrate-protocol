@@ -18,7 +18,7 @@ workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27
 |---|---|
 | [`mandate-registry-contract.md`](mandate-registry-contract.md) | Current contracts, controls, methods, errors, releases, and verification. |
 | [`x402-roundtrip.md`](x402-roundtrip.md) | Bound-v2 challenge, proof, chain verification, recovery, and stores. |
-| [`wallet-chat-application.md`](wallet-chat-application.md) | LOBSTR wallet, mandate activation, AI consumer chat, authority boundaries, and hosted release gate. |
+| [`wallet-chat-application.md`](wallet-chat-application.md) | Retirement record for the former wallet frontend. |
 | [`ackrate-sdk-npm.md`](ackrate-sdk-npm.md) | Package/version map, typed APIs, publication, and clean-install checks. |
 | [`repo-inventory.md`](repo-inventory.md) | Current repository surfaces and ownership boundaries. |
 | [`live-failure-drills.md`](live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
@@ -34,15 +34,15 @@ workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27
 | CLI | [`packages/cli/README.md`](../packages/cli/README.md) |
 | Consumer agent | [`apps/consumer-agent/README.md`](../apps/consumer-agent/README.md) |
 | Fulfillment agent | [`apps/fulfillment-agent/README.md`](../apps/fulfillment-agent/README.md) |
-| Wallet and consumer chat | [`apps/wallet-chat/README.md`](../apps/wallet-chat/README.md) |
+| Wallet and consumer chat | [retirement record](wallet-chat-application.md) |
 
 ## Security
 
 | Document | Scope |
 |---|---|
-| [`security/threat-model.md`](../security/threat-model.md) | Current bound-v2 release threat model and named production gates. |
-| [`security/data-flow.md`](../security/data-flow.md) | Current first-delivery and exact-recovery sequences. |
-| [`security/README.md`](../security/README.md) | Current evidence index and historical-scope labels. |
+| [`docs/security/threat-model.md`](security/threat-model.md) | Current bound-v2 release threat model and named production gates. |
+| [`docs/security/data-flow.md`](security/data-flow.md) | Current first-delivery and exact-recovery sequences. |
+| [`docs/security/README.md`](security/README.md) | Current evidence index and historical-scope labels. |
 
 The dated 2026-06 security reports are historical snapshots with exact old
 versions. They are retained for traceability and are not current release proof.

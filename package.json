@@ -16,7 +16,6 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @ackrate/wallet-chat",
     "build": "npm run build -w @ackrate/stellar && npm run build -w @ackrate/core && npm run build --workspaces --if-present",
     "cli:bundle": "esbuild packages/cli/src/index.ts --bundle --platform=node --format=esm --target=node22 --external:@stellar/stellar-sdk --banner:js=\"import{createRequire as __cr}from'module';const require=__cr(import.meta.url);\" --outfile=packages/cli/dist/ackrate-cli.bundle.mjs",
     "test": "node --test scripts/dependency-safety.test.mjs scripts/verify-mainnet-evidence.test.mjs && npm run test --workspaces --if-present",

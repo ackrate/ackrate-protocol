@@ -88,9 +88,8 @@ proof is recorded in [September 27 workflow evidence](docs/npm-workflow-evidence
 | [`packages/cli`](packages/cli) | `@ackrate/cli`: terminal workflow, pre-broadcast journal, exact-hash reconciliation, and explicit success acknowledgment |
 | [`apps/consumer-agent`](apps/consumer-agent) | Reference ResearchAgent that buys data through `agent.fetch()` |
 | [`apps/fulfillment-agent`](apps/fulfillment-agent) | Reference 402-gated API that verifies settlement before serving |
-| [`apps/wallet-chat`](apps/wallet-chat) | Next.js + LOBSTR wallet flow and mandate-aware AI consumer chat |
 | [`scripts`](scripts) | Testnet demos, live flows, deployment, and gate check tooling |
-| [`security`](security) | Threat model, data flows, upgrade custody, and contract/SDK/x402 gate check records |
+| [`docs/security`](docs/security) | Threat model, data flows, upgrade custody, and contract/SDK/x402 gate check records |
 
 ---
 

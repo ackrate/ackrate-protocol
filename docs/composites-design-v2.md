@@ -621,7 +621,7 @@ are byte-identical at rate 0, the *event* is not).
 A test constructs a full `MAX_POOL_MEMBERS`-member pool with fee enabled and
 `MAX_SCHEDULE_POINTS` schedules, clears it, and asserts success within the Soroban
 test budget (`env.budget()` cost assertion). A companion note requires a testnet
-`simulateTransaction` resource report checked into `security/` before the cap is
+`simulateTransaction` resource report checked into `docs/security/` before the cap is
 raised. Until that artifact exists, `MAX_POOL_MEMBERS` stays at 8.
 
 ## 10. Judgment calls flagged for review (decided)
