@@ -1,5 +1,11 @@
 # Historical Mainnet USDC evidence and current reference-agent acceptance
 
+> Historical evidence and acceptance status from the earlier release workstream.
+> Statements about pending Core 0.4.1 / CLI 0.2.1 acceptance below are historical.
+> See the [current release matrix](ackrate-sdk-npm.md) and
+> [September 27 workflow evidence](npm-workflow-evidence-2026-09-27.md) for current status.
+
+
 Status: historical direct-payment check passed
 
 Executed: 2026-08-26 20:52 UTC

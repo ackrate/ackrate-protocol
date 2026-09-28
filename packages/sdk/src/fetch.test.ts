@@ -1024,3 +1024,40 @@ test("submitted-but-unconfirmed settlement survives Agent restart and blocks a s
     afterRestart.restore();
   }
 });
+
+test("fetch never pays unsupported or incomplete requirements", async () => {
+  for (const over of [
+    { scheme: "exact" }, { scheme: undefined }, { network: undefined },
+    { network: "stellar-mainnet" }, { network: "stellar:testnet" },
+    { asset: undefined }, { asset: "" }, { extra: { contract: "WRONG_REGISTRY" } }, { maxAmountRequired: 10000000 },
+    { maxAmountRequired: "1.00", amount: "10000000" },
+  ]) {
+    const { agent } = makeAgent();
+    let calls = 0;
+    agent.pay = async () => { calls++; return TXHASH; };
+    const stub = stubFetch(() => challenge402(over));
+    try {
+      await assert.rejects(agent.fetch(TARGET));
+      assert.equal(calls, 0);
+      assert.equal(stub.calls.length, 1);
+    } finally { stub.restore(); }
+  }
+});
+
+
+test("fetch rejects canonical transport and v2 envelopes before payment", async () => {
+  for (const header of [false, true]) {
+    const { agent } = makeAgent();
+    let paid = 0;
+    agent.pay = async () => { paid++; return TXHASH; };
+    const stub = stubFetch(async () => {
+      const value = await challenge402().json();
+      if (!header) value.x402Version = 2;
+      return new Response(JSON.stringify(value), {
+        status: 402, headers: header ? { "payment-required": "malformed" } : {},
+      });
+    });
+    try { await assert.rejects(agent.fetch(TARGET)); assert.equal(paid, 0); }
+    finally { stub.restore(); }
+  }
+});

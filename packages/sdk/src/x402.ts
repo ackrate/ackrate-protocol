@@ -333,38 +333,71 @@ export function verifyBoundPaymentProofSignature(proof: BoundPaymentProofV2, age
   }
 }
 
-export async function parse402(response: Response): Promise<PaymentRequired> {
+export interface AckratePaymentSelection {
+  network?: string;
+  asset?: string;
+  payTo?: string;
+  boundOnly?: boolean;
+  contract?: string;
+}
+
+/** Parses only Ackrate's v1 envelope. Amounts here are display units, never atomic units. */
+export async function parse402(response: Response, selection: AckratePaymentSelection = {}): Promise<PaymentRequired> {
+  if (response.headers.has("payment-required")) {
+    throw new Error("x402: canonical PAYMENT-REQUIRED is unsupported by the mandate payer; use @ackrate/core/x402 for inspection");
+  }
   let body: unknown;
   try {
     body = await response.clone().json();
   } catch {
     throw new Error("x402: the 402 response body was not valid JSON");
   }
-  const accepts = (body as { accepts?: unknown[] })?.accepts;
+  const envelope = object(body, "payment challenge");
+  const accepts = envelope.accepts;
   if (!Array.isArray(accepts) || accepts.length === 0) {
     throw new Error("x402: the 402 response carried no `accepts` payment requirement");
   }
-  const accepted = object(accepts[0], "payment requirement");
-  const amount = String(accepted.maxAmountRequired ?? accepted.amount ?? "");
-  const payTo = String(accepted.payTo ?? "");
-  if (!amount) throw new Error("x402: the payment requirement is missing an amount");
-  if (!payTo) throw new Error("x402: the payment requirement is missing `payTo` (the merchant)");
-  const extra = object(accepted.extra ?? {}, "payment requirement extra");
-  if ("ackrateProofVersion" in extra && extra.ackrateProofVersion !== 2) {
-    throw new Error("x402: unsupported Ackrate payment proof version");
+  if (envelope.x402Version !== 1) throw new Error("x402: unsupported payment envelope version");
+  const failures: string[] = [];
+  for (const value of accepts) {
+    try {
+      const accepted = object(value, "payment requirement");
+      const scheme = text(accepted.scheme, "payment scheme");
+      if (scheme !== "ackrate-soroban" && scheme !== BOUND_PAYMENT_SCHEME) throw new Error("unsupported payment scheme");
+      const network = text(accepted.network, "payment network");
+      if (network !== "stellar-testnet" && network !== "stellar-mainnet") throw new Error("unsupported payment network");
+      const amount = accepted.maxAmountRequired ?? accepted.amount;
+      if (amount === undefined) throw new Error("missing an amount");
+      if (typeof amount !== "string" || !/^(0|[1-9][0-9]*)(\.[0-9]+)?$/.test(amount) || !/[1-9]/.test(amount)) {
+        throw new Error("amount must be a positive display-unit decimal string");
+      }
+      if (accepted.maxAmountRequired !== undefined && accepted.amount !== undefined && accepted.maxAmountRequired !== accepted.amount) {
+        throw new Error("conflicting amount aliases");
+      }
+      const payTo = text(accepted.payTo, "payTo (the merchant)");
+      const asset = text(accepted.asset, "payment asset");
+      if (selection.network && network !== selection.network) throw new Error("different network than this mandate's");
+      if (selection.payTo && payTo !== selection.payTo) throw new Error("not this mandate's merchant");
+      if (selection.asset && asset !== selection.asset) throw new Error("different asset than this mandate's");
+      const extra = object(accepted.extra ?? {}, "payment requirement extra");
+      if ("ackrateProofVersion" in extra && extra.ackrateProofVersion !== 2) throw new Error("unsupported Ackrate payment proof version");
+      const contract = extra.contract === undefined ? undefined : text(extra.contract, "payment contract");
+      if (contract !== undefined && selection.contract && contract !== selection.contract) throw new Error("different registry than this mandate's");
+      const bound = scheme === BOUND_PAYMENT_SCHEME;
+      if (bound !== (extra.ackrateProofVersion === 2)) throw new Error("payment scheme and proof version do not match");
+      if (selection.boundOnly && !bound) throw new Error("bound-v2-only agent refused a legacy payment challenge before paying");
+      const challenge = bound ? parseBoundPaymentChallenge(extra.challenge) : undefined;
+      return {
+        scheme, network, amount, asset, payTo,
+        resource: accepted.resource === undefined ? "" : text(accepted.resource, "payment resource"),
+        contract,
+        ...(bound ? { proofVersion: 2 as const, challenge } : {}),
+      };
+    } catch (error) {
+      failures.push(error instanceof Error ? error.message : "invalid payment requirement");
+    }
   }
-  const proofVersion = extra.ackrateProofVersion === 2 ? 2 : 1;
-  const challenge = proofVersion === 2 ? parseBoundPaymentChallenge(extra.challenge) : undefined;
-  return {
-    scheme: String(accepted.scheme ?? "ackrate-soroban"),
-    network: String(accepted.network ?? "stellar-testnet"),
-    amount,
-    asset: String(accepted.asset ?? ""),
-    payTo,
-    resource: String(accepted.resource ?? ""),
-    contract: extra.contract ? String(extra.contract) : undefined,
-    ...(proofVersion === 2 ? { proofVersion: 2 as const, challenge } : {}),
-  };
+  throw new Error(`x402: no supported payment requirement: ${failures.join("; ")}`);
 }
 
 export function encodePaymentProof(proof: PaymentProof): string {

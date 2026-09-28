@@ -14,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ENV = process.env;
+const ENV = { ...process.env, PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? ""}:/opt/homebrew/bin` };
 
 for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
   if (!name.endsWith(".yml") && !name.endsWith(".yaml")) continue;

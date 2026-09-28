@@ -1,4 +1,4 @@
-# @ackrate/cli 0.2.1
+# @ackrate/cli 0.2.2
 
 Run Ackrate's contract-enforced USDC payment workflow on Stellar Mainnet from
 your terminal: configure signers, register a mandate, approve its budget, pay a
@@ -16,13 +16,18 @@ still be checked when that implementation changes.
 ## Install
 
 ```bash
-npm install -g @ackrate/cli@0.2.1
+npm install -g @ackrate/cli@0.2.2
 ackrate --help
 ```
 
 Requires Node.js 22 or newer. The installed command is `ackrate`. Check the
 [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)
 for publication and clean-install verification.
+
+## Testnet development
+
+For disposable funded accounts, follow the [Testnet workflow guide](https://github.com/ackrate/ackrate-protocol/blob/main/docs/testnet-workflows.md).
+Select `--network testnet` for CLI `init` and `demo`; Mainnet remains the default.
 
 ## Before you spend
 
@@ -104,8 +109,6 @@ ackrate init \
 ackrate setup
 ackrate mandate create --confirm-real-usdc
 ackrate pay --confirm-real-usdc
-ackrate settlement reconcile
-ackrate settlement acknowledge <TX_HASH>
 ```
 
 `init` writes the public project configuration. `setup` performs read-only
@@ -113,6 +116,9 @@ account, balance, asset, RPC, and registry checks. Mandate creation has two
 distinct user-authorized operations: register the mandate, then approve the
 registry's token allowance. The allowance goes to the **contract**, never the
 agent or CLI. A budget is a cap, not an upfront deposit.
+
+Complete the exact-hash acknowledgment in [Recover a pending payment](#recover-a-pending-payment)
+after durably accepting the payment result.
 
 `pay` is agent-signed. The contract checks the stored mandate and atomically
 consumes its budget/sequence with the USDC transfer. A cached mandate or an SDK

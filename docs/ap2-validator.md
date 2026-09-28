@@ -1,65 +1,16 @@
-# AP2 compliance validator
+# AP2 validation
 
-`@ackrate/ap2` verifies the Stellar Ed25519 signature, separately trusted user,
-single-merchant scope, amount, expiry, binding hash, strict schema, and atomic
-admission replay state. AP2 and x402 adapters are isolated from the MandateRegistry,
-so their profile/wire logic can evolve without touching the contract.
+The [AP2 package README](../packages/ap2/README.md) is the canonical signed-intent
+example and API reference. It defines supported intent semantics, trusted input
+requirements, replay admission and durable-store behavior. Its separate SD-JWT
+entrypoint verifies cryptography; callers still enforce issuer trust, business
+constraints and replay policy.
 
-## Validate your own mandate — local and offline
+Validation itself is offline. Registering the admitted mandate, approving its
+allowance and paying are separate on-chain operations; the contract enforces
+every payment. Use the [Testnet guide](testnet-workflows.md#sdk-and-ap2-examples)
+for explicit development-network configuration and the [release matrix](ackrate-sdk-npm.md)
+for installable versions.
 
-Nothing to clone; validation runs in-process (no chain, no testnet).
-
-```bash
-npm install @ackrate/ap2@0.3.2 @ackrate/core@0.3.3 @stellar/stellar-sdk
-```
-
-```js
-// validate.mjs — sign an AP2 IntentMandate, then check it accepts and fails closed.
-import { Keypair } from "@stellar/stellar-sdk";
-import { ackrate } from "@ackrate/core";
-import { signAp2Mandate, createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
-
-const user = Keypair.random(), agent = Keypair.random(), merchant = Keypair.random();
-
-const credential = signAp2Mandate({
-  intent: {
-    user_cart_confirmation_required: false,
-    natural_language_description: "Buy one research dataset",
-    merchants: [merchant.publicKey()],
-    intent_expiry: new Date((Math.floor(Date.now() / 1000) + 3600) * 1000).toISOString(),
-  },
-  stellar: {
-    user: user.publicKey(),
-    agent: agent.publicKey(),
-    asset: ackrate.testnet.nativeSac,
-    maxAmount: "5.00",
-  },
-}, user);
-
-const check = () => createAp2ComplianceValidator({ replayStore: new InMemoryAp2ReplayStore(), replayNamespace: "local" });
-const req = (over = {}) => ({ credential, expectedUser: user.publicKey(), merchant: merchant.publicKey(), amount: "1.00", ...over });
-
-console.log("accepted   ", (await check().validateAndConsume(req())).mandateHash.slice(0, 10) + "…");
-for (const [label, over] of [["overspend", { amount: "6.00" }], ["wrong merchant", { merchant: Keypair.random().publicKey() }]]) {
-  try { await check().validateAndConsume(req(over)); console.log("NOT rejected:", label); }
-  catch (e) { console.log("rejected   ", label, "->", e.code); }
-}
-```
-
-```bash
-node validate.mjs
-# accepted    mandate 4001e01f3d…
-# rejected    overspend -> AMOUNT_EXCEEDS_MANDATE
-# rejected    wrong merchant -> MERCHANT_MISMATCH
-```
-
-Tamper any signed field — amount, merchant, expiry, the signature itself — and
-`validateAndConsume` throws an `Ap2ValidationError` with a stable `code`
-(`AMOUNT_EXCEEDS_MANDATE`, `MERCHANT_MISMATCH`, `EXPIRED`, `INVALID_SIGNATURE`,
-`REPLAYED`, …). The full API and every field are documented in the package README.
-
-## Test suite
-
-From a clone of the monorepo, the full suite runs with `npm test -w @ackrate/ap2`:
-59 passing tests including valid mandates, altered signatures, wrong merchants,
-overspend, expiry, replay, schema mutation, and store failure.
+The package tests run with `npm run test -w @ackrate/ap2`. Live and packed-package
+results are recorded in [September 27 workflow evidence](npm-workflow-evidence-2026-09-27.md).

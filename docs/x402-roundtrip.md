@@ -1,11 +1,15 @@
 # Bound-v2 402 round trip
 
+September 27 candidate: [contract-independent x402 changes](x402-sdk-compatibility-2026-09-27.md). Package publication status is recorded separately from test results.
+
 Ackrate isolates the evolving HTTP payment wire format from the MandateRegistry.
 The contract owns spending authorization; the HTTP layer decides whether a
 merchant may release one exact resource after independently proving settlement.
 
-Current implementation: `@ackrate/core@0.3.3` and
-`@ackrate/express-middleware@0.2.4` on Stellar testnet.
+Published baseline: `@ackrate/core@0.4.1` and
+`@ackrate/express-middleware@0.3.0`, with verified Mainnet defaults.
+The September 27 candidates are core 0.4.2 and middleware 0.3.1; see the
+[release matrix](ackrate-sdk-npm.md#release-matrix) for availability.
 
 ## Sequence
 

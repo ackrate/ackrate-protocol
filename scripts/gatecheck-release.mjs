@@ -13,10 +13,10 @@ const MAINNET_WASM = "982809197d35d44c7b0fce6bd117fb2fec09b728c64c146c1f803b01fa
 
 const packages = [
   ["packages/stellar", "@ackrate/stellar", "0.3.0"],
-  ["packages/sdk", "@ackrate/core", "0.4.1"],
-  ["packages/ap2", "@ackrate/ap2", "0.4.0"],
-  ["packages/express-middleware", "@ackrate/express-middleware", "0.3.0"],
-  ["packages/cli", "@ackrate/cli", "0.2.1"],
+  ["packages/sdk", "@ackrate/core", "0.4.2"],
+  ["packages/ap2", "@ackrate/ap2", "0.4.1"],
+  ["packages/express-middleware", "@ackrate/express-middleware", "0.3.1"],
+  ["packages/cli", "@ackrate/cli", "0.2.2"],
 ];
 const OBSOLETE_BRAND = new RegExp(["re", "app"].join(""), "i");
 const candidateVersions = new Map(packages.map(([, name, version]) => [name, version]));
@@ -25,7 +25,7 @@ const requiredInternalDependencies = {
   // Existing consumers accept the compatible core patch without an unrelated
   // package release. The clean installs below resolve the candidate tarball.
   "@ackrate/ap2": { "@ackrate/core": "^0.4.0" },
-  "@ackrate/express-middleware": { "@ackrate/core": "^0.4.0", "@ackrate/stellar": "^0.3.0" },
+  "@ackrate/express-middleware": { "@ackrate/core": "^0.4.2", "@ackrate/stellar": "^0.3.0" },
 };
 
 function fail(message) {
@@ -151,7 +151,9 @@ for (const [directory, expectedName, expectedVersion] of packages) {
       if (!body.includes(`https://stellar.expert/explorer/public/contract/${MAINNET_REGISTRY}`)) {
         fail(`${expectedName} README is missing the official Mainnet explorer link`);
       }
-      if (/testnet|time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current Mainnet product only`);
+      // Mainnet identity is required above and verified at runtime below.
+      // Explicit Testnet onboarding is supported and must remain discoverable.
+      if (/time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current registry, not retired timelock controls`);
     }
     if (OBSOLETE_BRAND.test(body)) {
       fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);
@@ -217,7 +219,10 @@ const route = createBoundAckratePaidJsonRoute({
   challengeSecret: "clean-install-secret-that-is-at-least-thirty-two-bytes",
   redemptionStore: new InMemoryBoundRedemptionStore(),
 }, async () => ({ body: { ok: true } }));
-void [validator, route];
+import { parseCanonical402, stellarAtomicAmount } from "@ackrate/core/x402";
+import { canonicalStellarPaymentMiddleware } from "@ackrate/express-middleware/canonical";
+import { verifyCompactJws } from "@ackrate/ap2/sd-jwt";
+void [validator, route, parseCanonical402, stellarAtomicAmount, canonicalStellarPaymentMiddleware, verifyCompactJws];
 `);
   writeFileSync(path.join(installRoot, "runtime.mjs"), `
 import assert from "node:assert/strict";
@@ -227,6 +232,7 @@ import { ackrate } from "@ackrate/core";
 await Promise.all([
   import("@ackrate/core"), import("@ackrate/stellar"),
   import("@ackrate/ap2"), import("@ackrate/express-middleware"),
+  import("@ackrate/core/x402"), import("@ackrate/express-middleware/canonical"), import("@ackrate/ap2/sd-jwt"),
 ]);
 assert.equal(DEPLOYMENTS.mainnet.mandateRegistryId, ${JSON.stringify(MAINNET_REGISTRY)});
 assert.equal(DEPLOYMENTS.mainnet.registryWasmSha256, ${JSON.stringify(MAINNET_WASM)});
@@ -252,6 +258,8 @@ console.log("runtime imports and fail-closed published deployment configuration 
   const cliVersion = run(path.join(installRoot, "node_modules", ".bin", "ackrate"), ["--version"], installRoot).trim();
   if (cliVersion !== candidateVersions.get("@ackrate/cli")) fail(`clean-installed CLI reported ${JSON.stringify(cliVersion)}`);
   console.log("  clean install, strict types, ESM imports, and CLI executable passed");
+
+  rmSync(installRoot, { recursive: true, force: true });
 
   // Each consumer gets only its package and the unpublished candidate closure
   // it actually declares. No unrelated top-level package or workspace override
@@ -293,6 +301,7 @@ console.log("runtime imports and fail-closed published deployment configuration 
       run(process.execPath, ["--input-type=module", "-e", `await import(${JSON.stringify(name)})`], consumerRoot);
     }
     console.log(`  minimal ${name} consumer and dependency scan passed`);
+    rmSync(consumerRoot, { recursive: true, force: true });
   }
 
 console.log("Release gate check 4/4: public terminology and private-file boundary");
