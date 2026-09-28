@@ -22,21 +22,18 @@ requires shared linearizable storage.
 
 ## Contracts
 
-The protocol repository includes a compatible contract workspace for development
-and tests. The authoritative source-verification releases and deployment gate
-live in `ackrate-protocol-contracts`:
-
-- simple/default `CCHQ5G4Y…CZRM`, release 0.2.3;
-- composite `CCYRF7FK…HEYW`, release 0.3.0.
-
-The contract gate covers unauthorized callers, expiry, overspend, replay,
-pause, upgrade authorization/timing, and real same-address replacement.
+All Rust contract source, tests, builds, and releases live in
+[`ackrate-protocol-contracts`](https://github.com/ackrate/ackrate-protocol-contracts).
+The Mainnet V2 source is `contracts/mainnet-v2/mandate-registry`. The former local
+contract is preserved there as `contracts/legacy-protocol/mandate-registry` for
+historical Testnet reproduction. See [Mainnet V2 deployment record](https://github.com/ackrate/ackrate-protocol-contracts/blob/main/contracts/mainnet-v2/README.md)
+for exact deployment and artifact evidence.
 
 ## Release and evidence scripts
 
 | Script | Purpose |
 |---|---|
-| `scripts/verify.mjs` | Clean build, formatting, lint/type, tests, and workspace contract checks. |
+| `scripts/verify.mjs` | Clean workspace build, strict types, tests, branding and dependency checks. |
 | `scripts/gatecheck-release.mjs` | Full release gate, real tarballs, empty-project strict types/imports/CLI, and public/private boundaries. |
 | `scripts/e2e-x402.ts` | Three bound-v2 testnet purchases, fourth budget rejection, replay conflict. |
 | `scripts/failure-drills-testnet.ts` | Revocation, merchant downtime recovery, and expiry drills. |
@@ -49,7 +46,7 @@ pause, upgrade authorization/timing, and real same-address replacement.
 - `docs/hackathon-quickstart.md`: external developer path.
 - `docs/express-vscode-quickstart.md`: hosted Express companion path.
 - `docs/playbook-testnet.md`: contract-to-SDK release procedure.
-- `security/threat-model.md` and `security/data-flow.md`: current security model.
+- `docs/security/threat-model.md` and `docs/security/data-flow.md`: current security model.
 
 Dated June security reports and composite work logs are historical snapshots.
 They are not current version or deployment sources.

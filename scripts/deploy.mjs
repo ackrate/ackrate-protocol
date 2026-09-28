@@ -30,11 +30,15 @@ const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin");
 const CHILD_ENV = { ...process.env, PATH: `${CARGO_BIN}${path.delimiter}${process.env.PATH ?? ""}` };
 
 const ENV_PATH = path.join(ROOT, ".env");
-const MANIFEST = path.join(ROOT, "contracts", "mandate-registry", "Cargo.toml");
-const CONTRACT_DIR = path.join(ROOT, "contracts", "mandate-registry");
+const loaded = dotenv.config({ path: ENV_PATH, quiet: true });
+// Explicit external checkout; never silently use another contract variant.
+const CONTRACTS_ROOT = process.env.ACKRATE_CONTRACTS_ROOT;
+const CONTRACT_DIR = CONTRACTS_ROOT
+  ? path.resolve(CONTRACTS_ROOT, "contracts", "legacy-protocol", "mandate-registry")
+  : undefined;
+const MANIFEST = CONTRACT_DIR && path.join(CONTRACT_DIR, "Cargo.toml");
 const EXPLORER = "https://stellar.expert/explorer/testnet/contract/";
 
-const loaded = dotenv.config({ path: ENV_PATH, quiet: true });
 
 // ── colors ───────────────────────────────────────────────────────────────--
 const TTY = Boolean(stdout.isTTY) && !process.env.NO_COLOR;
@@ -175,6 +179,9 @@ async function main() {
   log(`  ${c.bold(c.magenta("Ackrate"))}  ${c.dim("·")}  ${c.bold("deploy MandateRegistry")} ${c.dim("→ Stellar testnet")}`);
   log(RULE(c.magenta));
 
+  if (!MANIFEST || !existsSync(MANIFEST)) {
+    die("Set ACKRATE_CONTRACTS_ROOT to an ackrate-protocol-contracts checkout containing contracts/legacy-protocol/mandate-registry");
+  }
   step("Environment");
   debug("repo root", c.dim(ROOT));
   debug("dotenv", loaded.error ? c.red(`FAILED (${loaded.error.message})`) : c.dim(ENV_PATH));
@@ -184,6 +191,7 @@ async function main() {
   debug("passphrase", c.dim(passphrase || "(unset)"));
   debug("deployer", c.yellow(process.env.ACKRATE_BURNER_PUBLIC_KEY || "(unset)"));
   if (!rpcUrl || !passphrase) die("SOROBAN_RPC_URL and NETWORK_PASSPHRASE must be set in .env");
+  if (passphrase !== "Test SDF Network ; September 2015") die("deploy:testnet requires the Stellar Testnet passphrase");
 
   step("Toolchain check");
   if (!has("stellar")) die("`stellar` CLI not found. Install: brew install stellar-cli");
@@ -193,7 +201,7 @@ async function main() {
 
   step("Build contract → WASM");
   run("stellar", ["contract", "build", "--manifest-path", MANIFEST]);
-  const wasm = findWasm(path.join(CONTRACT_DIR, "target")) ?? findWasm(path.join(ROOT, "target"));
+  const wasm = findWasm(path.join(CONTRACT_DIR, "target"));
   if (!wasm) die("build succeeded but no .wasm found under target/**/release/");
   ok(`wasm built (${(statSync(wasm).size / 1024).toFixed(1)} KiB)`);
   debug("path", c.dim(wasm));

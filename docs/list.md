@@ -44,9 +44,9 @@ Current testnet facts:
 
 | Document | Scope |
 |---|---|
-| [`security/threat-model.md`](../security/threat-model.md) | Current bound-v2 release threat model and named production gates. |
-| [`security/data-flow.md`](../security/data-flow.md) | Current first-delivery and exact-recovery sequences. |
-| [`security/README.md`](../security/README.md) | Current evidence index and historical-scope labels. |
+| [`docs/security/threat-model.md`](security/threat-model.md) | Current bound-v2 release threat model and named production gates. |
+| [`docs/security/data-flow.md`](security/data-flow.md) | Current first-delivery and exact-recovery sequences. |
+| [`docs/security/README.md`](security/README.md) | Current evidence index and historical-scope labels. |
 
 The dated 2026-06 security reports are historical snapshots with exact old
 versions. They are retained for traceability and are not current release proof.

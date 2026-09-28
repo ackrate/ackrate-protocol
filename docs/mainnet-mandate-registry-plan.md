@@ -852,6 +852,6 @@ expansion and invokes the incident path.
 - [Mainnet delivery roadmap](mainnet-roadmap.md)
 - [Current MandateRegistry testnet evidence](mandate-registry-contract.md)
 - [Current x402 round trip](x402-roundtrip.md)
-- [Current threat model](../security/threat-model.md)
-- [Current data flows](../security/data-flow.md)
+- [Current threat model](security/threat-model.md)
+- [Current data flows](security/data-flow.md)
 - [Live testnet failure drills](live-failure-drills.md)
