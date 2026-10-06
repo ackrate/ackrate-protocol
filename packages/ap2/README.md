@@ -28,7 +28,9 @@ evidence must still be checked when the implementation changes.
 Version **0.4.1** requires
 **Node.js 22+** and exact `@stellar/stellar-sdk@16.3.0`.
 The dependency range accepts core `^0.4.0`; this coordinated release uses core
-**0.4.2**. The AP2 protocol profile remains v0.1; this package update does not change it.
+**0.4.2**. The default AP2 profile remains v0.1. The explicit
+[`@ackrate/ap2/v02` entry point](../../docs/ap2-v02.md) provides the historical
+v0.2 helpers and shares the current SD-JWT verifier and replay store.
 
 Install the pinned set with:
 

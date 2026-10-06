@@ -83,7 +83,7 @@ proof is recorded in [September 27 workflow evidence](https://github.com/ackrate
 |---|---|
 | [`packages/sdk`](packages/sdk) | `@ackrate/core`: contract client, bound-v2 adapter, durable settlement receipts, and no-second-payment recovery |
 | [`packages/stellar`](packages/stellar) | `@ackrate/stellar`: generated binding, network config, signer, and token helpers |
-| [`packages/ap2`](packages/ap2) | `@ackrate/ap2`: signed AP2 v0.1 Ackrate profile validator with deterministic binding evidence and 59 tests |
+| [`packages/ap2`](packages/ap2) | `@ackrate/ap2`: signed AP2 v0.1 admission, with explicit [v0.2 helpers](docs/ap2-v02.md) and deterministic binding evidence |
 | [`packages/express-middleware`](packages/express-middleware) | `@ackrate/express-middleware`: exact-origin GET verification and at-most-once paid JSON fulfillment |
 | [`packages/cli`](packages/cli) | `@ackrate/cli`: terminal workflow, pre-broadcast journal, exact-hash reconciliation, and explicit success acknowledgment |
 | [`apps/consumer-agent`](apps/consumer-agent) | Reference ResearchAgent that buys data through `agent.fetch()` |
