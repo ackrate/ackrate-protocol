@@ -143,7 +143,7 @@ npm run drills:testnet
 
 Use the public browser companion at [reapp.live/express](https://reapp.live/express),
 or follow the verified [clean VS Code project guide](docs/express-vscode-quickstart.md).
-Operational evidence and boundaries are in the [live drill record](docs/live-failure-drills.md),
+Operational evidence and boundaries are in the [live drill record](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/8dd88de0f38b40611bf37a52221ed670bf014490/docs/live-failure-drills.md),
 [threat model](security/threat-model.md), [data flow](security/data-flow.md), and
 [upgrade authority runbook](security/upgrade-authority.md).
 

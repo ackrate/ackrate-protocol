@@ -13,8 +13,8 @@ Current testnet facts:
 | [`hackathon-quickstart.md`](hackathon-quickstart.md) | Clean-clone, CLI, SDK, and reference-agent testnet setup. |
 | [`express-vscode-quickstart.md`](express-vscode-quickstart.md) | Build a clean VS Code consumer against the `/express` companion. |
 | [`playbook-testnet.md`](playbook-testnet.md) | Linear contract-to-SDK release and operating procedure. |
-| [`mainnet-roadmap.md`](mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
-| [`mainnet-mandate-registry-plan.md`](mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
+| [`mainnet-roadmap.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/8dd88de0f38b40611bf37a52221ed670bf014490/docs/mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
+| [`mainnet-mandate-registry-plan.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/8dd88de0f38b40611bf37a52221ed670bf014490/docs/mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
 
 ## Protocol and implementation
 
@@ -24,8 +24,8 @@ Current testnet facts:
 | [`x402-roundtrip.md`](x402-roundtrip.md) | Bound-v2 challenge, proof, chain verification, recovery, and stores. |
 | [`wallet-chat-application.md`](wallet-chat-application.md) | LOBSTR wallet, mandate activation, AI consumer chat, authority boundaries, and hosted release gate. |
 | [`reapp-sdk-npm.md`](reapp-sdk-npm.md) | Package/version map, typed APIs, publication, and clean-install checks. |
-| [`repo-inventory.md`](repo-inventory.md) | Current repository surfaces and ownership boundaries. |
-| [`live-failure-drills.md`](live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
+| [`repo-inventory.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/8dd88de0f38b40611bf37a52221ed670bf014490/docs/repo-inventory.md) | Current repository surfaces and ownership boundaries. |
+| [`live-failure-drills.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/8dd88de0f38b40611bf37a52221ed670bf014490/docs/live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
 
 ## Package and app READMEs
 
