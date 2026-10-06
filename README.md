@@ -75,7 +75,7 @@ Start with [Testnet workflows](docs/testnet-workflows.md) for disposable actors
 and real development-network payments. Mainnet is the default; use it only with
 explicitly authorized actors and spending limits. The contract configuration is
 explained in the [Mainnet guide](docs/mainnet-configuration.md), and current
-proof is recorded in [September 27 workflow evidence](docs/npm-workflow-evidence-2026-09-27.md).
+proof is recorded in [September 27 workflow evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md).
 
 ## 📁 Repository Map
 

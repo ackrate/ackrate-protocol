@@ -25,9 +25,9 @@ core package does not update an older CLI bundle.
 ## Release and evidence
 
 - [Current published versions and candidates](ackrate-sdk-npm.md#release-matrix).
-- [September 27 package workflow validation](npm-workflow-evidence-2026-09-27.md).
-- [September 7 coordinated release](t3-step-1-gate-2026-09-07.md).
-- [September 7 independent Mainnet receipts](cli-mainnet-independent-receipts-2026-09-07.json).
+- [September 27 package workflow validation](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md).
+- [September 7 coordinated release](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/t3-step-1-gate-2026-09-07.md).
+- [September 7 independent Mainnet receipts](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/cli-mainnet-independent-receipts-2026-09-07.json).
 
 `verify:mainnet-evidence` checks a historical canary; it does not execute the
 current CLI or prove a new payment. Recovery of a successful registration after

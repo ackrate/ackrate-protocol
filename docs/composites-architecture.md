@@ -3,10 +3,10 @@
 **Status:** ARCHITECTURE, build-ready. Scope is the smart contract only:
 composite mandates (clearing pools, Stage 1, ThresholdFloor). No SDK, no CLI,
 no deploy scripts, no admin/pause/fee spec (those are owned by
-composites-design-v2.md §4.5/§5.2 and are referenced here only where the pool
+[historical composites design](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/composites-design-v2.md) §4.5/§5.2 and are referenced here only where the pool
 path consumes them as interfaces).
 
-**Precedence.** The decisions in composites-design-v2.md (D-A deadline auction,
+**Precedence.** The decisions in [historical composites design](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/composites-design-v2.md) (D-A deadline auction,
 D-B best-effort capture over the able set, D-C constructor admin, D-D terminal
 release) are binding and inherited unchanged. This document adds the precision
 an implementer needs: exact types, storage keys, state machines, the clearing
@@ -625,7 +625,7 @@ conventions:
   `simulateTransaction` report goes to `docs/security/` before
   `MAX_POOL_MEMBERS` may ever be raised (v2 §9.5, unchanged).
 
-## 12. Refinements vs composites-design-v2.md (the only deltas; everything else is inherited)
+## 12. Refinements vs [historical composites design](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/composites-design-v2.md) (the only deltas; everything else is inherited)
 
 - **R1 · Exact minimal-price search.** Replaces §4.4 step 3's derived-candidate
   formula with an exact binary search per breakpoint interval (§5.4). Rationale:

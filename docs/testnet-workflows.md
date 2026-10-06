@@ -107,7 +107,7 @@ provide the payer and facilitator; `@x402/core/facilitator` coordinates the latt
 Use an upstream canonical payer for this workflow: Ackrate's mandate
 payer intentionally refuses canonical exact offers. The upstream facilitator code
 was run locally with a disposable funded sponsor and real Testnet settlement, as
-recorded in the [dated evidence](npm-workflow-evidence-2026-09-27.md); a fake
+recorded in the [dated evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md); a fake
 facilitator fixture or parsed response header alone does not prove settlement.
 
 ## Offline signing coordination and cryptography
@@ -123,5 +123,5 @@ SD-JWT cryptographic verification is network-independent. Test the installed
 
 Contract deployments, upgrades, authority rotations and hosted app/device testing
 have separate lifecycles. The [historical contract playbook](playbook-testnet.md)
-is not an npm quickstart. See [current workflow evidence and remaining limits](npm-workflow-evidence-2026-09-27.md)
+is not an npm quickstart. See [current workflow evidence and remaining limits](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md)
 before declaring a release ready.
