@@ -103,7 +103,7 @@ only enforcement boundary.
 - The contract is gatechecked and live on testnet; treat its interface as a published
   contract. The negative/§10 suite is not optional and must stay green from commit one.
 - Contract, SDK, x402 gate check records, and release reports belong in the canonical
-  project artifact archive linked below. Keep technical API and usage documentation
+  [project artifact archive](https://github.com/ackrate/ackrate-project/tree/main/instance/artifacts). Keep technical API and usage documentation
   here and update it when the matching surface changes.
 - The published SDK and CLI default to the verified Mainnet registry. Select Testnet explicitly for development scripts. Hot burner keys are testnet-only, never reused on
   mainnet, and never committed. Mainnet paths require the complete verified

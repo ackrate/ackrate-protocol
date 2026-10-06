@@ -102,7 +102,11 @@ npm ci
 npm run gatecheck:release -- --keep-artifacts
 ```
 
-This builds real package archives and checks clean consumer installs. Live
+This stages the public package files with their vetted Stellar 16 dependency
+bundles, builds real package archives, and checks clean consumer installs without
+consumer overrides. Use the retained, verified archives for release preparation;
+packing directly from a workspace omits its hoisted dependency bundle. Changed
+archives require new package versions before publication. Live
 [Testnet workflows](docs/testnet-workflows.md), explicitly authorized Mainnet
 payments, and npm publication are separate checks. See the
 [documentation index](docs/list.md) for protocol design, deployment ownership

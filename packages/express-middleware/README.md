@@ -26,7 +26,7 @@ Version **0.3.1** requires
 Install with:
 
 ```bash
-npm install --save-exact @ackrate/express-middleware@0.3.1 @ackrate/stellar@0.3.0 @stellar/stellar-sdk@16.3.0 express@5.2.1
+npm install --save-exact @ackrate/express-middleware@0.3.1 @ackrate/stellar@0.3.0 express@5.2.1
 ```
 
 See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)

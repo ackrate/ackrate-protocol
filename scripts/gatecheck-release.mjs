@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { preparePackageBundle } from "./prepare-package-bundle.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = "/tmp/ackrate-release-npm-cache";
@@ -98,10 +99,20 @@ for (const [directory, expectedName, expectedVersion] of packages) {
     !readmeBody.includes(`${expectedName} ${expectedVersion}`)
     && !readmeBody.includes(`${expectedName}@${expectedVersion}`)
   ) fail(`${expectedName} README does not identify candidate version ${expectedVersion}`);
-  const packed = JSON.parse(run("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], packageRoot));
+  const expectedBundles = expectedName === "@ackrate/express-middleware"
+    ? ["@stellar/stellar-sdk", "@x402/stellar"] : ["@stellar/stellar-sdk"];
+  if (JSON.stringify(manifest.bundleDependencies) !== JSON.stringify(expectedBundles)) {
+    fail(`${expectedName} must bundle its verified upstream dependency graph`);
+  }
+  const stagedRoot = preparePackageBundle(packageRoot, path.join(packRoot, `stage-${expectedName.split("/")[1]}`), run,
+    JSON.parse(readFileSync(path.join(ROOT, "package.json"), "utf8")).overrides);
+  const packed = JSON.parse(run("npm", ["pack", "--dry-run", "--json", "--ignore-scripts"], stagedRoot));
   const entry = packed[0];
   if (!entry || entry.name !== expectedName || entry.version !== expectedVersion) {
     fail(`${expectedName} dry-run pack metadata did not match its manifest`);
+  }
+  if (expectedBundles.some((name) => !entry.bundled?.includes(name))) {
+    fail(`${expectedName} tarball would omit a required upstream bundle`);
   }
   const names = new Set((entry.files ?? []).map((file) => file.path));
   if (expectedName === "@ackrate/stellar") {
@@ -140,13 +151,18 @@ for (const [directory, expectedName, expectedVersion] of packages) {
   }
   const actual = JSON.parse(run("npm", [
     "pack", "--json", "--ignore-scripts", "--pack-destination", packRoot,
-  ], packageRoot))[0];
+  ], stagedRoot))[0];
   if (!actual?.filename) fail(`${expectedName} did not produce a real tarball`);
   const tarballPath = path.join(packRoot, actual.filename);
   const listing = run("tar", ["-tzf", tarballPath]);
   const artifactFiles = listing.split("\n").filter((name) => /\.(?:js|mjs|cjs|d\.ts|json|md)$/i.test(name));
+  const contentRoot = path.join(packRoot, `contents-${expectedName.split("/")[1]}`);
+  mkdirSync(contentRoot);
+  // Read every first-party and bundled text artifact, as before. Extract once
+  // rather than spawning tar for each of thousands of upstream bundle files.
+  run("tar", ["-xzf", tarballPath, "-C", contentRoot]);
   for (const artifactFile of artifactFiles) {
-    const body = run("tar", ["-xOzf", tarballPath, artifactFile]);
+    const body = readFileSync(path.join(contentRoot, artifactFile), "utf8");
     if (artifactFile === "package/README.md") {
       if (!body.includes(`https://stellar.expert/explorer/public/contract/${MAINNET_REGISTRY}`)) {
         fail(`${expectedName} README is missing the official Mainnet explorer link`);
@@ -165,6 +181,7 @@ for (const [directory, expectedName, expectedVersion] of packages) {
       }
     }
   }
+  rmSync(contentRoot, { recursive: true, force: true });
   tarballs.set(expectedName, tarballPath);
   console.log(`  verified ${expectedName}@${expectedVersion} (${entry.entryCount} files)`);
 }
@@ -187,6 +204,7 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
   }, null, 2));
   run("npm", ["install", "--ignore-scripts", ["--no-", "au", "dit"].join(""), "--no-fund"], installRoot);
   run("npm", [["au", "dit"].join(""), "--audit-level=high"], installRoot);
+  console.log(run(process.execPath, [path.join(ROOT, "scripts/check-packed-sdk.mjs"), installRoot]).trim());
   writeFileSync(path.join(installRoot, "tsconfig.json"), JSON.stringify({
     compilerOptions: {
       target: "ES2022",
@@ -284,6 +302,7 @@ console.log("runtime imports and fail-closed published deployment configuration 
     }, null, 2));
     run("npm", ["install", "--ignore-scripts", "--no-fund"], consumerRoot);
     run("npm", [["au", "dit"].join(""), "--audit-level=high"], consumerRoot);
+    console.log(run(process.execPath, [path.join(ROOT, "scripts/check-packed-sdk.mjs"), consumerRoot]).trim());
     if (name === "@ackrate/cli") {
       const bin = path.join(consumerRoot, "node_modules", ".bin", "ackrate");
       if (run(bin, ["--version"], consumerRoot).trim() !== candidateVersions.get(name)) {

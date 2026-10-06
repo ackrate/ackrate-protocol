@@ -25,15 +25,19 @@ The [compatibility notes](https://github.com/ackrate/ackrate-project/blob/main/i
 stricter legacy challenge selection and the separate canonical adapters.
 Local verification does not establish npm availability or live settlement.
 
-After publication and registry integrity verification, install the candidate set:
+Local candidate archives now bundle Stellar SDK 16.3.0 with patched Axios 1.20.0.
+The middleware also bundles its Stellar x402 adapter. Repository overrides do not
+propagate to npm consumers; the verified dependency bytes travel in the archives.
+Use `npm run gatecheck:release -- --keep-artifacts` to prepare them. Direct packing
+from a workspace omits the hoisted dependency bundle. Each changed archive needs
+a new package version before publication; the historical versions below do not
+acquire this dependency fix.
 
-```bash
-npm install --save-exact @ackrate/core@0.4.2 @ackrate/stellar@0.3.0 @ackrate/ap2@0.4.1 @ackrate/express-middleware@0.3.1 @stellar/stellar-sdk@16.3.0
-npm install -g @ackrate/cli@0.2.2
-```
-
-Until those versions are published, the published installation commands below
-continue to refer to the September 7 release. Historical evidence is retained.
+Stellar primitives such as `Keypair`, `TransactionBuilder`, and `xdr` are available
+through `@ackrate/stellar`; candidate consumers do not need an additional direct
+installation of the upstream SDK. Bundled copies have separate class identities.
+The gate checks foreign keys/XDR values, transaction envelope round trips,
+signatures, and the Core registration and journal boundaries between those copies.
 
 ### September 7 setup-recovery release
 
@@ -176,6 +180,8 @@ The gate check:
 - builds and typechecks the workspace;
 - runs all package and app tests;
 - dry-inspects and builds real tarballs for every public package;
+- scans every bundled dependency graph and repeats the scan in combined and minimal consumers without overrides;
+- checks Stellar 16/Axios identities, foreign-key signing, XDR and transaction interoperability;
 - checks exact name/version, README, JavaScript, and declaration files;
 - rejects install lifecycle scripts, source/test leakage, env files, and secret-like paths;
 - installs all five tarballs into an empty project, strict-typechecks public
