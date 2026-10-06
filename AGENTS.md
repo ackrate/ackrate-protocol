@@ -86,6 +86,10 @@ refundability, multi-merchant, and cart-confirmation semantics fail closed. AP2
 normalization and evidence stay separate from x402, and the contract remains the
 only enforcement boundary.
 
+The explicit `@ackrate/ap2/v02` entry point contains historical v0.2 helpers.
+It shares the current SD-JWT verifier and replay store. Its extension encoders
+do not add methods to the current Mainnet V2 contract. See [API boundaries](docs/ap2-v02.md).
+
 ### `apps/`
 - `fulfillment-agent/` — reference 402-gated merchant; verifies payment on-chain
   before serving.

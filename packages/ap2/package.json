@@ -31,6 +31,10 @@
     "./sd-jwt": {
       "types": "./dist/sd-jwt.d.ts",
       "default": "./dist/sd-jwt.js"
+    },
+    "./v02": {
+      "types": "./dist/v02/index.d.ts",
+      "default": "./dist/v02/index.js"
     }
   },
   "files": [
@@ -38,7 +42,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/index.test.ts src/validator.test.ts src/sd-jwt.test.ts"
+    "test": "node --import tsx --test src/index.test.ts src/validator.test.ts src/sd-jwt.test.ts src/v02/*.test.ts"
   },
   "dependencies": {
     "@ackrate/core": "^0.4.0",

@@ -6,6 +6,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { preparePackageBundle } from "./prepare-package-bundle.mjs";
+import { withoutHistoricalWireIdentifiers } from "./branding-policy.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CACHE = "/tmp/ackrate-release-npm-cache";
@@ -171,7 +172,8 @@ for (const [directory, expectedName, expectedVersion] of packages) {
       // Explicit Testnet onboarding is supported and must remain discoverable.
       if (/time[ -]?lock/i.test(body)) fail(`${expectedName} README must describe the current registry, not retired timelock controls`);
     }
-    if (OBSOLETE_BRAND.test(body)) {
+    if (OBSOLETE_BRAND.test(withoutHistoricalWireIdentifiers(body,
+      `${directory}/${artifactFile.slice("package/".length)}`))) {
       fail(`${expectedName} tarball contains obsolete branding in ${artifactFile}`);
     }
     if ((expectedName === "@ackrate/stellar" && artifactFile === "package/dist/deployments.js")
@@ -220,6 +222,7 @@ console.log("Release gate check 3/4: clean install, strict TypeScript, runtime i
 import { ackrate, DeliveryPendingError } from "@ackrate/core";
 import { Client, DEPLOYMENTS, MAINNET, MAINNET_DEPLOYMENT_MANIFEST, registryClient, publishedMainnetNetworkFromDeploymentManifest, type StellarSigner } from "@ackrate/stellar";
 import { createAp2ComplianceValidator, InMemoryAp2ReplayStore } from "@ackrate/ap2";
+import { AP2_OPEN_PAYMENT_VCT, signAp2Mandate as signV02Mandate, verifyAp2MerchantAuthorization } from "@ackrate/ap2/v02";
 import { createBoundAckratePaidJsonRoute, InMemoryBoundRedemptionStore } from "@ackrate/express-middleware";
 
 void [ackrate.mainnet, DeliveryPendingError, MAINNET, MAINNET_DEPLOYMENT_MANIFEST, DEPLOYMENTS.mainnet.mandateRegistryId, publishedMainnetNetworkFromDeploymentManifest];
@@ -240,7 +243,7 @@ const route = createBoundAckratePaidJsonRoute({
 import { parseCanonical402, stellarAtomicAmount } from "@ackrate/core/x402";
 import { canonicalStellarPaymentMiddleware } from "@ackrate/express-middleware/canonical";
 import { verifyCompactJws } from "@ackrate/ap2/sd-jwt";
-void [validator, route, parseCanonical402, stellarAtomicAmount, canonicalStellarPaymentMiddleware, verifyCompactJws];
+void [validator, route, parseCanonical402, stellarAtomicAmount, canonicalStellarPaymentMiddleware, verifyCompactJws, AP2_OPEN_PAYMENT_VCT, signV02Mandate, verifyAp2MerchantAuthorization];
 `);
   writeFileSync(path.join(installRoot, "runtime.mjs"), `
 import assert from "node:assert/strict";
@@ -250,8 +253,16 @@ import { ackrate } from "@ackrate/core";
 await Promise.all([
   import("@ackrate/core"), import("@ackrate/stellar"),
   import("@ackrate/ap2"), import("@ackrate/express-middleware"),
+  import("@ackrate/ap2/v02"),
   import("@ackrate/core/x402"), import("@ackrate/express-middleware/canonical"), import("@ackrate/ap2/sd-jwt"),
 ]);
+const ap2 = await import("@ackrate/ap2");
+const v02 = await import("@ackrate/ap2/v02");
+const jwt = await import("@ackrate/ap2/sd-jwt");
+assert.equal(ap2.AP2_SPEC_VERSION, "0.1.0");
+assert.equal(v02.AP2_SPEC_VERSION, "0.2.0");
+assert.equal(v02.InMemoryAp2ReplayStore, ap2.InMemoryAp2ReplayStore);
+assert.equal(v02.verifyDelegateSdJwtChain, jwt.verifyDelegateSdJwtChain);
 assert.equal(DEPLOYMENTS.mainnet.mandateRegistryId, ${JSON.stringify(MAINNET_REGISTRY)});
 assert.equal(DEPLOYMENTS.mainnet.registryWasmSha256, ${JSON.stringify(MAINNET_WASM)});
 assert.equal(DEPLOYMENTS.mainnet.schemaVersion, 2);
@@ -311,13 +322,17 @@ console.log("runtime imports and fail-closed published deployment configuration 
       run(bin, ["--help"], consumerRoot);
       run(bin, ["demo"], consumerRoot);
     } else {
-      writeFileSync(path.join(consumerRoot, "consumer.ts"), `import * as api from ${JSON.stringify(name)};\nvoid api;\n`);
+      const extra = name === "@ackrate/ap2" ? '\nimport * as v02 from "@ackrate/ap2/v02";\nvoid v02;\n' : '';
+      writeFileSync(path.join(consumerRoot, "consumer.ts"), `import * as api from ${JSON.stringify(name)};\nvoid api;\n${extra}`);
       writeFileSync(path.join(consumerRoot, "tsconfig.json"), JSON.stringify({
         compilerOptions: { target: "ES2022", module: "NodeNext", moduleResolution: "NodeNext", strict: true, noEmit: true, skipLibCheck: false },
         include: ["consumer.ts"],
       }, null, 2));
       run(path.join(consumerRoot, "node_modules", ".bin", "tsc"), ["-p", "tsconfig.json"], consumerRoot);
       run(process.execPath, ["--input-type=module", "-e", `await import(${JSON.stringify(name)})`], consumerRoot);
+      if (name === "@ackrate/ap2") {
+        run(process.execPath, ["--input-type=module", "-e", 'import assert from "node:assert/strict"; const root = await import("@ackrate/ap2"); const v02 = await import("@ackrate/ap2/v02"); assert.equal(v02.AP2_SPEC_VERSION, "0.2.0"); assert.equal(v02.InMemoryAp2ReplayStore, root.InMemoryAp2ReplayStore);'], consumerRoot);
+      }
     }
     console.log(`  minimal ${name} consumer and dependency scan passed`);
     rmSync(consumerRoot, { recursive: true, force: true });

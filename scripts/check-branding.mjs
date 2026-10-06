@@ -2,6 +2,7 @@
 import { lstatSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withoutHistoricalWireIdentifiers } from "./branding-policy.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const RETIRED_BRAND_FORMS = [
@@ -27,7 +28,7 @@ function visit(directory) {
       if (!target.isFile()) continue;
     }
     if (SKIP_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
-    const body = readFileSync(absolute, "utf8");
+    const body = withoutHistoricalWireIdentifiers(readFileSync(absolute, "utf8"), relative);
     if (RETIRED_BRAND_FORMS.some((form) => body.includes(form) || relative.includes(form))) {
       matches.push(relative);
     }
