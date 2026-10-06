@@ -120,9 +120,9 @@ only enforcement boundary.
   never reintroduce the prohibited T1 review term.
 - The contract is gatechecked and live on testnet; treat its interface as a published
   contract. The negative/§10 suite is not optional and must stay green from commit one.
-- `security/` holds the contract, SDK, and x402 gatecheck records; the release docs
-  `docs/mandate-registry-contract.md`, `docs/reapp-sdk-npm.md`, and `docs/x402-roundtrip.md`
-  document each shipped step. Update them when the matching surface changes.
+- Contract, SDK, x402 gate check records, and release reports belong in the canonical
+  project artifact archive linked below. Keep technical API and usage documentation
+  here and update it when the matching surface changes.
 - Testnet only in this repo: hot burner keys, never reused on mainnet, never committed.
 
 ## Project knowledge and task artifacts
