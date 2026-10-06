@@ -328,6 +328,13 @@ export function createAp2PoolParticipationAuthorization(
 ): Readonly<Ap2PoolParticipationAuthorization> {
   requireWindow(input.notBefore, input.expiresAt);
   const terms = input.participation.terms;
+  const checkoutMerchant = input.checkout.checkout.merchant;
+  if (!checkoutMerchant || typeof checkoutMerchant.id !== "string" || checkoutMerchant.id.length === 0) {
+    throw new Error("checkout must identify its verified merchant.");
+  }
+  if (checkoutMerchant.id !== address("participation merchant", terms.merchant).toString()) {
+    throw new Error("checkout merchant must equal the participation merchant.");
+  }
   if (input.expiresAt <= terms.captureWindowEnd) {
     throw new Error("expiresAt must be later than the Composite capture window.");
   }

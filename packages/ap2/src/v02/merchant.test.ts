@@ -315,6 +315,77 @@ test("a declared execution_date is still held to the window", async () => {
   await assert.rejects(verify(f), code("PAYMENT_CONSTRAINT_FAILED"));
 });
 
+test("signed execution-window bounds reject malformed and noncanonical UTC dates", async () => {
+  const malformed = ["not-a-date", "2026", "2026-07-24T00:00:00", "2026-07-24T00:00:00+00:00",
+    "2026-02-30T00:00:00Z", "2026-07-24T00:00:00.000Z", "2026-07-24T00:00:60Z", ""];
+  for (const field of ["not_before", "not_after"]) {
+    for (const date of malformed) {
+      const f = fixture({ paymentConstraints: [{ type: "payment.execution_date", [field]: date }] });
+      await assert.rejects(verify(f), code("SCHEMA_INVALID"), `${field}: ${JSON.stringify(date)}`);
+    }
+  }
+});
+
+test("signed execution windows require a bound and reject reversed bounds", async () => {
+  for (const constraint of [
+    { type: "payment.execution_date" },
+    { type: "payment.execution_date", not_before: "2099-01-01T00:00:00Z", not_after: "2020-01-01T00:00:00Z" },
+  ]) {
+    await assert.rejects(verify(fixture({ paymentConstraints: [constraint] })), code("SCHEMA_INVALID"));
+  }
+  const now = new Date(1_800_000_000 * 1000).toISOString().replace(".000Z", "Z");
+  for (const closedPaymentOverrides of [{}, { execution_date: now }]) {
+    const f = fixture({ paymentConstraints: [{ type: "payment.execution_date", not_before: now, not_after: now }],
+      closedPaymentOverrides });
+    assert.equal((await verify(f)).closedPayment.payment_amount.amount, f.amount);
+  }
+});
+
+test("signed closed execution dates must be real canonical UTC whole seconds", async () => {
+  for (const execution_date of ["not-a-date", "2026", "2026-07-24T00:00:00",
+    "2026-07-24T00:00:00+00:00", "2026-02-30T00:00:00Z", "2026-07-24T00:00:00.000Z"]) {
+    await assert.rejects(verify(fixture({ closedPaymentOverrides: { execution_date } })), code("SCHEMA_INVALID"));
+  }
+});
+
+test("usage amount, uses and optional last-used time require non-negative safe integers", async () => {
+  const f = fixture();
+  for (const field of ["totalAmountMinor", "totalUses", "lastUsedAt"]) {
+    for (const invalid of [NaN, Infinity, "0", -1, 0.5, Number.MAX_SAFE_INTEGER + 1, null]) {
+      await assert.rejects(verify(f, { usage: { totalAmountMinor: 0, totalUses: 0, [field]: invalid } }),
+        code("SCHEMA_INVALID"), `${field}: ${String(invalid)}`);
+    }
+  }
+  assert.equal((await verify(f, { usage: { totalAmountMinor: 0, totalUses: 0, lastUsedAt: 0 } }))
+    .closedPayment.payment_amount.amount, f.amount);
+});
+
+test("missing usage fields cannot bypass cumulative budget or occurrence checks", async () => {
+  const f = fixture({ paymentConstraints: [{ type: "payment.budget", currency: "USD", max: 1 }] });
+  for (const usage of [{}, { totalUses: 0 }, { totalAmountMinor: 0 }]) {
+    await assert.rejects(verify(f, { usage }), code("SCHEMA_INVALID"));
+  }
+  await assert.rejects(verify(f, { usage: undefined }), code("MISSING_USAGE_CONTEXT"));
+  await assert.rejects(verify(f), code("PAYMENT_CONSTRAINT_FAILED"));
+  const recurrence = fixture({ paymentConstraints: [
+    { type: "payment.amount_range", currency: "USD", max: 5_000 },
+    { type: "payment.budget", currency: "USD", max: 100 },
+    { type: "payment.agent_recurrence", frequency: "ON_DEMAND", max_occurrences: 1 },
+  ] });
+  await assert.rejects(verify(recurrence, { usage: { totalAmountMinor: 0, totalUses: 1 } }),
+    code("PAYMENT_CONSTRAINT_FAILED"));
+});
+
+test("usage addition rejects unsafe cumulative amount or occurrence totals", async () => {
+  const f = fixture();
+  for (const usage of [
+    { totalAmountMinor: Number.MAX_SAFE_INTEGER - f.amount + 1, totalUses: 0 },
+    { totalAmountMinor: 0, totalUses: Number.MAX_SAFE_INTEGER },
+  ]) {
+    await assert.rejects(verify(f, { usage }), code("SCHEMA_INVALID"));
+  }
+});
+
 test("a canceled or unfinished checkout cannot back a capture", async () => {
   for (const status of ["canceled", "incomplete", "requires_escalation"]) {
     await assert.rejects(

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import {
+  createHash,
   generateKeyPairSync,
   type JsonWebKey,
   type KeyObject,
@@ -22,7 +23,7 @@ import {
   parseSdJwt,
   signCompactJws,
 } from "./sd-jwt.js";
-import type { VerifiedAp2CheckoutAuthorization } from "./merchant.js";
+import { verifyAp2CheckoutAuthorization } from "./merchant.js";
 
 const addresses = [
   "GCFIRY65OQE7DFP5KLNS2PF2LVZMUZYJX4OZIEQ36N2IQANUB5XVYOJR",
@@ -98,10 +99,38 @@ function fixture(options: { scheduleHash?: string; constraints?: readonly unknow
   }, agentKey.privateKey, "kb+sd-jwt");
   return {
     user,
+    agentKey,
     now,
     terms,
     serialized: chain(open, closed),
   };
+}
+
+async function verifiedCheckout(value: ReturnType<typeof fixture>, merchantId = value.terms.merchant) {
+  const merchantSigner = p256();
+  const merchant = { id: merchantId, name: "Pool merchant" };
+  const checkoutJwt = signCompactJws({
+    id: "pool-checkout", merchant, status: "ready_for_complete", currency: "USD",
+    line_items: [{ id: "pool-item", item: { id: "article", title: "Pool article", price: 125 },
+      quantity: 1, totals: [] }], totals: [], links: [],
+  }, { alg: "ES256", key: merchantSigner.privateKey });
+  const checkoutHash = createHash("sha256").update(checkoutJwt, "ascii").digest("base64url");
+  const open = sdJwt({ delegate_payload: [{
+    vct: "mandate.checkout.open.1", constraints: [
+      { type: "checkout.allowed_merchants", allowed: [merchant] },
+    ], cnf: { jwk: value.agentKey.publicJwk }, exp: value.now + 600,
+  }] }, value.user.privateKey);
+  const closed = sdJwt({ delegate_payload: [{
+    vct: "mandate.checkout.1", checkout_jwt: checkoutJwt, checkout_hash: checkoutHash,
+  }], iat: value.now, aud: "merchant.example", nonce: "checkout-nonce",
+  sd_hash: computeSdHash(parseSdJwt(open)) }, value.agentKey.privateKey, "kb+sd-jwt");
+  return verifyAp2CheckoutAuthorization({
+    checkoutMandateChain: chain(open, closed),
+    resolveCheckoutRootKey: () => value.user.publicJwk,
+    resolveCheckoutJwtKey: () => merchantSigner.publicJwk,
+    expectedAudience: "merchant.example", expectedCheckoutNonce: "checkout-nonce",
+    expectedMerchant: merchant, expectedCurrency: "USD", currentTime: value.now,
+  });
 }
 
 test("verifies an exact Ackrate open/closed pool-participation chain", async () => {
@@ -163,14 +192,7 @@ test("builds and signs the contract participation authorization from verified ev
     expected: value.terms,
     currentTime: value.now,
   });
-  const checkout = {
-    checkoutChain: participation.participationChain,
-    checkout: {},
-    closedCheckout: {},
-    checkoutJwtHash: "unused",
-    openCheckoutHash: "unused",
-    closedCheckoutHash: "unused",
-  } as unknown as VerifiedAp2CheckoutAuthorization;
+  const checkout = await verifiedCheckout(value);
   const verifier = Keypair.fromRawEd25519Seed(Buffer.alloc(32, 7));
   const authorization = createAp2PoolParticipationAuthorization({
     checkout,
@@ -189,4 +211,27 @@ test("builds and signs the contract participation authorization from verified ev
     Buffer.from(signed.authorizationId, "hex"),
     Buffer.from(signed.signature, "hex"),
   ));
+});
+
+test("pool authorization rejects a missing or mismatched verified checkout merchant", async () => {
+  const value = fixture();
+  const participation = await verifyAckratePoolParticipation({
+    participationMandateChain: value.serialized,
+    resolveRootKey: () => value.user.publicJwk,
+    expectedAudience: "merchant.example", expectedNonce: "pool-nonce",
+    expected: value.terms, currentTime: value.now,
+  });
+  const options = { participation, networkPassphrase: Networks.TESTNET,
+    verifier: Keypair.fromRawEd25519Seed(Buffer.alloc(32, 7)), notBefore: value.now,
+    expiresAt: value.terms.captureWindowEnd + 1, nonce: "17".repeat(32) };
+  const checkout = await verifiedCheckout(value);
+  assert.throws(() => createAp2PoolParticipationAuthorization({ ...options,
+    checkout: { ...checkout, checkout: { ...checkout.checkout, merchant: undefined } },
+  }), /checkout must identify its verified merchant/);
+  for (const merchant of [addresses[0], "opaque-merchant-id"]) {
+    const mismatched = await verifiedCheckout(value, merchant);
+    assert.equal(mismatched.checkout.merchant?.id, merchant);
+    assert.throws(() => createAp2PoolParticipationAuthorization({ ...options, checkout: mismatched }),
+      /checkout merchant must equal the participation merchant/);
+  }
 });

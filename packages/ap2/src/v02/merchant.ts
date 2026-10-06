@@ -201,6 +201,18 @@ function integer(label: string, value: unknown, minimum = 0): number {
   return value as number;
 }
 
+function timestamp(label: string, value: unknown): number {
+  const iso = text(label, value);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(iso)) {
+    reject("SCHEMA_INVALID", `${label} must be a canonical UTC whole-second timestamp.`);
+  }
+  const milliseconds = Date.parse(iso);
+  if (!Number.isFinite(milliseconds) || new Date(milliseconds).toISOString().replace(".000Z", "Z") !== iso) {
+    reject("SCHEMA_INVALID", `${label} must be a real calendar timestamp.`);
+  }
+  return milliseconds;
+}
+
 function array(label: string, value: unknown): readonly unknown[] {
   if (!Array.isArray(value)) reject("SCHEMA_INVALID", `${label} must be an array.`);
   return value;
@@ -329,10 +341,8 @@ function parseClosedPayment(value: unknown): Ap2ClosedPaymentMandate {
   };
   if (candidate.pisp !== undefined) parsed.pisp = pisp("closed Payment Mandate.pisp", candidate.pisp);
   if (candidate.execution_date !== undefined) {
+    timestamp("closed Payment Mandate.execution_date", candidate.execution_date);
     parsed.execution_date = text("closed Payment Mandate.execution_date", candidate.execution_date);
-    if (!Number.isFinite(Date.parse(parsed.execution_date))) {
-      reject("SCHEMA_INVALID", "closed Payment Mandate.execution_date must be ISO 8601.");
-    }
   }
   if (candidate.risk_data !== undefined) {
     parsed.risk_data = object("closed Payment Mandate.risk_data", candidate.risk_data);
@@ -611,22 +621,30 @@ function evaluatePaymentConstraints(
         break;
       }
       case "payment.execution_date": {
+        if (constraint.not_before === undefined && constraint.not_after === undefined) {
+          reject("SCHEMA_INVALID", "payment.execution_date requires at least one window bound.");
+        }
+        const notBefore = constraint.not_before === undefined ? undefined
+          : timestamp("payment.execution_date.not_before", constraint.not_before);
+        const notAfter = constraint.not_after === undefined ? undefined
+          : timestamp("payment.execution_date.not_after", constraint.not_after);
+        if (notBefore !== undefined && notAfter !== undefined && notBefore > notAfter) {
+          reject("SCHEMA_INVALID", "payment.execution_date window bounds are reversed.");
+        }
         // A closed mandate that simply omits execution_date must not escape a
         // window the user signed; an undeclared execution date is the payment
         // happening now, so hold it to the same bounds.
         const execution = closed.execution_date === undefined
           ? currentTimeMs
-          : Date.parse(closed.execution_date);
+          : timestamp("closed Payment Mandate.execution_date", closed.execution_date);
         if (!Number.isFinite(execution)) reject("SCHEMA_INVALID", "execution_date must be ISO 8601.");
         if (
-          constraint.not_before !== undefined &&
-          execution < Date.parse(text("payment.execution_date.not_before", constraint.not_before))
+          notBefore !== undefined && execution < notBefore
         ) {
           reject("PAYMENT_CONSTRAINT_FAILED", "payment executes before the allowed window.");
         }
         if (
-          constraint.not_after !== undefined &&
-          execution > Date.parse(text("payment.execution_date.not_after", constraint.not_after))
+          notAfter !== undefined && execution > notAfter
         ) {
           reject("PAYMENT_CONSTRAINT_FAILED", "payment executes after the allowed window.");
         }
@@ -738,6 +756,19 @@ export async function verifyAp2MerchantAuthorization(
   text("expectedPaymentNonce", input.expectedPaymentNonce);
   const expectedMerchant = merchant("expectedMerchant", input.expectedMerchant);
   const expectedAmount = integer("expectedAmountMinor", input.expectedAmountMinor, 1);
+  let usage: Ap2MandateUsageContext | undefined;
+  if (input.usage !== undefined) {
+    const candidate = object("usage", input.usage);
+    usage = {
+      totalAmountMinor: integer("usage.totalAmountMinor", candidate.totalAmountMinor),
+      totalUses: integer("usage.totalUses", candidate.totalUses),
+      ...(candidate.lastUsedAt === undefined ? {} : {
+        lastUsedAt: integer("usage.lastUsedAt", candidate.lastUsedAt),
+      }),
+    };
+    integer("cumulative payment amount", usage.totalAmountMinor + expectedAmount);
+    integer("cumulative payment uses", usage.totalUses + 1);
+  }
   const exponent = input.currencyMinorUnitExponent ?? 2;
   if (!Number.isSafeInteger(exponent) || exponent < 0 || exponent > 9) {
     reject("SCHEMA_INVALID", "currencyMinorUnitExponent must be an integer from 0 through 9.");
@@ -782,7 +813,7 @@ export async function verifyAp2MerchantAuthorization(
       open,
       closedPayment,
       checkoutAuthorization.openCheckoutHash,
-      input.usage,
+      usage,
       exponent,
       currentTimeMs,
     );
