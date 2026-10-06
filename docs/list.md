@@ -22,8 +22,8 @@ Current testnet facts:
 | [`x402-roundtrip.md`](x402-roundtrip.md) | Bound-v2 challenge, proof, chain verification, recovery, and stores. |
 | [`ap2-merchant-extension.md`](ap2-merchant-extension.md) | Implemented AP2 v0.2 open/closed-chain boundary, separate authorization contract, Simple/Composite routes, and deployment status. |
 | [`reapp-sdk-npm.md`](reapp-sdk-npm.md) | Package/version map, typed APIs, publication, and clean-install checks. |
-| [`repo-inventory.md`](repo-inventory.md) | Current repository surfaces and ownership boundaries. |
-| [`live-failure-drills.md`](live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
+| [`repo-inventory.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/b32ef46d4ce5b1a5936455c1d892cfd8c39fdef6/docs/repo-inventory.md) | Current repository surfaces and ownership boundaries. |
+| [`live-failure-drills.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/b32ef46d4ce5b1a5936455c1d892cfd8c39fdef6/docs/live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
 
 ## Package and app READMEs
 

@@ -131,7 +131,7 @@ and expiry before settlement.
 
 ## Historical security record
 
-[`security/x402-gatecheck-2026-06-16.md`](../security/x402-gatecheck-2026-06-16.md)
+[[historical artifact](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/3334588e9a6dfac7c7856ff42a609c8a12283422/security/x402-gatecheck-2026-06-16.md)](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/3334588e9a6dfac7c7856ff42a609c8a12283422/security/x402-gatecheck-2026-06-16.md)
 records the legacy proof-v1 review. It is retained as history, not as evidence
 for bound-v2. Current release evidence comes from the T2 gate check, bound-v2
 tests, and the fresh live commands above.

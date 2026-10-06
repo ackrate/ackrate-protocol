@@ -135,3 +135,7 @@ boundary.
   `docs/mandate-registry-contract.md`, `docs/reapp-sdk-npm.md`, and `docs/x402-roundtrip.md`
   document each shipped step. Update them when the matching surface changes.
 - Testnet only in this repo: hot burner keys, never reused on mainnet, never committed.
+
+## Project knowledge and task artifacts
+
+Authored plans, reviews, run evidence, screenshots, and handoff artifacts belong in the [Ackrate project wiki](https://github.com/ackrate/ackrate-project). Commit original Markdown evidence through its `instance/scripts/knowledge.mjs` ingest workflow into `sources/`, and retain original artifact bytes under `instance/artifacts/`. Do not commit task outputs in this code repository. Keep executable source, test fixtures, package/build inputs, and technical API/usage documentation here.
