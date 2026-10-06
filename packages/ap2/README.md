@@ -33,7 +33,7 @@ The dependency range accepts core `^0.4.0`; this coordinated release uses core
 Install the pinned set with:
 
 ```bash
-npm install --save-exact @ackrate/ap2@0.4.1 @ackrate/core@0.4.2 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/ap2@0.4.1 @ackrate/core@0.4.2
 ```
 
 See the [coordinated release status](https://github.com/ackrate/ackrate-protocol/blob/main/docs/ackrate-sdk-npm.md)

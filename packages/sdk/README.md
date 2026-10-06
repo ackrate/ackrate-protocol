@@ -15,7 +15,7 @@ must still be checked when the implementation changes.
 ## Install
 
 ```bash
-npm install --save-exact @ackrate/core@0.4.2 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/core@0.4.2
 ```
 
 Requires Node.js 22 or newer and the coordinated Stellar package `^0.3.0`.

@@ -1,6 +1,6 @@
 # Bound-v2 402 round trip
 
-September 27 candidate: [contract-independent x402 changes](x402-sdk-compatibility-2026-09-27.md). Package publication status is recorded separately from test results.
+September 27 candidate: [contract-independent x402 changes](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/x402-sdk-compatibility-2026-09-27.md). Package publication status is recorded separately from test results.
 
 Ackrate isolates the evolving HTTP payment wire format from the MandateRegistry.
 The contract owns spending authorization; the HTTP layer decides whether a
@@ -135,7 +135,7 @@ and expiry before settlement.
 
 ## Historical security record
 
-[`docs/security/x402-gatecheck-2026-06-16.md`](security/x402-gatecheck-2026-06-16.md)
+[[historical artifact](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/security/x402-gatecheck-2026-06-16.md)](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/security/x402-gatecheck-2026-06-16.md)
 records the legacy proof-v1 review. It is retained as history, not as evidence
 for bound-v2. Current release evidence comes from the release gate check, bound-v2
 tests, and the fresh live commands above.

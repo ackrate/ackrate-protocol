@@ -102,10 +102,16 @@ only enforcement boundary.
   never reintroduce the prohibited T1 review term.
 - The contract is gatechecked and live on testnet; treat its interface as a published
   contract. The negative/§10 suite is not optional and must stay green from commit one.
-- `docs/security/` holds the contract, SDK, and x402 gatecheck records; the release docs
-  `docs/mandate-registry-contract.md`, `docs/ackrate-sdk-npm.md`, and `docs/x402-roundtrip.md`
-  document each shipped step. Update them when the matching surface changes.
+- Contract, SDK, x402 gate check records, and release reports belong in the canonical
+  [project artifact archive](https://github.com/ackrate/ackrate-project/tree/main/instance/artifacts). Keep technical API and usage documentation
+  here and update it when the matching surface changes.
 - The published SDK and CLI default to the verified Mainnet registry. Select Testnet explicitly for development scripts. Hot burner keys are testnet-only, never reused on
   mainnet, and never committed. Mainnet paths require the complete verified
   deployment manifest, canonical USDC, explicit real-value confirmation, and
   external or secret-manager-backed signing; they must never fall back to testnet.
+
+## Project knowledge and task artifacts
+
+Authored plans, review reports, run evidence, screenshots, and handoff artifacts belong in the canonical [Ackrate project wiki](https://github.com/ackrate/ackrate-project). Commit original Markdown evidence through its `instance/scripts/knowledge.mjs` ingest workflow into `sources/`; retain original artifact bytes under `instance/artifacts/`. Do not commit these task outputs in this code repository. Keep executable source, test fixtures, package/build inputs, and technical API/usage documentation here.
+
+Historical artifacts from this repository are preserved in [the project artifact archive](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol). Update project task status in the parent wiki.

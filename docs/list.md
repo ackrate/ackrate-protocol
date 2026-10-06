@@ -1,7 +1,7 @@
 # Ackrate documentation index
 
 Package status is maintained in the [release matrix](ackrate-sdk-npm.md); live
-workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27.md).
+workflow results are in [September 27 evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md).
 
 ## Start here
 
@@ -9,8 +9,8 @@ workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27
 |---|---|
 | [`testnet-workflows.md`](testnet-workflows.md) | Installed CLI, SDK/AP2, local Express, recovery, canonical x402 and offline signing. |
 | [`playbook-testnet.md`](playbook-testnet.md) | Historical contract release and operating procedure. |
-| [`mainnet-roadmap.md`](mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
-| [`mainnet-mandate-registry-plan.md`](mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
+| [`mainnet-roadmap.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/mainnet-roadmap.md) | Contract, custody, SDK, CLI, agent, wallet, security, and evidence gates for mainnet. |
+| [`mainnet-mandate-registry-plan.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/mainnet-mandate-registry-plan.md) | Deep design and one-step execution plan for the first mainnet MandateRegistry workstream. |
 
 ## Protocol and implementation
 
@@ -20,8 +20,8 @@ workflow results are in [September 27 evidence](npm-workflow-evidence-2026-09-27
 | [`x402-roundtrip.md`](x402-roundtrip.md) | Bound-v2 challenge, proof, chain verification, recovery, and stores. |
 | [`wallet-chat-application.md`](wallet-chat-application.md) | Retirement record for the former wallet frontend. |
 | [`ackrate-sdk-npm.md`](ackrate-sdk-npm.md) | Package/version map, typed APIs, publication, and clean-install checks. |
-| [`repo-inventory.md`](repo-inventory.md) | Current repository surfaces and ownership boundaries. |
-| [`live-failure-drills.md`](live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
+| [`repo-inventory.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/repo-inventory.md) | Current repository surfaces and ownership boundaries. |
+| [`live-failure-drills.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/live-failure-drills.md) | Fresh testnet revocation, downtime recovery, and expiry evidence. |
 
 ## Package and app READMEs
 

@@ -14,7 +14,7 @@ evidence. The contract, not this package, enforces each payment.
 ## Install
 
 ```bash
-npm install --save-exact @ackrate/stellar@0.3.0 @stellar/stellar-sdk@16.3.0
+npm install --save-exact @ackrate/stellar@0.3.0
 ```
 
 Requires Node.js 22 or newer. See the

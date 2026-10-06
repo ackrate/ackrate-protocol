@@ -75,7 +75,7 @@ Start with [Testnet workflows](docs/testnet-workflows.md) for disposable actors
 and real development-network payments. Mainnet is the default; use it only with
 explicitly authorized actors and spending limits. The contract configuration is
 explained in the [Mainnet guide](docs/mainnet-configuration.md), and current
-proof is recorded in [September 27 workflow evidence](docs/npm-workflow-evidence-2026-09-27.md).
+proof is recorded in [September 27 workflow evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md).
 
 ## 📁 Repository Map
 
@@ -102,7 +102,11 @@ npm ci
 npm run gatecheck:release -- --keep-artifacts
 ```
 
-This builds real package archives and checks clean consumer installs. Live
+This stages the public package files with their vetted Stellar 16 dependency
+bundles, builds real package archives, and checks clean consumer installs without
+consumer overrides. Use the retained, verified archives for release preparation;
+packing directly from a workspace omits its hoisted dependency bundle. Changed
+archives require new package versions before publication. Live
 [Testnet workflows](docs/testnet-workflows.md), explicitly authorized Mainnet
 payments, and npm publication are separate checks. See the
 [documentation index](docs/list.md) for protocol design, deployment ownership

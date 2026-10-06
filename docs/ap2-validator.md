@@ -13,4 +13,4 @@ for explicit development-network configuration and the [release matrix](ackrate-
 for installable versions.
 
 The package tests run with `npm run test -w @ackrate/ap2`. Live and packed-package
-results are recorded in [September 27 workflow evidence](npm-workflow-evidence-2026-09-27.md).
+results are recorded in [September 27 workflow evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/npm-workflow-evidence-2026-09-27.md).
