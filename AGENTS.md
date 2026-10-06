@@ -127,3 +127,7 @@ only enforcement boundary.
   mainnet, and never committed. Mainnet paths require the complete verified
   deployment manifest, canonical USDC, explicit real-value confirmation, and
   external or secret-manager-backed signing; they must never fall back to testnet.
+
+## Project knowledge and task artifacts
+
+Authored plans, reviews, run evidence, screenshots, and handoff artifacts belong in the [Ackrate project wiki](https://github.com/ackrate/ackrate-project). Commit original Markdown evidence through its `instance/scripts/knowledge.mjs` ingest workflow into `sources/`, and retain original artifact bytes under `instance/artifacts/`. Do not commit task outputs in this code repository. Keep executable source, test fixtures, package/build inputs, and technical API/usage documentation here.

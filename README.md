@@ -119,7 +119,7 @@ on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched each `latest` t
 and downloaded archive's SHA-512 to the verified release bytes. A fresh public
 installation passed strict TypeScript, ESM, default-contract/full-V2-interface,
 package-README, and CLI guard checks at **04:25:11**, with zero dependency findings.
-See the [Step 1 release evidence](docs/t3-step-1-gate-2026-09-07.md).
+See the [Step 1 release evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/t3-step-1-gate-2026-09-07.md).
 
 | Package | Current public version | Earlier 03:33 checkpoint | Protocol/specification target |
 |---|---:|---:|---|
@@ -227,7 +227,7 @@ npm run drills:testnet
 
 Use the public browser companion at [ackrate.live/express](https://ackrate.live/express),
 or follow the verified [clean VS Code project guide](docs/express-vscode-quickstart.md).
-Operational evidence and boundaries are in the [live drill record](docs/live-failure-drills.md),
+Operational evidence and boundaries are in the [live drill record](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/live-failure-drills.md),
 [threat model](security/threat-model.md), [data flow](security/data-flow.md), and
 [upgrade authority runbook](security/upgrade-authority.md).
 

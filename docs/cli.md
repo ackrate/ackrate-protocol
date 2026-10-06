@@ -19,7 +19,7 @@ the combined public install passed strict TypeScript, ESM imports, default
 Mainnet contract, full V2 interface, packed README, and CLI confirmation-guard
 checks at **04:25:11**, with zero dependency findings. Registry `latest` tags and
 downloaded archive SHA-512 integrity values matched at **04:25:38–04:25:45**.
-See the [dated Step 1 release evidence](t3-step-1-gate-2026-09-07.md).
+See the [dated Step 1 release evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/t3-step-1-gate-2026-09-07.md).
 
 The current patch candidates are Core `0.4.1` and CLI `0.2.1`. Core repairs
 shared exact-receipt recovery and retains uncertain settlements when RPC network
@@ -117,7 +117,7 @@ npx --yes @ackrate/cli@0.2.1 demo research-agent \
 Public installation and configuration checks for this patch are still required.
 Release evidence is distinct from a new live-payment run: retain the resulting
 transaction and delivery receipts when exercising the reference-agent workflow.
-Use the [current-run evidence checklist](mainnet-live-usdc-evidence.md#evidence-required-for-a-new-step-3-run)
+Use the [current-run evidence checklist](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/3334588e9a6dfac7c7856ff42a609c8a12283422/docs/mainnet-live-usdc-evidence.md#evidence-required-for-a-new-step-3-run)
 to record the exact release, delivered output, finalized transfers, state/balance
 agreement, and fourth-purchase rejection. A local bundle run establishes only
 that source candidate's behavior.
@@ -170,7 +170,7 @@ evidence still need review after implementation changes.
 
 Historical Mainnet direct-payment transactions, rejection evidence, and the
 recipient balance delta remain in
-[`mainnet-live-usdc-evidence.md`](mainnet-live-usdc-evidence.md). Those receipts
+[`mainnet-live-usdc-evidence.md`](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/revisions/3334588e9a6dfac7c7856ff42a609c8a12283422/docs/mainnet-live-usdc-evidence.md). Those receipts
 do not prove completion of the newer reference-agent HTTP flow. Retain a new
 run's delivery receipts and transaction evidence before marking that acceptance
 check complete. Publication, public clean installation, and live delivery are

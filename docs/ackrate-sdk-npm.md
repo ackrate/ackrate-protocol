@@ -16,7 +16,7 @@ checks. The complete dependency tree reported no dependency problems. Runtime
 probes blocked networking and child processes and recorded zero signer calls.
 The public verification record completed at **18:05:19 Bangkok on September 7,
 2026 (11:05:19 UTC)**. See the
-[public package verification](public-npm-release-verification-20260907T110304Z.json).
+[public package verification](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/public-npm-release-verification-20260907T110304Z.json).
 
 The published CLI archive matches the verified archive, and its executable is
 byte-identical to the bundle exercised by the live run:
@@ -40,7 +40,7 @@ USDC**, payer USDC balance **0**, and merchant USDC balance **0.03**. Public age
 history contained exactly those three successful agent transactions and no
 fourth applied transaction. A separate read-only `validate_mandate` simulation
 for another 0.01 USDC returned contract error **6 (BudgetExceeded)**. The
-[independent receipt record](cli-mainnet-independent-receipts-2026-09-07.json)
+[independent receipt record](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/cli-mainnet-independent-receipts-2026-09-07.json)
 contains all hashes, identities, amounts, ledgers, and verification qualifications.
 
 These are bounded verification results, not a guarantee against every failure.
@@ -58,7 +58,7 @@ Registry checks on **2026-09-07 at 04:25:38–04:25:45 Bangkok (UTC+7)** matched
 their `latest` tags and downloaded archive SHA-512 integrity values. A fresh
 combined public install passed strict TypeScript, ESM imports, default-contract,
 full V2 interface, packed README, and CLI confirmation-guard checks at **04:25:11**,
-with zero dependency findings. See the [dated baseline release evidence](t3-step-1-gate-2026-09-07.md).
+with zero dependency findings. See the [dated baseline release evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/t3-step-1-gate-2026-09-07.md).
 
 The earlier **03:33 Bangkok** registry checkpoint is retained below as history;
 older packages do not acquire the new defaults or APIs automatically.

@@ -27,9 +27,9 @@ native 2-of-3 governance profile.
 
 All five versions above are **published and verified**. The current public
 install and archive identities were verified at **2026-09-07 18:05:19 Bangkok
-(UTC+7)**. See the [public npm integrity evidence](public-npm-release-verification-20260907T110304Z.json)
+(UTC+7)**. See the [public npm integrity evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/public-npm-release-verification-20260907T110304Z.json)
 and [npm release matrix](ackrate-sdk-npm.md#release-matrix). The dated
-[Step 1 release evidence](t3-step-1-gate-2026-09-07.md) records the historical
+[Step 1 release evidence](https://github.com/ackrate/ackrate-project/blob/main/instance/artifacts/108-other-repository-artifacts/ackrate-protocol/docs/t3-step-1-gate-2026-09-07.md) records the historical
 04:25 baseline with Core 0.4.0 and CLI 0.2.0, not the current patch releases.
 Older releases are not interchangeable evidence for these defaults or exports.
 
