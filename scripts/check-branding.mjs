@@ -17,7 +17,7 @@ const matches = [];
 function visit(directory) {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     const absolute = path.join(directory, entry.name);
-    const relative = path.relative(ROOT, absolute);
+    const relative = path.relative(ROOT, absolute).split(path.sep).join('/');
     if (entry.isDirectory()) {
       if (SKIP_DIRECTORIES.has(entry.name)) continue;
       visit(absolute);

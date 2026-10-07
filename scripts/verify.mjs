@@ -9,12 +9,18 @@
  * since CI runs from a fresh checkout where each package's dist is absent).
  */
 import { spawnSync } from "node:child_process";
-import { readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const ENV = { ...process.env, PATH: `${path.dirname(process.execPath)}:${process.env.PATH ?? ""}:/opt/homebrew/bin` };
+const pathKey = Object.keys(process.env).find(key => key.toLowerCase() === "path") ?? "PATH";
+const ENV = { ...process.env, [pathKey]: [path.dirname(process.execPath), process.env[pathKey] ?? "", ...(process.platform === "darwin" ? ["/opt/homebrew/bin"] : [])].join(path.delimiter) };
+// npm supplies its JavaScript entry point; invoking it through Node also works
+// when Windows cannot spawn the npm.cmd shim directly.
+const npmEntry = process.env.npm_execpath;
+const NPM = (npmEntry && path.basename(npmEntry) === "npm-cli.js" ? npmEntry : undefined) ?? [path.dirname(process.execPath), ...(process.env[pathKey] ?? "").split(path.delimiter)]
+  .map(dir => path.join(dir, "node_modules/npm/bin/npm-cli.js")).find(existsSync);
 
 for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
   if (!name.endsWith(".yml") && !name.endsWith(".yaml")) continue;
@@ -30,7 +36,8 @@ for (const name of readdirSync(path.join(ROOT, ".github", "workflows"))) {
 
 function run(label, cmd, args, cwd) {
   process.stdout.write(`\n▶ ${label}\n`);
-  const res = spawnSync(cmd, args, { cwd, stdio: "inherit", env: ENV });
+  const useNpmEntry = cmd === "npm" && NPM;
+  const res = spawnSync(useNpmEntry ? process.execPath : cmd, useNpmEntry ? [NPM, ...args] : args, { cwd, stdio: "inherit", env: ENV });
   if (res.error || res.status !== 0) {
     console.error(`\n✖ verify failed at: ${label}`);
     process.exit(1);

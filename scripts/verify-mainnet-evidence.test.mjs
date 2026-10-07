@@ -32,7 +32,7 @@ async function runHistoricalVerifier(paymentRegistry = OLD_REGISTRY) {
   const process = {};
   // Run the actual auto-executing script with isolated read-only network fixtures.
   // Its two imports are supplied by the context; no live RPC or signing is possible.
-  const executable = source.replace(/^import .*;\n/gm, "");
+  const executable = source.replace(/^import .*;\r?\n/gm, "");
   await runInNewContext(executable, {
     assert: {
       ...assert,

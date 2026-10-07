@@ -20,6 +20,11 @@ parser errors for invalid input and verify that `Object.prototype` is unchanged;
 prototype-like table names may remain ordinary document data. They do not depend
 on the old parser's error messages.
 
+The October 7 lockfile update selects `smol-toml` 1.9.0. Parsed tables now
+have null prototypes. Read table fields directly or use `Object.hasOwn`;
+do not depend on inherited methods such as `hasOwnProperty`. The tests retain
+the prototype-pollution checks and require the safer null-prototype result.
+
 The existing `qs` checks remain: normal query parsing, bracket-comma array limits,
 and attacker-controlled `constructor.isBuffer` fields. These checks exercise the
 installed `qs` implementation; the SDK migration does not itself change Express

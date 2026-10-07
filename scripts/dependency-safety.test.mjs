@@ -16,7 +16,7 @@ test("the SDK smol-toml parser reads normal issuer metadata", () => {
   const metadata = toml.parse(issuerMetadata);
   assert.equal(metadata.VERSION, "2.0.0");
   assert.equal(metadata.NETWORK_PASSPHRASE, "Public Global Stellar Network ; September 2015");
-  assert.deepEqual(metadata.CURRENCIES, [{ code: "USDC", display_decimals: 7 }]);
+  assert.deepEqual(metadata.CURRENCIES.map(value => ({ ...value })), [{ code: "USDC", display_decimals: 7 }]);
 });
 
 test("the SDK issuer metadata resolver uses the compatible smol-toml path", async () => {
@@ -59,7 +59,7 @@ test("smol-toml keeps prototype-named tables as document data", () => {
   assert.ok(Object.hasOwn(metadata, "constructor"));
   assert.equal(metadata.__proto__.ackrate_toml_regression_marker, "yes");
   assert.equal(metadata.constructor.prototype.ackrate_toml_regression_marker, "yes");
-  assert.equal(Object.getPrototypeOf(metadata), Object.prototype);
+  assert.equal(Object.getPrototypeOf(metadata), null);
   assert.deepEqual(Object.getOwnPropertyDescriptors(Object.prototype), prototype);
   assert.equal(Object.getPrototypeOf(Object.prototype), null);
 });
