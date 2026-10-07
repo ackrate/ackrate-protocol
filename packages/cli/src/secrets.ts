@@ -7,6 +7,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { requireJournalPlatform } from "./journal-platform.js";
 
 export type Credentials = {
   network: "testnet";
@@ -35,6 +36,7 @@ export function loadCredentials(): Credentials {
 }
 
 export function saveCredentials(creds: Credentials): string {
+  requireJournalPlatform();
   const home = ackrateHome();
   mkdirSync(home, { recursive: true, mode: 0o700 });
   const path = credentialsPath();

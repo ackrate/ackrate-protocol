@@ -16,6 +16,7 @@ import { FileSettlementReceiptStore } from "../../../apps/consumer-agent/src/rec
 import { FilePurchaseOutcomeStore, createPurchaseIdentity } from "../../../apps/consumer-agent/src/outcome-store.js";
 import { FileBoundRedemptionStore } from "../../../apps/fulfillment-agent/src/redemption-store.js";
 import { ackrateHome } from "./secrets.js";
+import { requireJournalPlatform } from "./journal-platform.js";
 
 export type SettlementSource = "pay" | "demo";
 
@@ -96,6 +97,7 @@ function statePath(): string {
 
 /** The stable sibling lock prevents stale readers from deleting or overwriting a new run. */
 async function withJournalLock<T>(operation: () => Promise<T>): Promise<T> {
+  requireJournalPlatform();
   const home = ackrateHome();
   await mkdir(home, { recursive: true, mode: 0o700 });
   await chmod(home, 0o700);

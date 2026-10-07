@@ -231,6 +231,9 @@ export class FilePurchaseOutcomeStore implements PurchaseOutcomeStore {
   private readonly filePath: string;
 
   constructor(filePath: string) {
+    if (!["linux", "darwin", "freebsd", "openbsd", "netbsd"].includes(process.platform)) {
+      throw new Error("Payment file journals require a local POSIX filesystem. Keep existing journals for recovery. Use Linux/WSL state outside /mnt/c and /mnt/d.");
+    }
     if (!filePath || filePath.trim() !== filePath) throw new Error("outcome file path must be a non-empty exact string");
     this.filePath = resolve(filePath);
   }

@@ -1,5 +1,9 @@
 # ⚡ ackrate-protocol
 
+Local payment journals require a POSIX filesystem. Native Windows file stores are unsupported.
+Use Linux/WSL with state in its Linux filesystem, not `/mnt/c` or `/mnt/d`.
+Keep existing journals and signed proofs after an error. Reconcile uncertain operations before another payment.
+
 **Protocol, SDK, CLI, and reference agents for mandate-enforced agent payments on Stellar. The SDK prepares requests; the contract decides whether money moves.**
 
 [![Stellar](https://img.shields.io/badge/Stellar-Mainnet-111111?logo=stellar&logoColor=white)](https://stellar.expert/explorer/public/contract/CCLZEBJXG4YVJEPBCR5F27N733BCK5HQJWZZGB3K54JVODY3VAGP4HWR)
